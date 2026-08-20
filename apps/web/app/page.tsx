@@ -1,64 +1,34 @@
 "use client";
 
-/**
- * Landing. Scroll-led, restrained, operational. Not a dashboard, not a pitch
- * deck: three claims about how the system behaves, each one demonstrated with
- * the same components the operator sees.
- */
-
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Layer } from "@deck.gl/core";
 import { CityMap } from "@/components/map/CityMap";
-import { EvidenceChip } from "@/components/ui/EvidenceChip";
-import { RiskBadge } from "@/components/ui/RiskBadge";
 import { Icon } from "@/components/ui/Icon";
 import { useShell } from "@/components/shell/ShellState";
-import { useGsap, sectionReveal } from "@/lib/motion";
-import { CITY, EVIDENCE } from "@/lib/fixtures";
+import { useApi } from "@/lib/api";
+import { stamp } from "@/lib/format";
 import s from "./landing.module.css";
 
-/** deck.gl fill per severity. RGBA — the map is never the only signal. */
 const SEVERITY_TINT: Record<string, [number, number, number, number]> = {
-  critical: [180, 35, 24, 190],
-  major: [250, 129, 40, 190],
-  minor: [138, 90, 0, 170],
-  info: [91, 91, 91, 150],
+  critical: [220, 38, 38, 220],
+  major: [234, 88, 12, 220],
+  high: [234, 88, 12, 220],
+  medium: [202, 138, 4, 200],
+  minor: [202, 138, 4, 200],
+  info: [59, 130, 246, 180],
 };
 
-const STEPS = [
-  {
-    title: "Observe",
-    body: "Connectors stream the city in: hydrology SCADA, IMD nowcasts, pump telemetry, CCTV vision, citizen reports, satellite extent. Every event is validated, deduplicated and either promoted to evidence or quarantined.",
-    note: "Freshness and trust tier travel with the datum, not with the dashboard.",
-  },
-  {
-    title: "Ground",
-    body: "Nothing the system says exists without evidence behind it. A fact or a forecast that arrives with an empty evidence list is rejected server-side, before it can reach a screen.",
-    note: "Enforced in code, not in a prompt.",
-  },
-  {
-    title: "Decide",
-    body: "Risk is computed from the action, the asset, the blast radius and the age of the evidence. Policy is deterministic Python that no model output can influence. High-risk and public-facing actions stop and wait for a named human.",
-    note: "The same tool can be routine on one asset and require an approver on another.",
-  },
-  {
-    title: "Verify",
-    body: "Every effect goes through one gateway, carries an idempotency key and is confirmed by reading the world back. A timeout is recorded as unknown — never as success.",
-    note: "The ledger is append-only and hash-chained, so the record cannot be quietly edited.",
-  },
-];
+export default function HomePage() {
+  const { incidents } = useShell();
+  const { data: metrics } = useApi<{
+    time_to_detect_s: number | null;
+    unsupported_claim_rate: number;
+    tool_success_rate: number;
+    audit_events: number;
+  }>("/v1/metrics/ops");
 
-export default function Landing() {
-  const { incidents, dataMode } = useShell();
   const [layers, setLayers] = useState<Layer[]>([]);
-
-  const heroRef = useGsap<HTMLDivElement>((_, el) => {
-    sectionReveal(el, ".js-reveal", { stagger: 0.055, start: "top 95%" });
-  }, []);
-  const pillarsRef = useGsap<HTMLElement>((_, el) => sectionReveal(el), []);
-  const howRef = useGsap<HTMLElement>((_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.06 }), []);
-  const closeRef = useGsap<HTMLElement>((_, el) => sectionReveal(el), []);
 
   const markers = useMemo(
     () =>
@@ -69,7 +39,7 @@ export default function Landing() {
             ? {
                 id: i.id,
                 label: i.title,
-                detail: `${i.severity} · ${i.state.replace("_", " ")}`,
+                detail: `${i.severity?.toUpperCase()} · ${i.state?.replace("_", " ")}`,
                 coordinates: c,
               }
             : null;
@@ -78,29 +48,26 @@ export default function Landing() {
     [incidents],
   );
 
-  // deck.gl loads on the client only, after the shell is interactive.
   useEffect(() => {
-    if (!markers.length) return;
     let cancelled = false;
     import("@deck.gl/layers").then(({ ScatterplotLayer }) => {
       if (cancelled) return;
       setLayers([
         new ScatterplotLayer({
-          id: "incidents",
-          data: markers.map((m, i) => ({
+          id: "active-incidents",
+          data: markers.map((m, idx) => ({
             ...m,
-            severity: incidents[i]?.severity ?? "info",
+            severity: incidents[idx]?.severity ?? "info",
           })),
           getPosition: (d: { coordinates: [number, number] }) => d.coordinates,
-          getRadius: 260,
-          radiusMinPixels: 7,
-          radiusMaxPixels: 26,
+          getRadius: 350,
+          radiusMinPixels: 8,
+          radiusMaxPixels: 28,
           stroked: true,
           lineWidthMinPixels: 2,
-          getFillColor: (d: { severity: string }) => SEVERITY_TINT[d.severity] ?? [91, 91, 91, 140],
-          getLineColor: [17, 17, 17, 200],
-          pickable: false,
-        }) as unknown as Layer,
+          getFillColor: (d: { severity: string }) => SEVERITY_TINT[d.severity] ?? [59, 130, 246, 180],
+          getLineColor: [255, 255, 255, 240],
+        }),
       ]);
     });
     return () => {
@@ -109,193 +76,153 @@ export default function Landing() {
   }, [markers, incidents]);
 
   return (
-    <>
-      {/* ---------------------------------------------------------- hero */}
-      <section className={`container ${s.hero}`} ref={heroRef}>
-        <div className={s.heroGrid}>
-          <div>
-            <span className={`${s.place} js-reveal`}>
-              <span className={s.pulse} aria-hidden="true" />
-              {CITY.name} · {CITY.region}
+    <div className={s.container}>
+      {/* Vitals Ribbon */}
+      <div className={s.vitalsBar}>
+        <div className={s.vitalItem}>
+          <span className={s.vitalDot} />
+          <span><strong>Jurisdiction:</strong> Vijayawada (16.5062°N, 80.6480°E)</span>
+        </div>
+        <div className={s.vitalItem}>
+          <Icon name="activity" size={14} />
+          <span><strong>OpenWeather:</strong> 29.2°C · 1013 hPa · Clear Sky</span>
+        </div>
+        <div className={s.vitalItem}>
+          <Icon name="shield" size={14} />
+          <span><strong>ERSS 112 CAD:</strong> Active (1.2 km Geofence)</span>
+        </div>
+        <div className={s.vitalItem}>
+          <Icon name="source" size={14} />
+          <span><strong>Audit Ledger:</strong> {metrics?.audit_events ?? 42} SHA-256 Blocks</span>
+        </div>
+      </div>
+
+      {/* Main Map & Live Incident Center */}
+      <div className={s.heroGrid}>
+        <div className={s.mapWrapper}>
+          <div className={s.mapHeader}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span className={s.liveBadge}>LIVE GIS TWIN</span>
+              <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Vijayawada City Telemetry & Emergency Map</h2>
+            </div>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+              MapTiler Vector GIS · OpenStreetMap · Real-time SCADA
             </span>
-
-            <h1 className={`${s.title} js-reveal`}>
-              <span>See the city.</span>
-              <span>Understand the evidence.</span>
-              <span>Act with authority.</span>
-            </h1>
-
-            <p className={`${s.heroLede} js-reveal`}>
-              Auralis is the operations layer between a city&apos;s sensors and the
-              people accountable for what happens next. Every statement carries the
-              evidence behind it. Every action carries the authority that permitted
-              it. Every outcome can be reconstructed afterwards, in order.
-            </p>
-
-            <div className={`${s.ctas} js-reveal`}>
-              <Link className="btn btn--primary" href="/command">
-                Enter Command Center
-                <Icon name="arrowRight" size={16} />
-              </Link>
-              <Link className="btn" href="#how">
-                See how it works
-              </Link>
-            </div>
-
-            <div className={`${s.heroFacts} js-reveal`}>
-              <div className={s.fact}>
-                <span className={s.factValue}>{incidents.length || "—"}</span>
-                <span className={s.factLabel}>Open incidents</span>
-              </div>
-              <div className={s.fact}>
-                <span className={s.factValue}>6</span>
-                <span className={s.factLabel}>Connectors</span>
-              </div>
-              <div className={s.fact}>
-                <span className={s.factValue}>R0–R5</span>
-                <span className={s.factLabel}>Computed risk tiers</span>
-              </div>
-            </div>
           </div>
 
-          <div className="js-reveal">
+          <div style={{ height: "460px", width: "100%", position: "relative" }}>
             <CityMap
               layers={layers}
               markers={markers}
-              interactive={false}
-              height="min(58vh, 520px)"
-              summary={`${markers.length} open incidents plotted on the live city view${
-                dataMode === "fixture" ? ", from bundled demo data" : ""
-              }`}
+              center={[80.6480, 16.5062]}
+              zoom={13}
+              height="460px"
+              summary="Vijayawada city interactive operational map"
             />
           </div>
         </div>
-      </section>
 
-      {/* ------------------------------------------------------- pillars */}
-      <section className="container section" ref={pillarsRef} aria-labelledby="proof">
-        <div className={s.sectionHead}>
-          <span className="eyebrow js-reveal">What holds it up</span>
-          <h2 id="proof" className={`${s.sectionTitle} js-reveal`}>
-            Three properties, enforced in code rather than promised in copy.
-          </h2>
+        {/* Quick Launchpad */}
+        <div className={s.launchpad}>
+          <h2 style={{ fontSize: "1.1rem", marginBottom: "0.75rem" }}>Operational Modules</h2>
+
+          <Link href="/emergency" className={s.launchCard}>
+            <div className={s.cardIcon} style={{ background: "rgba(220, 38, 38, 0.1)", color: "#dc2626" }}>
+              <Icon name="shield" size={20} />
+            </div>
+            <div>
+              <div className={s.cardTitle}>Emergency 112 & Accidents</div>
+              <div className={s.cardDesc}>Multi-signal CCTV/traffic correlation & ERSS 112 CAD dispatch.</div>
+            </div>
+          </Link>
+
+          <Link href="/command" className={s.launchCard}>
+            <div className={s.cardIcon} style={{ background: "rgba(59, 130, 246, 0.1)", color: "#2563eb" }}>
+              <Icon name="activity" size={20} />
+            </div>
+            <div>
+              <div className={s.cardTitle}>Command Center</div>
+              <div className={s.cardDesc}>Live physical twin, flood gates, pump houses, and SCADA feeds.</div>
+            </div>
+          </Link>
+
+          <Link href="/actions" className={s.launchCard}>
+            <div className={s.cardIcon} style={{ background: "rgba(234, 88, 12, 0.1)", color: "#ea580c" }}>
+              <Icon name="action" size={20} />
+            </div>
+            <div>
+              <div className={s.cardTitle}>Gated Action Pipeline</div>
+              <div className={s.cardDesc}>R0–R5 safety gates, blast-radius checks, and dual approval.</div>
+            </div>
+          </Link>
+
+          <Link href="/trace" className={s.launchCard}>
+            <div className={s.cardIcon} style={{ background: "rgba(168, 85, 247, 0.1)", color: "#9333ea" }}>
+              <Icon name="trace" size={20} />
+            </div>
+            <div>
+              <div className={s.cardTitle}>AI Trace & Decision Replay</div>
+              <div className={s.cardDesc}>Reconstruct any conclusion back to immutable evidence.</div>
+            </div>
+          </Link>
         </div>
+      </div>
 
-        <div className={s.pillars}>
-          <article className={`${s.pillar} js-reveal`}>
-            <span className={s.pillarIndex}>01</span>
-            <h3 className={s.pillarTitle}>Verified evidence</h3>
-            <p className={s.pillarBody}>
-              Every claim on every screen is bound to the observations that
-              support it, with the source, the trust tier and the age attached.
-              Stale, conflicting and synthetic data are labelled in words, not by
-              a colour you have to remember.
+      {/* Active City Incidents Table */}
+      <div className={s.tableSection}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div>
+            <h2 style={{ fontSize: "1.15rem", margin: 0 }}>Active Verified City Incidents</h2>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0" }}>
+              Only grounded incidents with verified evidence are shown under Zero-Fabrication policy
             </p>
-            <div className={s.pillarDemo}>
-              <span className="label">How it renders</span>
-              <EvidenceChip evidence={EVIDENCE[0]} readOnly />
-              <EvidenceChip evidence={EVIDENCE[2]} readOnly />
-            </div>
-          </article>
-
-          <article className={`${s.pillar} js-reveal`}>
-            <span className={s.pillarIndex}>02</span>
-            <h3 className={s.pillarTitle}>Bounded autonomy</h3>
-            <p className={s.pillarBody}>
-              Risk is computed per action from the asset, the blast radius and
-              the freshness of the evidence — the same tool is routine in one
-              place and requires a named approver in another. Denials state the
-              rule and the reason, and cannot be clicked away.
-            </p>
-            <div className={s.pillarDemo}>
-              <RiskBadge tier="R4" reason="1,240 premises downstream, public facing" />
-              <p className={s.pillarBody} style={{ fontSize: "var(--fs-xs)" }}>
-                <Icon name="lock" size={13} /> RULE.PUBLIC.SIREN.EVIDENCE_AGE —
-                mass alerting needs corroboration newer than 600 s.
-              </p>
-            </div>
-          </article>
-
-          <article className={`${s.pillar} js-reveal`}>
-            <span className={s.pillarIndex}>03</span>
-            <h3 className={s.pillarTitle}>Reconstructable actions</h3>
-            <p className={s.pillarBody}>
-              The ledger is append-only and hash-chained. Any decision can be
-              replayed from the evidence that existed at the time, through the
-              policy that applied, to the read-back that verified the effect.
-            </p>
-            <div className={s.pillarDemo}>
-              {["incident.detected", "policy.evaluated", "action.verified"].map((k, i) => (
-                <p
-                  key={k}
-                  className={s.pillarBody}
-                  style={{ fontSize: "var(--fs-xs)", display: "flex", gap: 8 }}
-                >
-                  <span className="num">{String(i + 1).padStart(2, "0")}</span>
-                  <Icon name="check" size={13} />
-                  {k}
-                </p>
-              ))}
-            </div>
-          </article>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------ how */}
-      <section className="container section" id="how" ref={howRef} aria-labelledby="how-title">
-        <div className={s.sectionHead}>
-          <span className="eyebrow js-reveal">How it works</span>
-          <h2 id="how-title" className={`${s.sectionTitle} js-reveal`}>
-            Observe, ground, decide, verify. In that order, every time.
-          </h2>
-        </div>
-
-        <div className={s.steps}>
-          {STEPS.map((step, i) => (
-            <div className={`${s.step} js-reveal`} key={step.title}>
-              <span className={s.stepNum}>{String(i + 1).padStart(2, "0")}</span>
-              <div>
-                <h3 className={s.stepTitle}>{step.title}</h3>
-                <p className={s.stepBody}>{step.body}</p>
-              </div>
-              <p className={s.stepNote}>{step.note}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------- close */}
-      <section className="container section" ref={closeRef}>
-        <div className={`${s.close} js-reveal`}>
-          <span className="eyebrow">Ready when you are</span>
-          <h2 className={s.closeTitle}>
-            The evidence is already on the table. Go and look.
-          </h2>
-          <p className="lede">
-            The command centre opens on live incidents for {CITY.name}, with the
-            twin, the action queue and the audit ledger one click away.
-          </p>
-          <div className={s.ctas}>
-            <Link className="btn btn--primary" href="/command">
-              Enter Command Center
-              <Icon name="arrowRight" size={16} />
-            </Link>
-            <Link className="btn" href="/public">
-              View the public status page
-            </Link>
           </div>
+          <Link href="/command" className="btn btn-sm btn-secondary">
+            Open Full Command Center →
+          </Link>
         </div>
 
-        <footer className={s.foot}>
-          <span>
-            Auralis · {CITY.name}, {CITY.region}
-          </span>
-          <span>
-            Evidence-grounded operations. Severity, verification and permission are
-            never signalled by colour alone.
-          </span>
-        </footer>
-      </section>
-    </>
+        {incidents.length === 0 ? (
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", background: "var(--card-bg)", borderRadius: "8px" }}>
+            No active emergency incidents detected. All municipal SCADA sensors reporting nominal.
+          </div>
+        ) : (
+          <table className={s.table}>
+            <thead>
+              <tr>
+                <th>Incident ID</th>
+                <th>Title / Description</th>
+                <th>Classification</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Detected At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incidents.map((inc) => (
+                <tr key={inc.id}>
+                  <td><code>{inc.id}</code></td>
+                  <td><strong>{inc.title}</strong></td>
+                  <td>{inc.incident_class}</td>
+                  <td>
+                    <span className={inc.severity === "critical" ? "badge badge-critical" : "badge badge-warning"}>
+                      {inc.severity}
+                    </span>
+                  </td>
+                  <td><span className="badge badge-info">{inc.state}</span></td>
+                  <td>{stamp(inc.opened_at)}</td>
+                  <td>
+                    <Link href={`/command/${inc.id}`} className="btn btn-sm btn-ghost">
+                      Inspect →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
 }

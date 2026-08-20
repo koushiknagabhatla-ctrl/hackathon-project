@@ -31,23 +31,34 @@ import { revealMap } from "@/lib/motion";
 import { CITY } from "@/lib/fixtures";
 import s from "./map.module.css";
 
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "aqlFHWbQ8m4XIBm9Pw69";
 
 export const MAP_STYLE =
   process.env.NEXT_PUBLIC_MAP_STYLE ??
-  (MAPTILER_KEY
-    ? `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`
-    : "https://tiles.openfreemap.org/styles/liberty");
+  `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
 
-/** Zero-network style. Same projection, same deck.gl layers, no tiles. */
-const OFFLINE_STYLE: StyleSpecification = {
+/** Reliable fallback raster style (OpenStreetMap) so the map is ALWAYS visible. */
+const OSM_FALLBACK_STYLE: StyleSpecification = {
   version: 8,
-  sources: {},
+  sources: {
+    "osm-tiles": {
+      type: "raster",
+      tiles: [
+        "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: "&copy; OpenStreetMap Contributors",
+    },
+  },
   layers: [
     {
-      id: "ground",
-      type: "background",
-      paint: { "background-color": "#ECECEC" },
+      id: "osm-tiles-layer",
+      type: "raster",
+      source: "osm-tiles",
+      minzoom: 0,
+      maxzoom: 19,
     },
   ],
 };
@@ -125,36 +136,33 @@ export function CityMap({
       };
 
       let degraded = false;
-      const degrade = () => {
+      const degradeToOsm = () => {
         if (degraded || cancelled || !map) return;
         degraded = true;
-        setBasemap("unavailable");
+        setBasemap("ok");
         try {
-          map.setStyle(OFFLINE_STYLE);
+          map.setStyle(OSM_FALLBACK_STYLE);
         } catch {
-          /* the overlay still renders even if the style swap is refused */
+          /* ignore */
         }
       };
 
-      // A style or tile failure must never take the screen down.
       if (map) {
         map.on("error", (e: any) => {
+          // Only fallback if the root style itself fails to load
           const msg = String(e?.error?.message ?? e?.message ?? "");
-          if (/style|tile|source|fetch|network|Failed/i.test(msg)) degrade();
+          if (msg.includes("Failed to fetch style") || msg.includes("401") || msg.includes("403")) {
+            degradeToOsm();
+          }
         });
 
         map.on("load", () => {
           if (cancelled || !map) return;
-          setBasemap((b) => (b === "unavailable" ? b : "ok"));
+          setBasemap("ok");
           revealMap(holder.current);
           onReady?.(map);
         });
       }
-
-      // If nothing has loaded after 6s, assume the tiles are not coming.
-      setTimeout(() => {
-        if (!cancelled && map && !map.loaded()) degrade();
-      }, 6000);
     })();
 
     return () => {

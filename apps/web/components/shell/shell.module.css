@@ -242,6 +242,7 @@
 /* ------------------------------------------------------------- mega panel */
 .panelWrap {
   position: relative;
+  z-index: 100;
 }
 .panel {
   position: absolute;
@@ -249,14 +250,15 @@
   right: 0;
   width: min(680px, calc(100vw - 2 * var(--pad-x)));
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong, rgba(0, 0, 0, 0.15));
   border-radius: var(--r-surface);
-  box-shadow: var(--sh-3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
   padding: 18px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 22px;
   transform-origin: top right;
+  z-index: 99999;
   animation: panelIn 150ms var(--ease-out);
 }
 @keyframes panelIn {
