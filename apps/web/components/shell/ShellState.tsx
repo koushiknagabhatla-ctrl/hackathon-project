@@ -1,16 +1,5 @@
 "use client";
 
-/**
- * ShellState — one place that knows whether the city is on fire, whether the
- * stream is live, and whether what you are looking at is real.
- *
- * It owns the single EventSource for the whole app (opening one per component
- * would hammer the API), and the single incident poll that feeds the critical
- * rail. Lane E can read it anywhere:
- *
- *   const { criticalIncidents, streamStatus, dataMode, refresh } = useShell();
- */
-
 import {
   createContext,
   useCallback,
@@ -22,6 +11,7 @@ import {
 } from "react";
 import { api, useDataMode, useStream, type DataMode, type StreamStatus } from "@/lib/api";
 import type { Incident, StreamEvent } from "@/lib/types";
+import { DEFAULT_LOCATION, type IndiaLocation } from "@/lib/locations";
 
 interface ShellValue {
   incidents: Incident[];
@@ -29,6 +19,9 @@ interface ShellValue {
   streamStatus: StreamStatus;
   dataMode: DataMode;
   events: StreamEvent[];
+  location: IndiaLocation;
+  weather: Record<string, any> | null;
+  setLocation: (loc: IndiaLocation) => void;
   refresh: () => void;
 }
 
@@ -51,11 +44,51 @@ const OPEN_STATES = new Set([
 
 export function ShellStateProvider({ children }: { children: ReactNode }) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [location, setLocationState] = useState<IndiaLocation>(DEFAULT_LOCATION);
+  const [weather, setWeather] = useState<Record<string, any> | null>(null);
   const [nonce, setNonce] = useState(0);
   const { events, status } = useStream();
   const dataMode = useDataMode();
 
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
+
+  const setLocation = useCallback((newLoc: IndiaLocation) => {
+    setLocationState(newLoc);
+    // Persist preferred location
+    if (typeof window !== "undefined") {
+      localStorage.setItem("auralis_location", JSON.stringify(newLoc));
+    }
+  }, []);
+
+  // Hydrate stored location if present
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("auralis_location");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.coordinates) setLocationState(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Fetch real-world live weather whenever location changes
+  useEffect(() => {
+    let alive = true;
+    const [lon, lat] = location.coordinates;
+    api
+      .get<Record<string, any>>(`/v1/weather/live?lat=${lat}&lon=${lon}`)
+      .then((res) => {
+        if (alive && res) setWeather(res);
+      })
+      .catch(() => {
+        /* fallback handled gracefully */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [location]);
 
   useEffect(() => {
     let alive = true;
@@ -70,7 +103,6 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
     };
   }, [nonce]);
 
-  // Any incident frame on the stream invalidates the list. Cheap and correct.
   const incidentFrames = events.filter((e) => e.type === "incident").length;
   useEffect(() => {
     if (incidentFrames > 0) refresh();
@@ -92,9 +124,12 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
       streamStatus: status,
       dataMode,
       events,
+      location,
+      weather,
+      setLocation,
       refresh,
     }),
-    [incidents, criticalIncidents, status, dataMode, events, refresh],
+    [incidents, criticalIncidents, status, dataMode, events, location, weather, setLocation, refresh],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

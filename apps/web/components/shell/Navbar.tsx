@@ -19,6 +19,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { PRINCIPALS, getPrincipal, setPrincipal } from "@/lib/api";
 import type { Role } from "@/lib/types";
 import { useShell } from "./ShellState";
+import { LocationSwitcher } from "./LocationSwitcher";
 import { ALL_NAV, GROUP_LABEL, PRIMARY, SECONDARY, isActive } from "./nav";
 import s from "./shell.module.css";
 
@@ -245,6 +246,8 @@ export function Navbar() {
           </nav>
 
           <div className={s.right}>
+            <LocationSwitcher />
+
             <button
               type="button"
               className={s.ctl}

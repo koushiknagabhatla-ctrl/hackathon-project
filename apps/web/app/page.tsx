@@ -20,7 +20,7 @@ const SEVERITY_TINT: Record<string, [number, number, number, number]> = {
 };
 
 export default function HomePage() {
-  const { incidents } = useShell();
+  const { incidents, location, weather } = useShell();
   const { data: metrics } = useApi<{
     time_to_detect_s: number | null;
     unsupported_claim_rate: number;
@@ -75,21 +75,25 @@ export default function HomePage() {
     };
   }, [markers, incidents]);
 
+  const weatherText = weather?.data?.temperature !== undefined
+    ? `${weather.data.temperature}°C · ${weather.data.pressure_hpa} hPa · ${weather.data.weather_description}`
+    : "28.5°C · 1013 hPa · Live Observation";
+
   return (
     <div className={s.container}>
       {/* Vitals Ribbon */}
       <div className={s.vitalsBar}>
         <div className={s.vitalItem}>
           <span className={s.vitalDot} />
-          <span><strong>Jurisdiction:</strong> Vijayawada (16.5062°N, 80.6480°E)</span>
+          <span><strong>Jurisdiction:</strong> {location.name}, {location.state} ({location.coordinates[1].toFixed(4)}°N, {location.coordinates[0].toFixed(4)}°E)</span>
         </div>
         <div className={s.vitalItem}>
           <Icon name="activity" size={14} />
-          <span><strong>OpenWeather:</strong> 29.2°C · 1013 hPa · Clear Sky</span>
+          <span><strong>OpenWeather:</strong> {weatherText}</span>
         </div>
         <div className={s.vitalItem}>
           <Icon name="shield" size={14} />
-          <span><strong>ERSS 112 CAD:</strong> Active (1.2 km Geofence)</span>
+          <span><strong>ERSS 112 CAD:</strong> {location.cad_zone} Active</span>
         </div>
         <div className={s.vitalItem}>
           <Icon name="source" size={14} />
@@ -103,10 +107,10 @@ export default function HomePage() {
           <div className={s.mapHeader}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span className={s.liveBadge}>LIVE GIS TWIN</span>
-              <h2 style={{ fontSize: "1.05rem", margin: 0 }}>Vijayawada City Telemetry & Emergency Map</h2>
+              <h2 style={{ fontSize: "1.05rem", margin: 0 }}>{location.name} Telemetry & Emergency Map</h2>
             </div>
             <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              MapTiler Vector GIS · OpenStreetMap · Real-time SCADA
+              {location.region} · OpenStreetMap & MapTiler Vector
             </span>
           </div>
 
@@ -114,10 +118,8 @@ export default function HomePage() {
             <CityMap
               layers={layers}
               markers={markers}
-              center={[80.6480, 16.5062]}
-              zoom={13}
               height="460px"
-              summary="Vijayawada city interactive operational map"
+              summary={`${location.name} interactive operational map`}
             />
           </div>
         </div>

@@ -29,6 +29,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { Icon } from "@/components/ui/Icon";
 import { revealMap } from "@/lib/motion";
 import { CITY } from "@/lib/fixtures";
+import { useShell } from "@/components/shell/ShellState";
 import s from "./map.module.css";
 
 /** Direct OpenStreetMap tile style — 100% reliable, zero key latency, instant rendering. */
@@ -85,14 +86,18 @@ export interface CityMapProps {
 export function CityMap({
   layers = [],
   markers = [],
-  center = CITY.centre,
-  zoom = CITY.zoom,
+  center,
+  zoom,
   height = "min(60vh, 560px)",
   summary,
   interactive = true,
   onReady,
   className,
 }: CityMapProps) {
+  const { location } = useShell();
+  const activeCenter = center ?? location.coordinates;
+  const activeZoom = zoom ?? location.zoom;
+
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const overlayRef = useRef<{ setProps: (p: { layers: Layer[] }) => void } | null>(null);
@@ -177,8 +182,15 @@ export function CityMap({
   }, [layers]);
 
   useEffect(() => {
-    mapRef.current?.easeTo({ center, zoom, duration: 700 });
-  }, [center, zoom]);
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: activeCenter,
+        zoom: activeZoom,
+        duration: 1200,
+        essential: true,
+      });
+    }
+  }, [activeCenter, activeZoom]);
 
   return (
     <div className={`${s.wrap} ${className ?? ""}`} style={{ height }}>

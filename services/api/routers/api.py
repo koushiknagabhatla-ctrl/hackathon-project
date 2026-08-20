@@ -26,13 +26,23 @@ from services.api.models import (
 router = APIRouter(prefix="/v1")
 
 
-# --------------------------------------------------------------- live connectors
+@router.get("/weather/live")
 @router.post("/connectors/weather/sync")
-def sync_live_weather(principal: dict = Depends(get_principal)) -> Any:
-    """Fetch live meteorological observations from Open-Meteo and ingest real evidence."""
-    from services.api.connectors.weather import fetch_live_weather
+def sync_live_weather(
+    lat: float | None = None,
+    lon: float | None = None,
+    principal: dict = Depends(get_principal),
+) -> Any:
+    """Fetch live verified meteorological observations from OpenWeather for any Indian location."""
+    from services.api.connectors.weather import fetch_live_weather, DEFAULT_LAT, DEFAULT_LON
 
-    return fetch_live_weather(principal=principal.get("id", "p_operator"))
+    target_lat = lat if lat is not None else DEFAULT_LAT
+    target_lon = lon if lon is not None else DEFAULT_LON
+    return fetch_live_weather(
+        lat=target_lat,
+        lon=target_lon,
+        principal=principal.get("id", "p_operator"),
+    )
 
 
 @router.post("/connectors/gis/sync")

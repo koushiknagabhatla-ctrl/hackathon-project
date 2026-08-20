@@ -22,7 +22,7 @@ const SEVERITY_TINT: Record<string, [number, number, number, number]> = {
 };
 
 export default function CommandCenter() {
-  const { incidents } = useShell();
+  const { incidents, location } = useShell();
   const { data: ops } = useApi<OpsMetrics>("/v1/metrics/ops");
   const [layers, setLayers] = useState<Layer[]>([]);
   const ref = useGsap<HTMLElement>((_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }), []);
@@ -80,7 +80,7 @@ export default function CommandCenter() {
         <div>
           <h1 style={{ fontSize: "1.45rem", margin: 0 }}>Command Center</h1>
           <p style={{ fontSize: "0.82rem", color: "var(--muted)", margin: "0.15rem 0 0 0" }}>
-            Unified Municipal State · Live SCADA & GIS Telemetry · {CITY.name}, {CITY.region}
+            Unified Municipal State · Live SCADA & GIS Telemetry · {location.name}, {location.state}
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -100,7 +100,7 @@ export default function CommandCenter() {
         <MetricTile label="Critical" value={String(criticals.length)} />
         <MetricTile label="Time to Detect" value={ops?.time_to_detect_s ? `${ops.time_to_detect_s}s` : "14s"} />
         <MetricTile label="Policy Blocks (24h)" value={String(ops?.policy_blocks_24h ?? 0)} />
-        <MetricTile label="SCADA Ingestion SLA" value="99.4%" />
+        <MetricTile label="CAD Zone" value={location.cad_zone} />
         <MetricTile label="LLM Cost (24h)" value={ops?.llm_cost_usd !== undefined ? `$${ops.llm_cost_usd.toFixed(2)}` : "$0.12"} />
       </div>
 
@@ -108,10 +108,10 @@ export default function CommandCenter() {
         <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden" }}>
           <div style={{ padding: "0.6rem 0.9rem", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: "0.8rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Live Vector Map & Sensor Telemetry
+              {location.name} Vector Map & Telemetry
             </span>
             <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
-              {markers.length} Active Incident Locations
+              {location.region}
             </span>
           </div>
           <CityMap
@@ -119,9 +119,7 @@ export default function CommandCenter() {
             markers={markers}
             interactive
             height="520px"
-            center={[80.6480, 16.5062]}
-            zoom={13}
-            summary={`${markers.length} incidents on the city map`}
+            summary={`${location.name} operational map`}
           />
         </div>
 
