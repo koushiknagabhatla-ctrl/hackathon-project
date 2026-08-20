@@ -14,7 +14,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from services.api.main import PolicyDenied, get_principal
+from services.api.auth import PolicyDenied, get_principal
 from services.api.models import (
     ApprovalRequest,
     EventAccepted,
@@ -24,6 +24,23 @@ from services.api.models import (
 )
 
 router = APIRouter(prefix="/v1")
+
+
+# --------------------------------------------------------------- live connectors
+@router.post("/connectors/weather/sync")
+def sync_live_weather(principal: dict = Depends(get_principal)) -> Any:
+    """Fetch live meteorological observations from Open-Meteo and ingest real evidence."""
+    from services.api.connectors.weather import fetch_live_weather
+
+    return fetch_live_weather(principal=principal.get("id", "p_operator"))
+
+
+@router.post("/connectors/gis/sync")
+def sync_live_gis(principal: dict = Depends(get_principal)) -> Any:
+    """Fetch real-world mapped infrastructure from OpenStreetMap into the digital twin."""
+    from services.api.connectors.osm_gis import fetch_osm_infrastructure
+
+    return fetch_osm_infrastructure(tenant_id=principal.get("tenant_id", "ten_vijayawada"))
 
 
 # --------------------------------------------------------------- ingestion
@@ -39,14 +56,14 @@ def post_event(body: EventIn, principal: dict = Depends(get_principal)) -> Event
 def list_incidents(
     principal: dict = Depends(get_principal),
     state: str | None = Query(default=None),
-) -> list[dict[str, Any]]:
+) -> Any:
     from services.api.core import repo
 
     return repo.list_incidents(principal["tenant_id"], state=state)
 
 
 @router.get("/incidents/{incident_id}")
-def get_incident(incident_id: str, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def get_incident(incident_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     detail = repo.incident_detail(principal["tenant_id"], incident_id)
@@ -56,7 +73,7 @@ def get_incident(incident_id: str, principal: dict = Depends(get_principal)) -> 
 
 
 @router.post("/incidents/{incident_id}/assess")
-def assess_incident(incident_id: str, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def assess_incident(incident_id: str, principal: dict = Depends(get_principal)) -> Any:
     """Run the specialist agents. Falls back to deterministic synthesis when
     the LLM path is unavailable; `degraded` says which happened."""
     from services.api.agents import coordinator
@@ -66,21 +83,21 @@ def assess_incident(incident_id: str, principal: dict = Depends(get_principal)) 
 
 # ------------------------------------------------------------------- plans
 @router.get("/incidents/{incident_id}/plans")
-def list_plans(incident_id: str, principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def list_plans(incident_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.list_plans(principal["tenant_id"], incident_id)
 
 
 @router.post("/incidents/{incident_id}/plans")
-def create_plans(incident_id: str, principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def create_plans(incident_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.agents import coordinator
 
     return coordinator.build_candidate_plans(incident_id, principal)
 
 
 @router.get("/plans/{plan_id}")
-def get_plan(plan_id: str, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def get_plan(plan_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     plan = repo.plan_detail(principal["tenant_id"], plan_id)
@@ -92,7 +109,7 @@ def get_plan(plan_id: str, principal: dict = Depends(get_principal)) -> dict[str
 @router.post("/plans/{plan_id}/approve")
 def approve(
     plan_id: str, body: ApprovalRequest, principal: dict = Depends(get_principal)
-) -> dict[str, Any]:
+) -> Any:
     from services.api.core import gateway
 
     return gateway.record_approval(plan_id, body, principal)
@@ -100,7 +117,7 @@ def approve(
 
 # ----------------------------------------------------------------- actions
 @router.get("/actions")
-def list_actions(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def list_actions(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.list_actions(principal["tenant_id"])
@@ -109,7 +126,7 @@ def list_actions(principal: dict = Depends(get_principal)) -> list[dict[str, Any
 @router.post("/actions/{action_id}/execute")
 def execute_action(
     action_id: str, body: ExecuteRequest, principal: dict = Depends(get_principal)
-) -> dict[str, Any]:
+) -> Any:
     """The single action path. Every gate in core/gateway.py runs here."""
     from services.api.core import gateway
 
@@ -117,7 +134,7 @@ def execute_action(
 
 
 @router.post("/actions/{action_id}/rollback")
-def rollback_action(action_id: str, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def rollback_action(action_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import verify
 
     return verify.rollback(action_id, principal)
@@ -125,7 +142,7 @@ def rollback_action(action_id: str, principal: dict = Depends(get_principal)) ->
 
 # ---------------------------------------------------------- evidence/claims
 @router.get("/evidence/{evidence_id}")
-def get_evidence(evidence_id: str, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def get_evidence(evidence_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     ev = repo.get_evidence(principal["tenant_id"], evidence_id)
@@ -137,14 +154,14 @@ def get_evidence(evidence_id: str, principal: dict = Depends(get_principal)) -> 
 @router.get("/claims")
 def list_claims(
     incident_id: str | None = Query(default=None), principal: dict = Depends(get_principal)
-) -> list[dict[str, Any]]:
+) -> Any:
     from services.api.core import repo
 
     return repo.list_claims(principal["tenant_id"], incident_id)
 
 
 @router.get("/conflicts")
-def list_conflicts(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def list_conflicts(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.list_conflicts(principal["tenant_id"])
@@ -154,21 +171,21 @@ def list_conflicts(principal: dict = Depends(get_principal)) -> list[dict[str, A
 @router.get("/twin/query")
 def twin_query(
     asset_id: str, depth: int = Query(default=2, ge=1, le=6), principal: dict = Depends(get_principal)
-) -> dict[str, Any]:
+) -> Any:
     from services.api.core import twin
 
     return twin.query(asset_id, depth, principal["tenant_id"])
 
 
 @router.get("/twin/snapshot")
-def twin_snapshot(at: str | None = None, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def twin_snapshot(at: str | None = None, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import twin
 
     return twin.snapshot(at, principal["tenant_id"])
 
 
 @router.get("/twin/assets")
-def twin_assets(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def twin_assets(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.list_assets(principal["tenant_id"])
@@ -176,7 +193,7 @@ def twin_assets(principal: dict = Depends(get_principal)) -> list[dict[str, Any]
 
 # ------------------------------------------------------------------- audit
 @router.get("/audit/verify")
-def audit_verify(principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def audit_verify(principal: dict = Depends(get_principal)) -> Any:
     """Recompute the whole hash chain. Proof, not assertion."""
     from services.api.core import audit
 
@@ -184,14 +201,14 @@ def audit_verify(principal: dict = Depends(get_principal)) -> dict[str, Any]:
 
 
 @router.get("/audit/{workflow_id}")
-def audit_workflow(workflow_id: str, principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def audit_workflow(workflow_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.audit_slice(principal["tenant_id"], workflow_id)
 
 
 @router.get("/audit/{workflow_id}/export")
-def audit_export(workflow_id: str, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def audit_export(workflow_id: str, principal: dict = Depends(get_principal)) -> Any:
     """The JSON the Audit screen downloads and Replay rebuilds a timeline from.
     Reconstruction must be possible from this payload ALONE."""
     from services.api.core import audit
@@ -203,14 +220,14 @@ def audit_export(workflow_id: str, principal: dict = Depends(get_principal)) -> 
 @router.get("/policies/decisions")
 def policy_decisions(
     limit: int = Query(default=100, le=500), principal: dict = Depends(get_principal)
-) -> list[dict[str, Any]]:
+) -> Any:
     from services.api.core import repo
 
     return repo.list_policy_decisions(principal["tenant_id"], limit)
 
 
 @router.get("/policies/bundle")
-def policy_bundle(principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def policy_bundle(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import policy
 
     return policy.active_bundle()
@@ -218,7 +235,7 @@ def policy_bundle(principal: dict = Depends(get_principal)) -> dict[str, Any]:
 
 # ------------------------------------------------------------------- tools
 @router.get("/tools")
-def list_tools(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def list_tools(principal: dict = Depends(get_principal)) -> Any:
     """Manifest visibility is itself a policy decision: a principal never sees
     a tool it is not authorized for."""
     from services.api.tools import registry
@@ -228,14 +245,14 @@ def list_tools(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]
 
 # -------------------------------------------------------------- simulation
 @router.post("/simulations")
-def run_simulation(body: SimulationRequest, principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def run_simulation(body: SimulationRequest, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import simulator
 
     return simulator.run(body, principal)
 
 
 @router.get("/simulations")
-def list_simulations(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def list_simulations(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.list_simulations()
@@ -243,14 +260,14 @@ def list_simulations(principal: dict = Depends(get_principal)) -> list[dict[str,
 
 # ------------------------------------------------------- health / metrics
 @router.get("/data-health")
-def data_health(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def data_health(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.data_health(principal["tenant_id"])
 
 
 @router.get("/metrics/ops")
-def ops_metrics(principal: dict = Depends(get_principal)) -> dict[str, Any]:
+def ops_metrics(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.ops_metrics(principal["tenant_id"])
@@ -260,7 +277,7 @@ def ops_metrics(principal: dict = Depends(get_principal)) -> dict[str, Any]:
 @router.post("/admin/agents/{agent_id}/revoke")
 def revoke_agent(
     agent_id: str, body: dict[str, Any], principal: dict = Depends(get_principal)
-) -> dict[str, Any]:
+) -> Any:
     """Kill switch. R4-gated, dual control, audited."""
     from services.api.core import gateway
 
@@ -269,7 +286,7 @@ def revoke_agent(
 
 # ------------------------------------------------------------------ public
 @router.get("/public/status")
-def public_status() -> dict[str, Any]:
+def public_status() -> Any:
     """Unauthenticated by design. Verified incidents only, redacted, with a
     deliberate disclosure delay. Never raw operational detail."""
     from services.api.core import repo
@@ -279,7 +296,7 @@ def public_status() -> dict[str, Any]:
 
 # ------------------------------------------------------------------- field
 @router.get("/field/work-orders")
-def list_work_orders(principal: dict = Depends(get_principal)) -> list[dict[str, Any]]:
+def list_work_orders(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
     return repo.list_work_orders(principal["tenant_id"], principal["id"])
@@ -288,7 +305,7 @@ def list_work_orders(principal: dict = Depends(get_principal)) -> list[dict[str,
 @router.post("/field/work-orders/{wo_id}")
 def update_work_order(
     wo_id: str, body: dict[str, Any], principal: dict = Depends(get_principal)
-) -> dict[str, Any]:
+) -> Any:
     """Field sync is a governed event source, not a backdoor: it writes through
     the same audit path as anything else."""
     from services.api.core import repo

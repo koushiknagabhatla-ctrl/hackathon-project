@@ -144,10 +144,9 @@ async function request<T>(
       cache: "no-store",
     });
   } catch (e) {
-    // API unreachable. Reads fall back to the bundled demo snapshot so the
-    // product stays explorable; WRITES never do — a fake success would be a lie
-    // about the physical world.
-    if (method === "GET") {
+    // Under zero-fabrication policy, NEVER silently fall back to mock fixtures in production.
+    const mockAllowed = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
+    if (mockAllowed && method === "GET") {
       const fixture = fixtureFor(path);
       if (fixture !== undefined) {
         setDataMode("fixture");
@@ -159,10 +158,10 @@ async function request<T>(
         };
       }
     }
-    setDataMode("fixture");
+    setDataMode("unknown");
     throw new ApiError({
-      code: "api_unreachable",
-      message: `Cannot reach the Auralis API at ${API_BASE}.`,
+      code: "source_unavailable",
+      message: `Live data source unreachable at ${API_BASE}. System refuses to display fabricated placeholder data.`,
       status: 0,
       detail: e instanceof Error ? e.message : String(e),
     });

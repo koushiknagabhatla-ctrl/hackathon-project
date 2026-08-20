@@ -374,3 +374,64 @@ CREATE TABLE IF NOT EXISTS alert_publication (
   published_at TEXT,
   disclosure_delay_s INTEGER NOT NULL DEFAULT 300
 );
+
+-- -------------------------------------------------------- emergency response
+CREATE TABLE IF NOT EXISTS registered_device (
+  id                  TEXT PRIMARY KEY,
+  tenant_id           TEXT NOT NULL REFERENCES tenant(id),
+  user_id             TEXT,
+  fcm_token           TEXT NOT NULL UNIQUE,
+  device_type         TEXT NOT NULL DEFAULT 'web',
+  last_lat            REAL,
+  last_lon            REAL,
+  opt_in_emergency    INTEGER NOT NULL DEFAULT 1,
+  permissions_granted INTEGER NOT NULL DEFAULT 1,
+  registered_at       TEXT NOT NULL,
+  last_seen_at        TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS emergency_dispatch (
+  id                  TEXT PRIMARY KEY,
+  tenant_id           TEXT NOT NULL REFERENCES tenant(id),
+  incident_id         TEXT NOT NULL REFERENCES incident(id),
+  service_type        TEXT NOT NULL, -- 'ambulance' | 'police' | 'fire' | 'disaster_response'
+  severity            TEXT NOT NULL,
+  latitude            REAL NOT NULL,
+  longitude           REAL NOT NULL,
+  road_segment        TEXT,
+  evidence_ids        TEXT NOT NULL DEFAULT '[]',
+  status              TEXT NOT NULL DEFAULT 'submitted', -- 'submitted' | 'awaiting_confirmation' | 'confirmed' | 'failed_escalated'
+  external_ref        TEXT,
+  requesting_authority TEXT NOT NULL,
+  approved_by         TEXT REFERENCES principal(id),
+  eta_minutes         INTEGER,
+  hazards_reported    TEXT NOT NULL DEFAULT '[]',
+  created_at          TEXT NOT NULL,
+  confirmed_at        TEXT,
+  response_payload    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS emergency_notification (
+  id           TEXT PRIMARY KEY,
+  tenant_id    TEXT NOT NULL REFERENCES tenant(id),
+  incident_id  TEXT NOT NULL REFERENCES incident(id),
+  channel      TEXT NOT NULL, -- 'fcm_push' | 'twilio_sms'
+  recipient_id TEXT NOT NULL,
+  recipient_category TEXT NOT NULL, -- 'public_geofence' | 'disaster_officer' | 'field_responder'
+  message_text TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'sent', -- 'sent' | 'delivered' | 'failed'
+  provider_ref TEXT,
+  created_at   TEXT NOT NULL,
+  delivered_at TEXT,
+  failure_reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS emergency_contact (
+  id               TEXT PRIMARY KEY,
+  tenant_id        TEXT NOT NULL REFERENCES tenant(id),
+  name             TEXT NOT NULL,
+  role             TEXT NOT NULL,
+  phone_e164       TEXT NOT NULL,
+  consent_verified INTEGER NOT NULL DEFAULT 1,
+  active           INTEGER NOT NULL DEFAULT 1
+);

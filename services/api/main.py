@@ -23,14 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = os.environ.get("AURALIS_DB", str(REPO_ROOT / "auralis.db"))
 
 
-class PolicyDenied(Exception):
-    """Raised by the tool gateway. Rendered as 403 with the exact rule id."""
-
-    def __init__(self, rule_id: str, reason: str, detail: Any = None):
-        self.rule_id = rule_id
-        self.reason = reason
-        self.detail = detail
-        super().__init__(f"{rule_id}: {reason}")
+from services.api.auth import PolicyDenied, get_principal
 
 
 @asynccontextmanager
@@ -120,25 +113,19 @@ async def _unhandled(request: Request, exc: Exception):
     return _error(500, "internal_error", "unexpected server error", str(exc), cid)
 
 
-# ------------------------------------------------------------ principal auth
-def get_principal(x_auralis_principal: str | None = Header(default=None)) -> dict[str, Any]:
-    """Resolve the calling identity. Humans and workloads share one model.
 
-    Least privilege: an unknown or revoked principal is rejected here, before
-    any router logic runs.
-    """
-    from services.api.core import db
 
-    if not x_auralis_principal:
-        raise HTTPException(status_code=401, detail="X-Auralis-Principal header required")
-    row = db.get_conn().execute(
-        "SELECT * FROM principal WHERE id = ?", (x_auralis_principal,)
-    ).fetchone()
-    if row is None:
-        raise HTTPException(status_code=401, detail="unknown principal")
-    if row["status"] != "active":
-        raise HTTPException(status_code=403, detail="principal revoked")
-    return dict(row)
+@app.get("/")
+def root() -> dict[str, Any]:
+    return {
+        "name": "Auralis Autonomous City API",
+        "version": app.version,
+        "status": "online",
+        "web_ui": "http://localhost:3000",
+        "command_center": "http://localhost:3000/command",
+        "interactive_docs": "http://localhost:8000/docs",
+        "health": "http://localhost:8000/v1/health",
+    }
 
 
 @app.get("/v1/health")
@@ -172,11 +159,12 @@ def readiness() -> dict[str, Any]:
 
 
 def _register_routers() -> None:
-    """Attach the v1 surface. Import here so a lane still building does not
-    take down the whole API during development."""
+    """Attach the v1 surface and emergency incident response system."""
     from services.api.routers import api as api_router
+    from services.api.routers import emergency as emergency_router
 
     app.include_router(api_router.router)
+    app.include_router(emergency_router.router)
 
 
 _register_routers()

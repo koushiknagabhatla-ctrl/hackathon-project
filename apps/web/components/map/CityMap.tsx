@@ -31,8 +31,13 @@ import { revealMap } from "@/lib/motion";
 import { CITY } from "@/lib/fixtures";
 import s from "./map.module.css";
 
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+
 export const MAP_STYLE =
-  process.env.NEXT_PUBLIC_MAP_STYLE ?? "https://tiles.openfreemap.org/styles/liberty";
+  process.env.NEXT_PUBLIC_MAP_STYLE ??
+  (MAPTILER_KEY
+    ? `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${MAPTILER_KEY}`
+    : "https://tiles.openfreemap.org/styles/liberty");
 
 /** Zero-network style. Same projection, same deck.gl layers, no tiles. */
 const OFFLINE_STYLE: StyleSpecification = {

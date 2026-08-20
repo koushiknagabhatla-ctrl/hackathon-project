@@ -25,6 +25,13 @@ export const PRIMARY: NavItem[] = [
     group: "operate",
   },
   {
+    href: "/emergency",
+    label: "Emergency 112",
+    blurb: "Multi-signal accident corroboration & ERSS 112 CAD dispatch.",
+    icon: "shield",
+    group: "operate",
+  },
+  {
     href: "/actions",
     label: "Actions",
     blurb: "The authorisation queue and everything currently executing.",

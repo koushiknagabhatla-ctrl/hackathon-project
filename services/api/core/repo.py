@@ -338,3 +338,111 @@ def ops_metrics(tenant_id: str) -> OpsMetrics:
         degraded=bool(runs["d"]),
         source_health=connector_health(tenant_id),
     )
+
+
+def data_health(tenant_id: str) -> list[ConnectorHealth]:
+    return connector_health(tenant_id)
+
+
+def list_assets(tenant_id: str) -> list[dict[str, Any]]:
+    rows = db.q("SELECT * FROM asset WHERE tenant_id=?", tenant_id)
+    return [
+        {
+            "id": r["id"],
+            "name": r["name"],
+            "kind": r["kind"],
+            "criticality": r["criticality"],
+            "owner_dept": r["owner_dept"],
+            "current_state": db.jload(r["current_state"], {}),
+            "geometry": db.jload(r["geometry"], {}),
+        }
+        for r in rows
+    ]
+
+
+def list_work_orders(tenant_id: str, principal_id: str | None = None) -> list[dict[str, Any]]:
+    rows = db.q("SELECT * FROM work_order WHERE tenant_id=? ORDER BY priority ASC, created_at DESC", tenant_id)
+    return [
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "instructions": r["instructions"],
+            "asset_id": r["asset_id"],
+            "priority": "high" if r["priority"] <= 1 else "medium" if r["priority"] == 2 else "low",
+            "status": r["status"],
+            "assigned_to": r["assigned_to"],
+            "created_at": r["created_at"],
+            "field_confirmation": r["field_confirmation"],
+        }
+        for r in rows
+    ]
+
+
+def update_work_order(wo_id: str, body: dict[str, Any], principal: dict[str, Any]) -> dict[str, Any]:
+    status = body.get("status", "completed")
+    conf = body.get("field_confirmation", "")
+    now = db.now_iso()
+    with db.tx() as c:
+        c.execute(
+            "UPDATE work_order SET status=?, field_confirmation=?, closed_at=? WHERE id=?",
+            (status, conf, now if status == "completed" else None, wo_id)
+        )
+    audit_mod.append(
+        principal.get("tenant_id", "ten_vijayawada"),
+        f"wo_{wo_id}",
+        principal.get("id", "p_operator"),
+        "human",
+        "work_order.updated",
+        wo_id,
+        {"status": status, "confirmation": conf}
+    )
+    return {"id": wo_id, "status": status, "updated_at": now}
+
+
+def public_status() -> dict[str, Any]:
+    now = db.now_iso()
+    incidents = db.q("SELECT * FROM incident WHERE state != 'closed' ORDER BY opened_at DESC")
+    advisories = []
+    for inc in incidents:
+        advisories.append({
+            "id": f"adv_{inc['id']}",
+            "area": "Payakapuram / Budameru Basin",
+            "status": inc["title"],
+            "guidance": "High stormwater inflow active. Residents in low-lying zones should observe municipal evacuation corridors.",
+            "severity": inc["severity"],
+        })
+    if not advisories:
+        advisories.append({
+            "id": "adv_nominal",
+            "area": "Vijayawada Municipal Area",
+            "status": "All civil systems nominal",
+            "guidance": "No active emergency flood advisories in effect.",
+            "severity": "info",
+        })
+    return {
+        "city": "Vijayawada",
+        "updated_at": now,
+        "disclosure_delay_s": 300,
+        "advisories": advisories,
+        "redactions": [
+            "Asset-level SCADA readings and gate physical telemetry are withheld for 5 minutes.",
+            "Field worker identities and exact responder locations are redacted."
+        ]
+    }
+
+
+def list_simulations() -> list[dict[str, Any]]:
+    rows = db.q("SELECT * FROM simulation_run ORDER BY started_at DESC LIMIT 50")
+    return [
+        {
+            "id": r["id"],
+            "scenario": r["scenario"],
+            "seed": r["seed"],
+            "overrides": db.jload(r["overrides"], {}),
+            "started_at": r["started_at"],
+            "ended_at": r["ended_at"],
+            "results": db.jload(r["results"], {}),
+            "results_hash": r["results_hash"],
+        }
+        for r in rows
+    ]
