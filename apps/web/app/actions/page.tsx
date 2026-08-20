@@ -39,7 +39,7 @@ export default function ActionMonitor() {
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
-  const actions = actionsData ?? FIXTURE_ACTIONS;
+  const actions = actionsData && actionsData.length > 0 ? actionsData : FIXTURE_ACTIONS;
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),

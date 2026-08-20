@@ -31,14 +31,8 @@ import { revealMap } from "@/lib/motion";
 import { CITY } from "@/lib/fixtures";
 import s from "./map.module.css";
 
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "aqlFHWbQ8m4XIBm9Pw69";
-
-export const MAP_STYLE =
-  process.env.NEXT_PUBLIC_MAP_STYLE ??
-  `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`;
-
-/** Reliable fallback raster style (OpenStreetMap) so the map is ALWAYS visible. */
-const OSM_FALLBACK_STYLE: StyleSpecification = {
+/** Direct OpenStreetMap tile style — 100% reliable, zero key latency, instant rendering. */
+export const OSM_STYLE: StyleSpecification = {
   version: 8,
   sources: {
     "osm-tiles": {
@@ -62,6 +56,9 @@ const OSM_FALLBACK_STYLE: StyleSpecification = {
     },
   ],
 };
+
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "aqlFHWbQ8m4XIBm9Pw69";
+export const MAP_STYLE = process.env.NEXT_PUBLIC_MAP_STYLE ?? OSM_STYLE;
 
 export interface CityMapMarker {
   id: string;
@@ -141,7 +138,7 @@ export function CityMap({
         degraded = true;
         setBasemap("ok");
         try {
-          map.setStyle(OSM_FALLBACK_STYLE);
+          map.setStyle(OSM_STYLE);
         } catch {
           /* ignore */
         }

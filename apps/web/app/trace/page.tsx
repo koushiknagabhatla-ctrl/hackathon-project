@@ -86,13 +86,13 @@ export default function TracePage() {
       </div>
 
       {/* Decision Pipeline Stepper */}
-      <div className={`${s.card} js-reveal`} style={{ marginBottom: 24 }}>
-        <div className={s.cardHeader}>
-          <h2>Causal Decision Pipeline</h2>
-          <span className="label">Step-by-Step Replay</span>
+      <div className={`${s.card} js-reveal`} style={{ marginBottom: "1rem", padding: "0.85rem 1rem" }}>
+        <div className={s.cardHeader} style={{ marginBottom: "0.6rem" }}>
+          <h2 style={{ fontSize: "0.9rem", margin: 0 }}>Causal Decision Pipeline</h2>
+          <span className="label">Step-by-Step Provenance Replay</span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "8px" }}>
           {STEPS.map((st, i) => (
             <button
               key={st.num}
@@ -100,24 +100,24 @@ export default function TracePage() {
               onClick={() => setActiveStep(i)}
               style={{
                 textAlign: "left",
-                padding: 14,
-                borderRadius: "var(--r-control)",
+                padding: "8px 10px",
+                borderRadius: "6px",
                 border: activeStep === i ? "2px solid var(--accent)" : "1px solid var(--line)",
-                background: activeStep === i ? "var(--surface)" : "transparent",
+                background: activeStep === i ? "rgba(250, 129, 40, 0.06)" : "var(--surface)",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span className="mono" style={{ fontWeight: 700, color: activeStep === i ? "var(--accent)" : "var(--muted)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                <span className="mono" style={{ fontWeight: 700, fontSize: "0.75rem", color: activeStep === i ? "var(--accent)" : "var(--muted)" }}>
                   {st.num}
                 </span>
-                {i < 4 && <Icon name="arrowRight" size={14} />}
+                {i < 4 && <Icon name="arrowRight" size={12} />}
               </div>
-              <strong style={{ fontSize: "0.875rem", display: "block", color: "var(--text)" }}>
+              <strong style={{ fontSize: "0.8rem", display: "block", color: "var(--text)" }}>
                 {st.title.split(":")[0]}
               </strong>
-              <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
+              <span style={{ fontSize: "0.7rem", color: "var(--muted)", display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {st.title.split(":")[1]}
               </span>
             </button>
@@ -126,16 +126,16 @@ export default function TracePage() {
       </div>
 
       {/* Main Trace Content Split */}
-      <div className={`${s.splitView} js-reveal`}>
+      <div className={`${s.splitView} js-reveal`} style={{ gridTemplateColumns: "1.35fr 1fr", gap: "1rem" }}>
         {/* Active Stage Details */}
         <div>
-          <div className={s.card} style={{ marginBottom: 20 }}>
-            <div className={s.cardHeader}>
+          <div className={s.card} style={{ marginBottom: "1rem", padding: "1rem" }}>
+            <div className={s.cardHeader} style={{ marginBottom: "0.75rem" }}>
               <div>
-                <span className="mono" style={{ fontSize: "0.75rem", color: "var(--accent)", fontWeight: 700 }}>
+                <span className="mono" style={{ fontSize: "0.72rem", color: "var(--accent)", fontWeight: 700 }}>
                   STAGE {STEPS[activeStep].num}
                 </span>
-                <h3 style={{ fontSize: "1.125rem", marginTop: 4 }}>{STEPS[activeStep].title}</h3>
+                <h3 style={{ fontSize: "1rem", marginTop: 2 }}>{STEPS[activeStep].title}</h3>
               </div>
             </div>
             <p style={{ color: "var(--muted)", fontSize: "0.875rem", marginBottom: 20 }}>

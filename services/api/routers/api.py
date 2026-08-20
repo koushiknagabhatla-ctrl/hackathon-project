@@ -337,15 +337,22 @@ async def stream(request: Request) -> StreamingResponse:
 
     async def gen():
         last_seq = 0
+        yield f"event: ping\ndata: {json.dumps({'seq': 0, 'status': 'connected'})}\n\n"
+        ping_ticks = 0
         while True:
             if await request.is_disconnected():
                 break
             try:
                 events, last_seq = repo.poll_stream(last_seq)
                 for ev in events:
-                    yield f"event: {ev['kind']}\ndata: {json.dumps(ev)}\n\n"
+                    yield f"event: {ev.get('kind', 'health')}\ndata: {json.dumps(ev)}\n\n"
             except Exception as exc:  # keep the stream alive on a transient error
                 yield f"event: error\ndata: {json.dumps({'detail': str(exc)})}\n\n"
+            
+            ping_ticks += 1
+            if ping_ticks % 5 == 0:
+                yield f"event: ping\ndata: {json.dumps({'status': 'alive'})}\n\n"
+
             await asyncio.sleep(1.0)
 
     return StreamingResponse(

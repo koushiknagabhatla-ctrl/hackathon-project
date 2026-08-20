@@ -17,13 +17,46 @@ import { useToast } from "@/components/ui/Toast";
 import type { SimulationRequest, SimulationResult } from "@/lib/types";
 import s from "../pages.module.css";
 
+const DEFAULT_SIM: SimulationResult = {
+  id: "sim_budameru_extreme_42",
+  scenario: "flood",
+  seed: 42,
+  overrides: { rain_mm_hr: 110 },
+  trust_domain: "sim",
+  evidence_class: "synthetic",
+  results_hash: "sha256:8f4c2e19d7a220b3e5b61a9c402179836efd7a9b01",
+  baseline: {
+    peak_forecast_m: 5.7,
+    premises_at_risk: 1240,
+    risk_tier: "R3",
+  },
+  counterfactual: {
+    peak_forecast_m: 6.85,
+    premises_at_risk: 2850,
+    risk_tier: "R4",
+  },
+  deltas: [{ metric: "peak_stage_delta_m", value: 1.15 }],
+  policy_changes: [
+    {
+      impact: "Gate BD-04 Discharge Authorization",
+      baseline: "R3 — Duty Officer approval",
+      counterfactual: "R4 — Dual District Magistrate & Chief Engineer authorization required",
+    },
+    {
+      impact: "Downstream Evacuation Alert SLA",
+      baseline: "Advisory monitoring",
+      counterfactual: "Mandatory 1.2km radius citizen warning broadcast (FCM & SMS)",
+    },
+  ],
+};
+
 export default function SimulationPage() {
   const toast = useToast();
   const [scenario, setScenario] = useState<string>("flood");
   const [seed, setSeed] = useState<number>(42);
   const [rainOverride, setRainOverride] = useState<number>(110);
   const [running, setRunning] = useState<boolean>(false);
-  const [simResult, setSimResult] = useState<SimulationResult | null>(null);
+  const [simResult, setSimResult] = useState<SimulationResult | null>(DEFAULT_SIM);
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),

@@ -166,9 +166,9 @@
 
   /* layout */
   --max-w: 1440px;
-  --pad-x: clamp(20px, 4vw, 48px);
-  --gutter: 24px;
-  --nav-h: 64px;
+  --pad-x: clamp(14px, 2vw, 24px);
+  --gutter: 16px;
+  --nav-h: 60px;
   --rail-h: 0px; /* set by the incident rail when it is live */
 
   /* type */
@@ -444,12 +444,12 @@ hr {
 .appMain {
   min-height: calc(100vh - var(--nav-h));
   padding-top: calc(var(--nav-h) + var(--rail-h));
-  padding-bottom: var(--sp-20);
+  padding-bottom: 24px;
 }
 @media (max-width: 767px) {
   .appMain {
     /* bottom nav is 62px + safe area */
-    padding-bottom: calc(78px + env(safe-area-inset-bottom));
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 }
 
