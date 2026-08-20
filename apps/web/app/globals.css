@@ -461,7 +461,7 @@ hr {
 }
 
 .section {
-  padding-block: clamp(56px, 9vw, 128px);
+  padding-block: 12px 24px;
 }
 
 .eyebrow {
