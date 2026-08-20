@@ -133,9 +133,7 @@ export default function CommandCenter() {
             {open.length === 0 && <p className={s.empty} style={{ padding: "1rem" }}>No open incidents.</p>}
             <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
               {open.map((inc) => (
-                <Link key={inc.id} href={`/command/${inc.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  <IncidentCard incident={inc} />
-                </Link>
+                <IncidentCard key={inc.id} incident={inc} href={`/command/${inc.id}`} />
               ))}
             </div>
           </div>
