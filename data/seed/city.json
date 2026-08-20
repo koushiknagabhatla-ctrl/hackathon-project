@@ -1,0 +1,5041 @@
+{
+  "$comment": "Auralis seed twin - Vijayawada, Krishna district, Andhra Pradesh. Coordinates are real EPSG:4326 (WGS84) lon,lat. Levels are metres above MSL unless a field says otherwise; the Prakasam Barrage pond level is carried in feet because that is the unit the AP Water Resources Department operates in, and river discharge is in cusecs for the same reason. The scenario mirrors the September 2024 Budameru breach: the Budameru rivulet enters the city from Velagaleru, its diversion channel is capacity-limited to about 11,000 cusecs, and when it overtops near Ajit Singh Nagar the water runs into Singh Nagar, Payakapuram, Vidyadharapuram and Krishnalanka. Wall-clock on the wire is UTC ISO8601 with Z, per the contract. Operators read it as IST (UTC+05:30); UI labels convert, storage never does.",
+  "tenant": {
+    "id": "ten_vijayawada",
+    "name": "Vijayawada Municipal Corporation / AP State Disaster Management Authority",
+    "jurisdiction": "IN-AP-KRISHNA-VIJAYAWADA",
+    "data_region": "ap-south"
+  },
+  "district": {
+    "name": "Vijayawada (VMC area, Krishna district)",
+    "state": "Andhra Pradesh",
+    "country": "IN",
+    "crs": "EPSG:4326",
+    "vertical_datum": "MSL (Survey of India)",
+    "operating_timezone": "Asia/Kolkata (IST, UTC+05:30)",
+    "bbox": [
+      80.544,
+      16.467,
+      80.69,
+      16.619
+    ],
+    "centre": [
+      80.648,
+      16.5062
+    ],
+    "reference_event": "Budameru breach and Vijayawada floods, 31 August - 5 September 2024",
+    "flood_thresholds": {
+      "prakasam_barrage_warning_1_cusecs": 750000,
+      "prakasam_barrage_warning_2_cusecs": 1000000,
+      "prakasam_barrage_warning_3_cusecs": 1200000,
+      "prakasam_barrage_frl_ft": 57.3,
+      "budameru_diversion_capacity_cusecs": 11000,
+      "budameru_bund_overtops_cusecs": 22000,
+      "u02_underpass_alarm_depth_m": 0.2,
+      "u02_underpass_impassable_depth_m": 0.45,
+      "imd_extremely_heavy_mm_24h": 204.5
+    }
+  },
+  "assets": [
+    {
+      "id": "WL-01",
+      "kind": "water_level_sensor",
+      "name": "Krishna river gauge - Prakasam Barrage upstream (CWC BZA)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6098,
+          16.5064
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Central Water Commission - Krishna Basin Organisation",
+      "current_state": {
+        "pond_level_ft": 55.8,
+        "frl_ft": 57.3,
+        "inflow_cusecs": 82000,
+        "level_m": 17.01,
+        "threshold_m": 17.47,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900,
+        "warning_1_cusecs": 750000,
+        "warning_2_cusecs": 1000000,
+        "warning_3_cusecs": 1200000,
+        "threshold_note": "threshold_m 17.47 = FRL 57.30 ft converted to m MSL."
+      },
+      "reported_state": {
+        "pond_level_ft": 55.8,
+        "frl_ft": 57.3,
+        "inflow_cusecs": 82000,
+        "level_m": 17.01,
+        "threshold_m": 17.47,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900,
+        "warning_1_cusecs": 750000,
+        "warning_2_cusecs": 1000000,
+        "warning_3_cusecs": 1200000,
+        "threshold_note": "threshold_m 17.47 = FRL 57.30 ft converted to m MSL."
+      },
+      "desired_state": {
+        "pond_level_ft": 55.8,
+        "frl_ft": 57.3,
+        "inflow_cusecs": 82000,
+        "level_m": 17.01,
+        "threshold_m": 17.47,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900,
+        "warning_1_cusecs": 750000,
+        "warning_2_cusecs": 1000000,
+        "warning_3_cusecs": 1200000,
+        "threshold_note": "threshold_m 17.47 = FRL 57.30 ft converted to m MSL."
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "WL-02",
+      "kind": "water_level_sensor",
+      "name": "Krishna river gauge - Prakasam Barrage downstream",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6112,
+          16.5032
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "level_m": 13.9,
+        "threshold_m": 16.2,
+        "outflow_cusecs": 82000,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900,
+        "threshold_note": "threshold_m 16.20 = downstream danger level, right bank Krishnalanka."
+      },
+      "reported_state": {
+        "level_m": 13.9,
+        "threshold_m": 16.2,
+        "outflow_cusecs": 82000,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900,
+        "threshold_note": "threshold_m 16.20 = downstream danger level, right bank Krishnalanka."
+      },
+      "desired_state": {
+        "level_m": 13.9,
+        "threshold_m": 16.2,
+        "outflow_cusecs": 82000,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900,
+        "threshold_note": "threshold_m 16.20 = downstream danger level, right bank Krishnalanka."
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "WL-03",
+      "kind": "water_level_sensor",
+      "name": "Budameru gauge - Velagaleru head regulator",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5462,
+          16.6178
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "discharge_cusecs": 3200,
+        "level_m": 21.4,
+        "threshold_m": 23.5,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "bdc_design_capacity_cusecs": 11000,
+        "threshold_note": "threshold_m 23.50 = regulator design flood level."
+      },
+      "reported_state": {
+        "discharge_cusecs": 3200,
+        "level_m": 21.4,
+        "threshold_m": 23.5,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "bdc_design_capacity_cusecs": 11000,
+        "threshold_note": "threshold_m 23.50 = regulator design flood level."
+      },
+      "desired_state": {
+        "discharge_cusecs": 3200,
+        "level_m": 21.4,
+        "threshold_m": 23.5,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "bdc_design_capacity_cusecs": 11000,
+        "threshold_note": "threshold_m 23.50 = regulator design flood level."
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "WL-04",
+      "kind": "water_level_sensor",
+      "name": "Budameru gauge - Nunna",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6302,
+          16.5608
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "discharge_cusecs": 2900,
+        "level_m": 19.6,
+        "threshold_m": 21.8,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600
+      },
+      "reported_state": {
+        "discharge_cusecs": 2900,
+        "level_m": 19.6,
+        "threshold_m": 21.8,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600
+      },
+      "desired_state": {
+        "discharge_cusecs": 2900,
+        "level_m": 19.6,
+        "threshold_m": 21.8,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "WL-05",
+      "kind": "water_level_sensor",
+      "name": "Budameru gauge - Kandrika bund",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6408,
+          16.5396
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "discharge_cusecs": 2750,
+        "level_m": 18.85,
+        "threshold_m": 21.2,
+        "bund_crest_m_msl": 21.2,
+        "freeboard_m": 2.35,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "threshold_note": "threshold_m = bund crest. Crossing it IS overtopping."
+      },
+      "reported_state": {
+        "discharge_cusecs": 2750,
+        "level_m": 18.85,
+        "threshold_m": 21.2,
+        "bund_crest_m_msl": 21.2,
+        "freeboard_m": 2.35,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "threshold_note": "threshold_m = bund crest. Crossing it IS overtopping."
+      },
+      "desired_state": {
+        "discharge_cusecs": 2750,
+        "level_m": 18.85,
+        "threshold_m": 21.2,
+        "bund_crest_m_msl": 21.2,
+        "freeboard_m": 2.35,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "threshold_note": "threshold_m = bund crest. Crossing it IS overtopping."
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "WL-06",
+      "kind": "water_level_sensor",
+      "name": "Budameru gauge - Ajit Singh Nagar (2024 breach reach)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6494,
+          16.5286
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "discharge_cusecs": 2600,
+        "level_m": 18.1,
+        "threshold_m": 20.4,
+        "bund_crest_m_msl": 20.4,
+        "freeboard_m": 2.3,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "threshold_note": "threshold_m = bund crest, the 2024 breach reach. The scenario stops at 20.15 m: not breached yet, and the forecast p90 says it crosses in under an hour. That gap is the decision."
+      },
+      "reported_state": {
+        "discharge_cusecs": 2600,
+        "level_m": 18.1,
+        "threshold_m": 20.4,
+        "bund_crest_m_msl": 20.4,
+        "freeboard_m": 2.3,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "threshold_note": "threshold_m = bund crest, the 2024 breach reach. The scenario stops at 20.15 m: not breached yet, and the forecast p90 says it crosses in under an hour. That gap is the decision."
+      },
+      "desired_state": {
+        "discharge_cusecs": 2600,
+        "level_m": 18.1,
+        "threshold_m": 20.4,
+        "bund_crest_m_msl": 20.4,
+        "freeboard_m": 2.3,
+        "unit": "cusecs",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 600,
+        "threshold_note": "threshold_m = bund crest, the 2024 breach reach. The scenario stops at 20.15 m: not breached yet, and the forecast p90 says it crosses in under an hour. That gap is the decision."
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "WL-07",
+      "kind": "water_level_sensor",
+      "name": "Eluru Canal gauge - Ramalingeswara Nagar lock",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6352,
+          16.5216
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "level_m": 16.2,
+        "threshold_m": 17.5,
+        "discharge_cusecs": 1400,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "level_m": 16.2,
+        "threshold_m": 17.5,
+        "discharge_cusecs": 1400,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "level_m": 16.2,
+        "threshold_m": 17.5,
+        "discharge_cusecs": 1400,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "WL-08",
+      "kind": "water_level_sensor",
+      "name": "Ryves Canal gauge - Kummaripalem lock",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6252,
+          16.503
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "level_m": 15.6,
+        "threshold_m": 17.0,
+        "discharge_cusecs": 1100,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "level_m": 15.6,
+        "threshold_m": 17.0,
+        "discharge_cusecs": 1100,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "level_m": 15.6,
+        "threshold_m": 17.0,
+        "discharge_cusecs": 1100,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "WL-09",
+      "kind": "water_level_sensor",
+      "name": "Bandar Canal gauge - Chuttugunta regulator",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6358,
+          16.5014
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "level_m": 15.1,
+        "threshold_m": 16.8,
+        "discharge_cusecs": 900,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "level_m": 15.1,
+        "threshold_m": 16.8,
+        "discharge_cusecs": 900,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "level_m": 15.1,
+        "threshold_m": 16.8,
+        "discharge_cusecs": 900,
+        "unit": "m MSL",
+        "trend": "steady",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "WL-10",
+      "kind": "water_level_sensor",
+      "name": "Sump level sensor - Singh Nagar Railway Under Bridge",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6188,
+          16.4958
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "depth_m": 0.0,
+        "level_m": 0.0,
+        "threshold_m": 0.2,
+        "unit": "m",
+        "health": "ok",
+        "sample_interval_s": 60,
+        "impassable_threshold_m": 0.45
+      },
+      "reported_state": {
+        "depth_m": 0.0,
+        "level_m": 0.0,
+        "threshold_m": 0.2,
+        "unit": "m",
+        "health": "ok",
+        "sample_interval_s": 60,
+        "impassable_threshold_m": 0.45
+      },
+      "desired_state": {
+        "depth_m": 0.0,
+        "level_m": 0.0,
+        "threshold_m": 0.2,
+        "unit": "m",
+        "health": "ok",
+        "sample_interval_s": 60,
+        "impassable_threshold_m": 0.45
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "DN-01",
+      "kind": "drain_node",
+      "name": "Storm water drain node - Singh Nagar Division 26",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6206,
+          16.4938
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Public Health & Sanitation",
+      "current_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "reported_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "desired_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "DN-02",
+      "kind": "drain_node",
+      "name": "Storm water drain node - Payakapuram Division 24",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6132,
+          16.4992
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Public Health & Sanitation",
+      "current_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "reported_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "desired_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "DN-03",
+      "kind": "drain_node",
+      "name": "Storm water drain node - Vidyadharapuram Division 22",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6178,
+          16.5006
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada Municipal Corporation - Public Health & Sanitation",
+      "current_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "reported_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "desired_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "DN-04",
+      "kind": "drain_node",
+      "name": "Storm water drain node - Ajit Singh Nagar Division 4",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6478,
+          16.5274
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Public Health & Sanitation",
+      "current_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "reported_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "desired_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "DN-05",
+      "kind": "drain_node",
+      "name": "Storm water drain node - Krishnalanka Division 40",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6328,
+          16.4982
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada Municipal Corporation - Public Health & Sanitation",
+      "current_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "reported_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "desired_state": {
+        "fill_pct": 24,
+        "level_m": 0.6,
+        "overflow_active": false,
+        "desilted": true,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "RG-01",
+      "kind": "rain_gauge",
+      "name": "IMD automatic weather station - Vijayawada (Gannavaram AMS link)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.648,
+          16.5062
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "India Meteorological Department - Amaravati Meteorological Centre",
+      "current_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "RG-02",
+      "kind": "rain_gauge",
+      "name": "IMD Doppler Weather Radar QPE grid cell - Singh Nagar / Payakapuram",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.618,
+          16.497
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "India Meteorological Department - Amaravati Meteorological Centre",
+      "current_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 500.0
+    },
+    {
+      "id": "RG-03",
+      "kind": "rain_gauge",
+      "name": "Smart City rain gauge - Singh Nagar",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6198,
+          16.4946
+        ]
+      },
+      "criticality": 2,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "RG-04",
+      "kind": "rain_gauge",
+      "name": "Smart City rain gauge - Ajit Singh Nagar",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6486,
+          16.528
+        ]
+      },
+      "criticality": 2,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "RG-05",
+      "kind": "rain_gauge",
+      "name": "Smart City rain gauge - Benz Circle",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.666,
+          16.4972
+        ]
+      },
+      "criticality": 2,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "RG-06",
+      "kind": "rain_gauge",
+      "name": "Smart City rain gauge - Gunadala",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6618,
+          16.5242
+        ]
+      },
+      "criticality": 2,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "reported_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "desired_state": {
+        "intensity_mm_h": 0.0,
+        "accumulation_24h_mm": 11.4,
+        "imd_category": "light",
+        "health": "ok",
+        "sample_interval_s": 900
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "P-01",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Kummaripalem Lock",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6258,
+          16.5026
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2400,
+        "capacity_cusecs": 23.5,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2400,
+        "capacity_cusecs": 23.5,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2400,
+        "capacity_cusecs": 23.5,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-02",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Ranigari Thota",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6138,
+          16.5072
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1800,
+        "capacity_cusecs": 17.7,
+        "pump_sets": 3,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1800,
+        "capacity_cusecs": 17.7,
+        "pump_sets": 3,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1800,
+        "capacity_cusecs": 17.7,
+        "pump_sets": 3,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-03",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Payakapuram",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6126,
+          16.4988
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1600,
+        "capacity_cusecs": 15.7,
+        "pump_sets": 3,
+        "rating_hp": 75,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1600,
+        "capacity_cusecs": 15.7,
+        "pump_sets": 3,
+        "rating_hp": 75,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1600,
+        "capacity_cusecs": 15.7,
+        "pump_sets": 3,
+        "rating_hp": 75,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-04",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Vidyadharapuram",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6174,
+          16.501
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1200,
+        "capacity_cusecs": 11.8,
+        "pump_sets": 2,
+        "rating_hp": 75,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1200,
+        "capacity_cusecs": 11.8,
+        "pump_sets": 2,
+        "rating_hp": 75,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1200,
+        "capacity_cusecs": 11.8,
+        "pump_sets": 2,
+        "rating_hp": 75,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-05",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Bhavanipuram",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5992,
+          16.5142
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1400,
+        "capacity_cusecs": 13.7,
+        "pump_sets": 2,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1400,
+        "capacity_cusecs": 13.7,
+        "pump_sets": 2,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1400,
+        "capacity_cusecs": 13.7,
+        "pump_sets": 2,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-06",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Ajit Singh Nagar (Budameru left bank)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6482,
+          16.5268
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2000,
+        "capacity_cusecs": 19.6,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2000,
+        "capacity_cusecs": 19.6,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2000,
+        "capacity_cusecs": 19.6,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-07",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Singh Nagar (Budameru left bank)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6202,
+          16.4948
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2200,
+        "capacity_cusecs": 21.6,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2200,
+        "capacity_cusecs": 21.6,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 2200,
+        "capacity_cusecs": 21.6,
+        "pump_sets": 4,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "P-08",
+      "kind": "pump_station",
+      "name": "Storm Water Pumping Station - Krishnalanka",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6334,
+          16.4976
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1800,
+        "capacity_cusecs": 17.7,
+        "pump_sets": 3,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "reported_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1800,
+        "capacity_cusecs": 17.7,
+        "pump_sets": 3,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "desired_state": {
+        "mode": "auto",
+        "running": false,
+        "setpoint_m": 0.35,
+        "flow_m3h": 0,
+        "capacity_m3h": 1800,
+        "capacity_cusecs": 17.7,
+        "pump_sets": 3,
+        "rating_hp": 100,
+        "available": true,
+        "outfall_drowned": false,
+        "plinth_level_m_msl": 18.9,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.pump.setpoint",
+        "tool.pump.setpoint.restore",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": "2026-11-15/2026-11-30",
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "S-101",
+      "kind": "substation",
+      "name": "132/33 kV Substation, Gunadala (APTRANSCO)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6624,
+          16.5238
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "APTRANSCO - Vijayawada Transmission Zone",
+      "current_state": {
+        "energised": true,
+        "voltage_class": "132/33kV",
+        "transformer_rating": "2 x 31.5 MVA",
+        "load_pct": 44,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 24.6,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "reported_state": {
+        "energised": true,
+        "voltage_class": "132/33kV",
+        "transformer_rating": "2 x 31.5 MVA",
+        "load_pct": 44,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 24.6,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "desired_state": {
+        "energised": true,
+        "voltage_class": "132/33kV",
+        "transformer_rating": "2 x 31.5 MVA",
+        "load_pct": 44,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 24.6,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.workorder.create",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "S-114",
+      "kind": "substation",
+      "name": "33/11 kV Substation, Singh Nagar (APSPDCL)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6196,
+          16.4954
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "APSPDCL - Vijayawada Operation Circle",
+      "current_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 58,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 18.4,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "reported_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 58,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 18.4,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "desired_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 58,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 18.4,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.workorder.create",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "S-115",
+      "kind": "substation",
+      "name": "33/11 kV Substation, Payakapuram (APSPDCL)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6134,
+          16.4996
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "APSPDCL - Vijayawada Operation Circle",
+      "current_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 51,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 19.1,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "reported_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 51,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 19.1,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "desired_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 51,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 19.1,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.workorder.create",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "S-122",
+      "kind": "substation",
+      "name": "33/11 kV Substation, Ajit Singh Nagar (APSPDCL)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6472,
+          16.5278
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "APSPDCL - Vijayawada Operation Circle",
+      "current_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "1 x 8 MVA",
+        "load_pct": 47,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 19.8,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "reported_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "1 x 8 MVA",
+        "load_pct": 47,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 19.8,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "desired_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "1 x 8 MVA",
+        "load_pct": 47,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 19.8,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.workorder.create",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "S-131",
+      "kind": "substation",
+      "name": "33/11 kV Substation, Governorpet (APSPDCL)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6316,
+          16.5106
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "APSPDCL - Vijayawada Operation Circle",
+      "current_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 8 MVA",
+        "load_pct": 62,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 22.7,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "reported_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 8 MVA",
+        "load_pct": 62,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 22.7,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "desired_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 8 MVA",
+        "load_pct": 62,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 22.7,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.workorder.create",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "S-140",
+      "kind": "substation",
+      "name": "33/11 kV Substation, Benz Circle (APSPDCL)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6656,
+          16.4986
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "APSPDCL - Vijayawada Operation Circle",
+      "current_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 39,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 23.4,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "reported_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 39,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 23.4,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "desired_state": {
+        "energised": true,
+        "voltage_class": "33/11kV",
+        "transformer_rating": "2 x 5 MVA",
+        "load_pct": 39,
+        "n_minus_1": true,
+        "plinth_level_m_msl": 23.4,
+        "feeder_count": 8,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.workorder.create",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "R-10",
+      "kind": "road",
+      "name": "Bandar Road (M. G. Road, NH-65 city reach)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6272,
+            16.5092
+          ],
+          [
+            80.6418,
+            16.5032
+          ],
+          [
+            80.656,
+            16.4996
+          ],
+          [
+            80.6661,
+            16.4972
+          ],
+          [
+            80.6822,
+            16.4918
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 4200,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 4200,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 4200,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-12",
+      "kind": "road",
+      "name": "Eluru Road (Vijayawada - Ramavarappadu)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6242,
+            16.5136
+          ],
+          [
+            80.6362,
+            16.5182
+          ],
+          [
+            80.6524,
+            16.5246
+          ],
+          [
+            80.6762,
+            16.5318
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 3600,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 3600,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 3600,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-14",
+      "kind": "road",
+      "name": "NH-16 Vijayawada Bypass (Ramavarappadu Ring - Kanuru - Yanamalakuduru)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6832,
+            16.5332
+          ],
+          [
+            80.6792,
+            16.5102
+          ],
+          [
+            80.6742,
+            16.4942
+          ],
+          [
+            80.6682,
+            16.4822
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "NHAI - Project Implementation Unit, Vijayawada",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 80,
+        "flow_veh_h": 5800,
+        "mean_speed_kmh": 46,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 80,
+        "flow_veh_h": 5800,
+        "mean_speed_kmh": 46,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 80,
+        "flow_veh_h": 5800,
+        "mean_speed_kmh": 46,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-16",
+      "kind": "road",
+      "name": "Singh Nagar Main Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6148,
+            16.4926
+          ],
+          [
+            80.6188,
+            16.4958
+          ],
+          [
+            80.6236,
+            16.4992
+          ],
+          [
+            80.6288,
+            16.5018
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 1100,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 1100,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 1100,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-18",
+      "kind": "road",
+      "name": "Payakapuram Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6106,
+            16.4972
+          ],
+          [
+            80.6152,
+            16.4998
+          ],
+          [
+            80.6204,
+            16.5018
+          ]
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 780,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 780,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 780,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-20",
+      "kind": "road",
+      "name": "Vidyadharapuram Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6156,
+            16.5002
+          ],
+          [
+            80.6212,
+            16.5024
+          ],
+          [
+            80.6268,
+            16.5042
+          ]
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 690,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 690,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 690,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-22",
+      "kind": "road",
+      "name": "Ajit Singh Nagar Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6438,
+            16.5252
+          ],
+          [
+            80.6496,
+            16.5286
+          ],
+          [
+            80.6552,
+            16.5312
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 820,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 820,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 820,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-24",
+      "kind": "road",
+      "name": "Rajagopalachari Road (RG Road, Governorpet)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6262,
+            16.5108
+          ],
+          [
+            80.6318,
+            16.5122
+          ],
+          [
+            80.6376,
+            16.5136
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 1500,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 1500,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 1500,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-26",
+      "kind": "road",
+      "name": "Kanuru - Poranki Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6742,
+            16.4942
+          ],
+          [
+            80.6812,
+            16.4886
+          ],
+          [
+            80.6884,
+            16.4832
+          ]
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 1300,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 1300,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 50,
+        "flow_veh_h": 1300,
+        "mean_speed_kmh": 29,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-28",
+      "kind": "road",
+      "name": "Krishnalanka Bund Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6284,
+            16.4988
+          ],
+          [
+            80.6362,
+            16.496
+          ],
+          [
+            80.6442,
+            16.4932
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada Municipal Corporation - Engineering (Storm Water)",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 950,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 950,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 950,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-29",
+      "kind": "road",
+      "name": "Bhavanipuram - Rajarajeswaripeta Road",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.5978,
+            16.5148
+          ],
+          [
+            80.6042,
+            16.5124
+          ],
+          [
+            80.6098,
+            16.5102
+          ]
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 720,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 720,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 720,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-31",
+      "kind": "road",
+      "name": "GGH ambulance access corridor - Singh Nagar RUB to Hanumanpet",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6188,
+            16.4958
+          ],
+          [
+            80.6236,
+            16.4992
+          ],
+          [
+            80.6288,
+            16.5044
+          ],
+          [
+            80.6242,
+            16.5108
+          ],
+          [
+            80.6212,
+            16.5212
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 900,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 900,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 40,
+        "flow_veh_h": 900,
+        "mean_speed_kmh": 23,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "R-33",
+      "kind": "road",
+      "name": "Prakasam Barrage crest road (Vijayawada - Guntur)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6082,
+            16.5058
+          ],
+          [
+            80.6106,
+            16.5049
+          ],
+          [
+            80.6132,
+            16.5038
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 30,
+        "flow_veh_h": 1800,
+        "mean_speed_kmh": 17,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 30,
+        "flow_veh_h": 1800,
+        "mean_speed_kmh": 17,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "speed_limit_kmh": 30,
+        "flow_veh_h": 1800,
+        "mean_speed_kmh": 17,
+        "occupancy_pct": 18,
+        "closure_reason": null
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.traffic.signal_plan",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 8.0
+    },
+    {
+      "id": "U-01",
+      "kind": "underpass",
+      "name": "Kummaripalem Underpass (RUB)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6256,
+            16.5034
+          ],
+          [
+            80.6262,
+            16.5028
+          ],
+          [
+            80.6268,
+            16.5022
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "South Central Railway - Vijayawada Division",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 14,
+        "clearance_m": 3.5,
+        "invert_level_m_msl": 15.8
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 14,
+        "clearance_m": 3.5,
+        "invert_level_m_msl": 15.8
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 14,
+        "clearance_m": 3.5,
+        "invert_level_m_msl": 15.8
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "U-02",
+      "kind": "underpass",
+      "name": "Singh Nagar Railway Under Bridge (RUB)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6182,
+            16.4964
+          ],
+          [
+            80.6188,
+            16.4958
+          ],
+          [
+            80.6194,
+            16.4952
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "South Central Railway - Vijayawada Division",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "level_m": 0.0,
+        "threshold_m": 0.2,
+        "impassable_threshold_m": 0.45,
+        "sump_pct": 21,
+        "clearance_m": 3.2,
+        "invert_level_m_msl": 15.2,
+        "closure_barrier": "manual_boom",
+        "note": "Lowest point on the GGH ambulance corridor. Submerged for 5 days in the September 2024 Budameru breach."
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "level_m": 0.0,
+        "threshold_m": 0.2,
+        "impassable_threshold_m": 0.45,
+        "sump_pct": 21,
+        "clearance_m": 3.2,
+        "invert_level_m_msl": 15.2,
+        "closure_barrier": "manual_boom",
+        "note": "Lowest point on the GGH ambulance corridor. Submerged for 5 days in the September 2024 Budameru breach."
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "level_m": 0.0,
+        "threshold_m": 0.2,
+        "impassable_threshold_m": 0.45,
+        "sump_pct": 21,
+        "clearance_m": 3.2,
+        "invert_level_m_msl": 15.2,
+        "closure_barrier": "manual_boom",
+        "note": "Lowest point on the GGH ambulance corridor. Submerged for 5 days in the September 2024 Budameru breach."
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "U-03",
+      "kind": "underpass",
+      "name": "Ranigari Thota Underpass",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6132,
+            16.5078
+          ],
+          [
+            80.6138,
+            16.5072
+          ],
+          [
+            80.6144,
+            16.5066
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "South Central Railway - Vijayawada Division",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 11,
+        "clearance_m": 3.6,
+        "invert_level_m_msl": 16.4
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 11,
+        "clearance_m": 3.6,
+        "invert_level_m_msl": 16.4
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 11,
+        "clearance_m": 3.6,
+        "invert_level_m_msl": 16.4
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "U-04",
+      "kind": "underpass",
+      "name": "Payakapuram Railway Under Bridge (RUB)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6118,
+            16.4996
+          ],
+          [
+            80.6124,
+            16.499
+          ],
+          [
+            80.613,
+            16.4984
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "South Central Railway - Vijayawada Division",
+      "current_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 16,
+        "clearance_m": 3.0,
+        "invert_level_m_msl": 15.9
+      },
+      "reported_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 16,
+        "clearance_m": 3.0,
+        "invert_level_m_msl": 15.9
+      },
+      "desired_state": {
+        "open": true,
+        "water_depth_m": 0.0,
+        "sump_pct": 16,
+        "clearance_m": 3.0,
+        "invert_level_m_msl": 15.9
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 2.0
+    },
+    {
+      "id": "BAR-01",
+      "kind": "barrage",
+      "name": "Prakasam Barrage (70 crest gates, Krishna river)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6058,
+            16.5072
+          ],
+          [
+            80.6106,
+            16.5049
+          ],
+          [
+            80.6154,
+            16.5026
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "gates_total": 70,
+        "gates_open": 12,
+        "gate_lift_ft": 2.0,
+        "pond_level_ft": 55.8,
+        "frl_ft": 57.3,
+        "inflow_cusecs": 82000,
+        "outflow_cusecs": 82000,
+        "warning_stage": 0,
+        "operator_on_site": true
+      },
+      "reported_state": {
+        "gates_total": 70,
+        "gates_open": 12,
+        "gate_lift_ft": 2.0,
+        "pond_level_ft": 55.8,
+        "frl_ft": 57.3,
+        "inflow_cusecs": 82000,
+        "outflow_cusecs": 82000,
+        "warning_stage": 0,
+        "operator_on_site": true
+      },
+      "desired_state": {
+        "gates_total": 70,
+        "gates_open": 12,
+        "gate_lift_ft": 2.0,
+        "pond_level_ft": 55.8,
+        "frl_ft": 57.3,
+        "inflow_cusecs": 82000,
+        "outflow_cusecs": 82000,
+        "warning_stage": 0,
+        "operator_on_site": true
+      },
+      "permitted_actions": [
+        "tool.workorder.create",
+        "tool.notify.internal",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "B-01",
+      "kind": "bridge",
+      "name": "Kanaka Durga Flyover (NH-65, Indrakeeladri)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.608,
+            16.5116
+          ],
+          [
+            80.615,
+            16.5156
+          ],
+          [
+            80.6216,
+            16.5182
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "NHAI - Project Implementation Unit, Vijayawada",
+      "current_state": {
+        "open": true,
+        "deck_level_m_msl": 26.4,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "reported_state": {
+        "open": true,
+        "deck_level_m_msl": 26.4,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "desired_state": {
+        "open": true,
+        "deck_level_m_msl": 26.4,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "B-02",
+      "kind": "bridge",
+      "name": "Krishna Rail Bridge - Vijayawada to Guntur (SCR)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6058,
+            16.5012
+          ],
+          [
+            80.6068,
+            16.4954
+          ],
+          [
+            80.6078,
+            16.4896
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "South Central Railway - Vijayawada Division",
+      "current_state": {
+        "open": true,
+        "deck_level_m_msl": 20.1,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "reported_state": {
+        "open": true,
+        "deck_level_m_msl": 20.1,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "desired_state": {
+        "open": true,
+        "deck_level_m_msl": 20.1,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "B-03",
+      "kind": "bridge",
+      "name": "NH-16 Krishna Bridge (Yanamalakuduru)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6648,
+            16.4794
+          ],
+          [
+            80.662,
+            16.4736
+          ],
+          [
+            80.6592,
+            16.4678
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "NHAI - Project Implementation Unit, Vijayawada",
+      "current_state": {
+        "open": true,
+        "deck_level_m_msl": 22.8,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "reported_state": {
+        "open": true,
+        "deck_level_m_msl": 22.8,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "desired_state": {
+        "open": true,
+        "deck_level_m_msl": 22.8,
+        "load_restriction": null,
+        "scour_monitoring": true
+      },
+      "permitted_actions": [
+        "tool.road.close",
+        "tool.road.reopen",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "TS-201",
+      "kind": "traffic_signal",
+      "name": "Signal - Benz Circle (Bandar Road / NH-16)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6661,
+          16.4972
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-202",
+      "kind": "traffic_signal",
+      "name": "Signal - Ramavarappadu Ring (Eluru Road / NH-16)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6832,
+          16.5332
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-203",
+      "kind": "traffic_signal",
+      "name": "Signal - Singh Nagar RUB approach",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6194,
+          16.4966
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-204",
+      "kind": "traffic_signal",
+      "name": "Signal - Kummaripalem Lock junction",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6256,
+          16.5036
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-205",
+      "kind": "traffic_signal",
+      "name": "Signal - Governorpet / RG Road",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.632,
+          16.5124
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-206",
+      "kind": "traffic_signal",
+      "name": "Signal - Chuttugunta junction",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6362,
+          16.501
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-207",
+      "kind": "traffic_signal",
+      "name": "Signal - Ajit Singh Nagar crossroads",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6496,
+          16.5286
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-208",
+      "kind": "traffic_signal",
+      "name": "Signal - Kanuru junction (NH-16)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6742,
+          16.4942
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-209",
+      "kind": "traffic_signal",
+      "name": "Signal - GGH Hanumanpet gate",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6216,
+          16.5196
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": true,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TS-210",
+      "kind": "traffic_signal",
+      "name": "Signal - Prakasam Barrage east approach",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6142,
+          16.5034
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Vijayawada City Police - Traffic Wing",
+      "current_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "reported_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "desired_state": {
+        "plan": "P2_offpeak",
+        "state": "operational",
+        "cycle_s": 120,
+        "priority_route": false,
+        "manual_override": false
+      },
+      "permitted_actions": [
+        "tool.traffic.signal_plan",
+        "tool.traffic.signal_plan.restore",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.5
+    },
+    {
+      "id": "TC-301",
+      "kind": "traffic_counter",
+      "name": "ANPR counter - Bandar Road at Ramesh Hospital",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6428,
+          16.5028
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "road_id": "R-10",
+        "flow_veh_h": 3400,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "reported_state": {
+        "road_id": "R-10",
+        "flow_veh_h": 3400,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "desired_state": {
+        "road_id": "R-10",
+        "flow_veh_h": 3400,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "TC-302",
+      "kind": "traffic_counter",
+      "name": "ANPR counter - Eluru Road at Ramalingeswara Nagar",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6368,
+          16.5186
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "road_id": "R-12",
+        "flow_veh_h": 1050,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "reported_state": {
+        "road_id": "R-12",
+        "flow_veh_h": 1050,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "desired_state": {
+        "road_id": "R-12",
+        "flow_veh_h": 1050,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "TC-303",
+      "kind": "traffic_counter",
+      "name": "Loop counter - Singh Nagar Main Road",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6232,
+          16.4988
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "road_id": "R-16",
+        "flow_veh_h": 1050,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "reported_state": {
+        "road_id": "R-16",
+        "flow_veh_h": 1050,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "desired_state": {
+        "road_id": "R-16",
+        "flow_veh_h": 1050,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "TC-304",
+      "kind": "traffic_counter",
+      "name": "Loop counter - NH-16 bypass at Kanuru",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6746,
+          16.4948
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "VMC Smart City Mission - Command & Control Centre",
+      "current_state": {
+        "road_id": "R-14",
+        "flow_veh_h": 3400,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "reported_state": {
+        "road_id": "R-14",
+        "flow_veh_h": 3400,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "desired_state": {
+        "road_id": "R-14",
+        "flow_veh_h": 3400,
+        "mean_speed_kmh": 27,
+        "occupancy_pct": 19,
+        "health": "ok"
+      },
+      "permitted_actions": [
+        "tool.twin.query",
+        "tool.evidence.fetch"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "H-01",
+      "kind": "hospital",
+      "name": "Government General Hospital, Vijayawada (Siddhartha Medical College)",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              80.6196,
+              16.5186
+            ],
+            [
+              80.6234,
+              16.5186
+            ],
+            [
+              80.6234,
+              16.521
+            ],
+            [
+              80.6196,
+              16.521
+            ],
+            [
+              80.6196,
+              16.5186
+            ]
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "Government General Hospital Vijayawada - Siddhartha Medical College",
+      "current_state": {
+        "operational": true,
+        "casualty_status": "open",
+        "beds_available": 118,
+        "icu_free": 9,
+        "power_feed": "primary",
+        "generator_fuel_h": 48,
+        "ambulance_access": "clear",
+        "dialysis_units": 24
+      },
+      "reported_state": {
+        "operational": true,
+        "casualty_status": "open",
+        "beds_available": 118,
+        "icu_free": 9,
+        "power_feed": "primary",
+        "generator_fuel_h": 48,
+        "ambulance_access": "clear",
+        "dialysis_units": 24
+      },
+      "desired_state": {
+        "operational": true,
+        "casualty_status": "open",
+        "beds_available": 118,
+        "icu_free": 9,
+        "power_feed": "primary",
+        "generator_fuel_h": 48,
+        "ambulance_access": "clear",
+        "dialysis_units": 24
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 5.0
+    },
+    {
+      "id": "H-02",
+      "kind": "hospital",
+      "name": "Andhra Hospitals, Governorpet",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6318,
+          16.5066
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Andhra Hospitals - Facilities",
+      "current_state": {
+        "operational": true,
+        "casualty_status": "open",
+        "beds_available": 46,
+        "icu_free": 4,
+        "power_feed": "primary",
+        "generator_fuel_h": 36,
+        "ambulance_access": "clear"
+      },
+      "reported_state": {
+        "operational": true,
+        "casualty_status": "open",
+        "beds_available": 46,
+        "icu_free": 4,
+        "power_feed": "primary",
+        "generator_fuel_h": 36,
+        "ambulance_access": "clear"
+      },
+      "desired_state": {
+        "operational": true,
+        "casualty_status": "open",
+        "beds_available": 46,
+        "icu_free": 4,
+        "power_feed": "primary",
+        "generator_fuel_h": 36,
+        "ambulance_access": "clear"
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 5.0
+    },
+    {
+      "id": "SCH-01",
+      "kind": "school",
+      "name": "ZPHS Payakapuram",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6128,
+          16.4992
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Krishna District Education Department",
+      "current_state": {
+        "occupied": true,
+        "pupils": 640,
+        "shelter_capacity": 400,
+        "evacuation_route": "R-18",
+        "power_feed": "primary"
+      },
+      "reported_state": {
+        "occupied": true,
+        "pupils": 640,
+        "shelter_capacity": 400,
+        "evacuation_route": "R-18",
+        "power_feed": "primary"
+      },
+      "desired_state": {
+        "occupied": true,
+        "pupils": 640,
+        "shelter_capacity": 400,
+        "evacuation_route": "R-18",
+        "power_feed": "primary"
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 5.0
+    },
+    {
+      "id": "SCH-02",
+      "kind": "school",
+      "name": "MPUP School, Ajit Singh Nagar",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6488,
+          16.5282
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "Krishna District Education Department",
+      "current_state": {
+        "occupied": true,
+        "pupils": 385,
+        "shelter_capacity": 250,
+        "evacuation_route": "R-22",
+        "power_feed": "primary"
+      },
+      "reported_state": {
+        "occupied": true,
+        "pupils": 385,
+        "shelter_capacity": 250,
+        "evacuation_route": "R-22",
+        "power_feed": "primary"
+      },
+      "desired_state": {
+        "occupied": true,
+        "pupils": 385,
+        "shelter_capacity": 250,
+        "evacuation_route": "R-22",
+        "power_feed": "primary"
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 5.0
+    },
+    {
+      "id": "CARE-01",
+      "kind": "care_home",
+      "name": "Sri Sarada Vridhashram, Vidyadharapuram",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6172,
+          16.5006
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "APSDMA-registered care facility",
+      "current_state": {
+        "occupied": true,
+        "residents": 96,
+        "reduced_mobility": 61,
+        "power_feed": "primary",
+        "generator_fuel_h": 6,
+        "lift_status": "operational",
+        "ground_floor_only": false
+      },
+      "reported_state": {
+        "occupied": true,
+        "residents": 96,
+        "reduced_mobility": 61,
+        "power_feed": "primary",
+        "generator_fuel_h": 6,
+        "lift_status": "operational",
+        "ground_floor_only": false
+      },
+      "desired_state": {
+        "occupied": true,
+        "residents": 96,
+        "reduced_mobility": 61,
+        "power_feed": "primary",
+        "generator_fuel_h": 6,
+        "lift_status": "operational",
+        "ground_floor_only": false
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 5.0
+    },
+    {
+      "id": "SHL-01",
+      "kind": "shelter",
+      "name": "Indira Gandhi Municipal Stadium - designated relief camp",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              80.6276,
+              16.5078
+            ],
+            [
+              80.6302,
+              16.5078
+            ],
+            [
+              80.6302,
+              16.5098
+            ],
+            [
+              80.6276,
+              16.5098
+            ],
+            [
+              80.6276,
+              16.5078
+            ]
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP State Disaster Management Authority",
+      "current_state": {
+        "activated": false,
+        "capacity": 5000,
+        "occupancy": 0,
+        "kitchen": true,
+        "medical_post": true,
+        "power_feed": "primary",
+        "access_route": "R-24",
+        "note": "Used as a relief camp in the September 2024 Budameru floods."
+      },
+      "reported_state": {
+        "activated": false,
+        "capacity": 5000,
+        "occupancy": 0,
+        "kitchen": true,
+        "medical_post": true,
+        "power_feed": "primary",
+        "access_route": "R-24",
+        "note": "Used as a relief camp in the September 2024 Budameru floods."
+      },
+      "desired_state": {
+        "activated": false,
+        "capacity": 5000,
+        "occupancy": 0,
+        "kitchen": true,
+        "medical_post": true,
+        "power_feed": "primary",
+        "access_route": "R-24",
+        "note": "Used as a relief camp in the September 2024 Budameru floods."
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 6.0
+    },
+    {
+      "id": "DEP-01",
+      "kind": "depot",
+      "name": "VMC Disaster Response Depot, Ajit Singh Nagar",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6474,
+          16.5266
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP State Disaster Management Authority",
+      "current_state": {
+        "crewed": true,
+        "boats_available": 14,
+        "dewatering_pumps": 22,
+        "sandbags": 30000,
+        "egress_route": "R-22",
+        "power_feed": "primary"
+      },
+      "reported_state": {
+        "crewed": true,
+        "boats_available": 14,
+        "dewatering_pumps": 22,
+        "sandbags": 30000,
+        "egress_route": "R-22",
+        "power_feed": "primary"
+      },
+      "desired_state": {
+        "crewed": true,
+        "boats_available": 14,
+        "dewatering_pumps": 22,
+        "sandbags": 30000,
+        "egress_route": "R-22",
+        "power_feed": "primary"
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 3.0
+    },
+    {
+      "id": "DEP-02",
+      "kind": "depot",
+      "name": "NDRF 10th Battalion forward staging post - IGMC Stadium",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6294,
+          16.5086
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP State Disaster Management Authority",
+      "current_state": {
+        "crewed": true,
+        "teams": 3,
+        "boats_available": 9,
+        "access": "clear",
+        "activation_time_min": 25
+      },
+      "reported_state": {
+        "crewed": true,
+        "teams": 3,
+        "boats_available": 9,
+        "access": "clear",
+        "activation_time_min": 25
+      },
+      "desired_state": {
+        "crewed": true,
+        "teams": 3,
+        "boats_available": 9,
+        "access": "clear",
+        "activation_time_min": 25
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 4.0
+    },
+    {
+      "id": "TH-01",
+      "kind": "transport_hub",
+      "name": "Vijayawada Junction Railway Station (BZA)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.619,
+          16.5172
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "South Central Railway - Vijayawada Division",
+      "current_state": {
+        "open": true,
+        "platforms": 10,
+        "services": "normal",
+        "concourse_level_m_msl": 21.4
+      },
+      "reported_state": {
+        "open": true,
+        "platforms": 10,
+        "services": "normal",
+        "concourse_level_m_msl": 21.4
+      },
+      "desired_state": {
+        "open": true,
+        "platforms": 10,
+        "services": "normal",
+        "concourse_level_m_msl": 21.4
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 4.0
+    },
+    {
+      "id": "TH-02",
+      "kind": "transport_hub",
+      "name": "Pandit Nehru Bus Station (PNBS)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6254,
+          16.5148
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "APSRTC - Vijayawada Region",
+      "current_state": {
+        "open": true,
+        "bays": 46,
+        "services": "normal",
+        "apron_level_m_msl": 21.0
+      },
+      "reported_state": {
+        "open": true,
+        "bays": 46,
+        "services": "normal",
+        "apron_level_m_msl": 21.0
+      },
+      "desired_state": {
+        "open": true,
+        "bays": 46,
+        "services": "normal",
+        "apron_level_m_msl": 21.0
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 4.0
+    },
+    {
+      "id": "TH-03",
+      "kind": "transport_hub",
+      "name": "Machavaram City Bus Depot",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6398,
+          16.5218
+        ]
+      },
+      "criticality": 3,
+      "owner_dept": "APSRTC - Vijayawada Region",
+      "current_state": {
+        "open": true,
+        "buses_stabled": 128,
+        "services": "normal",
+        "apron_level_m_msl": 20.2
+      },
+      "reported_state": {
+        "open": true,
+        "buses_stabled": 128,
+        "services": "normal",
+        "apron_level_m_msl": 20.2
+      },
+      "desired_state": {
+        "open": true,
+        "buses_stabled": 128,
+        "services": "normal",
+        "apron_level_m_msl": 20.2
+      },
+      "permitted_actions": [
+        "tool.notify.internal",
+        "tool.workorder.create"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 4.0
+    },
+    {
+      "id": "FD-01",
+      "kind": "flood_defence",
+      "name": "Budameru left bank bund - Singh Nagar / Payakapuram reach",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.6098,
+            16.5052
+          ],
+          [
+            80.6188,
+            16.5088
+          ],
+          [
+            80.6296,
+            16.5136
+          ],
+          [
+            80.6414,
+            16.5206
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "crest_m_msl": 20.4,
+        "condition": "fair",
+        "breach": false,
+        "seepage": "none",
+        "last_inspection": "2026-07-18",
+        "note": "Overtopped and breached in September 2024 near Ajit Singh Nagar."
+      },
+      "reported_state": {
+        "crest_m_msl": 20.4,
+        "condition": "fair",
+        "breach": false,
+        "seepage": "none",
+        "last_inspection": "2026-07-18",
+        "note": "Overtopped and breached in September 2024 near Ajit Singh Nagar."
+      },
+      "desired_state": {
+        "crest_m_msl": 20.4,
+        "condition": "fair",
+        "breach": false,
+        "seepage": "none",
+        "last_inspection": "2026-07-18",
+        "note": "Overtopped and breached in September 2024 near Ajit Singh Nagar."
+      },
+      "permitted_actions": [
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "FD-02",
+      "kind": "flood_defence",
+      "name": "Budameru Diversion Channel head regulator, Velagaleru",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.5462,
+          16.6178
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "gates_total": 6,
+        "gates_open": 2,
+        "design_capacity_cusecs": 11000,
+        "widening_works": "in_progress_to_17500_cusecs",
+        "condition": "good"
+      },
+      "reported_state": {
+        "gates_total": 6,
+        "gates_open": 2,
+        "design_capacity_cusecs": 11000,
+        "widening_works": "in_progress_to_17500_cusecs",
+        "condition": "good"
+      },
+      "desired_state": {
+        "gates_total": 6,
+        "gates_open": 2,
+        "design_capacity_cusecs": 11000,
+        "widening_works": "in_progress_to_17500_cusecs",
+        "condition": "good"
+      },
+      "permitted_actions": [
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "FD-03",
+      "kind": "flood_defence",
+      "name": "Ryves Canal lock and sluice, Kummaripalem",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6252,
+          16.503
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "gates_total": 3,
+        "gates_open": 1,
+        "closed": false,
+        "closure_time_min": 30,
+        "crew_required": 4
+      },
+      "reported_state": {
+        "gates_total": 3,
+        "gates_open": 1,
+        "closed": false,
+        "closure_time_min": 30,
+        "crew_required": 4
+      },
+      "desired_state": {
+        "gates_total": 3,
+        "gates_open": 1,
+        "closed": false,
+        "closure_time_min": 30,
+        "crew_required": 4
+      },
+      "permitted_actions": [
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "FD-04",
+      "kind": "flood_defence",
+      "name": "Bandar Canal regulator, Chuttugunta",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.6358,
+          16.5014
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "AP Water Resources Department - Krishna Delta Division",
+      "current_state": {
+        "gates_total": 2,
+        "gates_open": 1,
+        "closed": false,
+        "closure_time_min": 25,
+        "crew_required": 3
+      },
+      "reported_state": {
+        "gates_total": 2,
+        "gates_open": 1,
+        "closed": false,
+        "closure_time_min": 25,
+        "crew_required": 3
+      },
+      "desired_state": {
+        "gates_total": 2,
+        "gates_open": 1,
+        "closed": false,
+        "closure_time_min": 25,
+        "crew_required": 3
+      },
+      "permitted_actions": [
+        "tool.barrier.deploy",
+        "tool.barrier.retract",
+        "tool.workorder.create",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 1.0
+    },
+    {
+      "id": "NET-01",
+      "kind": "ot_network",
+      "name": "VMC storm-water SCADA ring - Budameru pump houses (OT zone 2)",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              80.594,
+              16.49
+            ],
+            [
+              80.656,
+              16.49
+            ],
+            [
+              80.656,
+              16.534
+            ],
+            [
+              80.594,
+              16.534
+            ],
+            [
+              80.594,
+              16.49
+            ]
+          ]
+        ]
+      },
+      "criticality": 5,
+      "owner_dept": "AP State Data Centre - Security Operations Centre",
+      "current_state": {
+        "segment": "OT-Z2",
+        "isolated": false,
+        "authorised_hosts": 18,
+        "unauthorised_writes_1h": 0,
+        "failed_auth_1h": 0,
+        "ids_status": "clean",
+        "protocol": "Modbus/TCP over MPLS",
+        "last_patch": "2026-07-02"
+      },
+      "reported_state": {
+        "segment": "OT-Z2",
+        "isolated": false,
+        "authorised_hosts": 18,
+        "unauthorised_writes_1h": 0,
+        "failed_auth_1h": 0,
+        "ids_status": "clean",
+        "protocol": "Modbus/TCP over MPLS",
+        "last_patch": "2026-07-02"
+      },
+      "desired_state": {
+        "segment": "OT-Z2",
+        "isolated": false,
+        "authorised_hosts": 18,
+        "unauthorised_writes_1h": 0,
+        "failed_auth_1h": 0,
+        "ids_status": "clean",
+        "protocol": "Modbus/TCP over MPLS",
+        "last_patch": "2026-07-02"
+      },
+      "permitted_actions": [
+        "tool.ot.isolate_segment",
+        "tool.ot.restore_segment",
+        "tool.notify.internal",
+        "tool.twin.query"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 40.0
+    },
+    {
+      "id": "NET-02",
+      "kind": "ot_network",
+      "name": "Vijayawada adaptive traffic signal network (OT zone 3)",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              80.606,
+              16.488
+            ],
+            [
+              80.69,
+              16.488
+            ],
+            [
+              80.69,
+              16.536
+            ],
+            [
+              80.606,
+              16.536
+            ],
+            [
+              80.606,
+              16.488
+            ]
+          ]
+        ]
+      },
+      "criticality": 4,
+      "owner_dept": "AP State Data Centre - Security Operations Centre",
+      "current_state": {
+        "segment": "OT-Z3",
+        "isolated": false,
+        "authorised_hosts": 34,
+        "unauthorised_writes_1h": 0,
+        "failed_auth_1h": 0,
+        "ids_status": "clean",
+        "protocol": "NTCIP over LTE",
+        "last_patch": "2026-08-05"
+      },
+      "reported_state": {
+        "segment": "OT-Z3",
+        "isolated": false,
+        "authorised_hosts": 34,
+        "unauthorised_writes_1h": 0,
+        "failed_auth_1h": 0,
+        "ids_status": "clean",
+        "protocol": "NTCIP over LTE",
+        "last_patch": "2026-08-05"
+      },
+      "desired_state": {
+        "segment": "OT-Z3",
+        "isolated": false,
+        "authorised_hosts": 34,
+        "unauthorised_writes_1h": 0,
+        "failed_auth_1h": 0,
+        "ids_status": "clean",
+        "protocol": "NTCIP over LTE",
+        "last_patch": "2026-08-05"
+      },
+      "permitted_actions": [
+        "tool.ot.isolate_segment",
+        "tool.ot.restore_segment",
+        "tool.notify.internal"
+      ],
+      "maintenance_window": null,
+      "geometry_accuracy_m": 40.0
+    }
+  ],
+  "asset_dependencies": [
+    {
+      "dependent_id": "S-114",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "S-115",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "S-122",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "S-131",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "S-140",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-07",
+      "depends_on_id": "S-114",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-03",
+      "depends_on_id": "S-115",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-04",
+      "depends_on_id": "S-115",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-06",
+      "depends_on_id": "S-122",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-01",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-02",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-05",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-08",
+      "depends_on_id": "S-140",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "NET-01",
+      "depends_on_id": "S-114",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "NET-02",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "P-01",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-02",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-03",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-04",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-05",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-06",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-07",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "P-08",
+      "depends_on_id": "NET-01",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "CARE-01",
+      "depends_on_id": "S-115",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "SCH-01",
+      "depends_on_id": "S-115",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "SCH-02",
+      "depends_on_id": "S-122",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "DEP-01",
+      "depends_on_id": "S-122",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "SHL-01",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "DEP-02",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TH-01",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TH-02",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TH-03",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "H-02",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "BAR-01",
+      "depends_on_id": "S-115",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-201",
+      "depends_on_id": "S-140",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-201",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-202",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-202",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-203",
+      "depends_on_id": "S-114",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-203",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-204",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-204",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-205",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-205",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-206",
+      "depends_on_id": "S-131",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-206",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-207",
+      "depends_on_id": "S-122",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-207",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-208",
+      "depends_on_id": "S-140",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-208",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-209",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-209",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "TS-210",
+      "depends_on_id": "S-115",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "TS-210",
+      "depends_on_id": "NET-02",
+      "relation": "controlled_by"
+    },
+    {
+      "dependent_id": "U-02",
+      "depends_on_id": "P-07",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "R-16",
+      "depends_on_id": "P-07",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "DN-01",
+      "depends_on_id": "P-07",
+      "relation": "pumped_by"
+    },
+    {
+      "dependent_id": "TS-203",
+      "depends_on_id": "P-07",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "U-01",
+      "depends_on_id": "P-01",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "DN-05",
+      "depends_on_id": "P-08",
+      "relation": "pumped_by"
+    },
+    {
+      "dependent_id": "R-28",
+      "depends_on_id": "P-08",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "U-03",
+      "depends_on_id": "P-02",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "R-24",
+      "depends_on_id": "P-02",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "U-04",
+      "depends_on_id": "P-03",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "DN-02",
+      "depends_on_id": "P-03",
+      "relation": "pumped_by"
+    },
+    {
+      "dependent_id": "R-18",
+      "depends_on_id": "P-03",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "DN-03",
+      "depends_on_id": "P-04",
+      "relation": "pumped_by"
+    },
+    {
+      "dependent_id": "R-20",
+      "depends_on_id": "P-04",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "R-29",
+      "depends_on_id": "P-05",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "DN-04",
+      "depends_on_id": "P-06",
+      "relation": "pumped_by"
+    },
+    {
+      "dependent_id": "R-22",
+      "depends_on_id": "P-06",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "SCH-02",
+      "depends_on_id": "P-06",
+      "relation": "drained_by"
+    },
+    {
+      "dependent_id": "R-31",
+      "depends_on_id": "U-02",
+      "relation": "routed_via"
+    },
+    {
+      "dependent_id": "R-31",
+      "depends_on_id": "R-16",
+      "relation": "routed_via"
+    },
+    {
+      "dependent_id": "R-31",
+      "depends_on_id": "R-24",
+      "relation": "routed_via"
+    },
+    {
+      "dependent_id": "H-01",
+      "depends_on_id": "R-31",
+      "relation": "access_route"
+    },
+    {
+      "dependent_id": "H-01",
+      "depends_on_id": "S-101",
+      "relation": "powered_by"
+    },
+    {
+      "dependent_id": "H-02",
+      "depends_on_id": "R-24",
+      "relation": "access_route"
+    },
+    {
+      "dependent_id": "SHL-01",
+      "depends_on_id": "R-24",
+      "relation": "access_route"
+    },
+    {
+      "dependent_id": "DEP-01",
+      "depends_on_id": "R-22",
+      "relation": "egress_route"
+    },
+    {
+      "dependent_id": "CARE-01",
+      "depends_on_id": "R-20",
+      "relation": "access_route"
+    },
+    {
+      "dependent_id": "TH-01",
+      "depends_on_id": "R-24",
+      "relation": "access_route"
+    },
+    {
+      "dependent_id": "R-10",
+      "depends_on_id": "B-01",
+      "relation": "routed_via"
+    },
+    {
+      "dependent_id": "R-14",
+      "depends_on_id": "B-03",
+      "relation": "routed_via"
+    },
+    {
+      "dependent_id": "R-33",
+      "depends_on_id": "BAR-01",
+      "relation": "carried_by"
+    },
+    {
+      "dependent_id": "FD-01",
+      "depends_on_id": "FD-02",
+      "relation": "relieved_by"
+    },
+    {
+      "dependent_id": "P-07",
+      "depends_on_id": "FD-01",
+      "relation": "protected_by"
+    },
+    {
+      "dependent_id": "P-06",
+      "depends_on_id": "FD-01",
+      "relation": "protected_by"
+    },
+    {
+      "dependent_id": "BAR-01",
+      "depends_on_id": "WL-01",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "FD-02",
+      "depends_on_id": "WL-03",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "FD-01",
+      "depends_on_id": "WL-05",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "FD-01",
+      "depends_on_id": "WL-06",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "FD-03",
+      "depends_on_id": "WL-08",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "FD-04",
+      "depends_on_id": "WL-09",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "U-02",
+      "depends_on_id": "WL-10",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "P-01",
+      "depends_on_id": "WL-08",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "P-08",
+      "depends_on_id": "WL-09",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "P-02",
+      "depends_on_id": "WL-07",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "R-10",
+      "depends_on_id": "TC-301",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "R-12",
+      "depends_on_id": "TC-302",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "R-16",
+      "depends_on_id": "TC-303",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "R-14",
+      "depends_on_id": "TC-304",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "B-02",
+      "depends_on_id": "WL-02",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "B-03",
+      "depends_on_id": "WL-02",
+      "relation": "monitored_by"
+    },
+    {
+      "dependent_id": "R-28",
+      "depends_on_id": "WL-02",
+      "relation": "monitored_by"
+    }
+  ]
+}

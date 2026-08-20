@@ -1,0 +1,117 @@
+# =============================================================================
+# AURALIS DATA CONTRACT — FORMAT SPEC (documented once, here; the other files in
+# this directory follow the same shape and just point back at this one).
+#
+# One file per connector, named <connector_id>.yaml. core/ingest.py reads these
+# to drive schema validation, impossible-value detection and freshness.
+#
+# Top level:
+#   connector_id      str   must match data/seed/connectors.json
+#   name, owner       str   the accountable human organisation, not a system name
+#   trust_tier        enum  statutory | certified | verified | crowdsourced | unknown
+#   contract_version  str   semver; bump on ANY change to event_kinds
+#   freshness_sla_s   int   evidence older than this renders stale, not current
+#   rate_limit        map   max_events_per_min, burst
+#   dpia_status       enum  cleared | cleared_with_conditions | review_required
+#                           | not_applicable
+#   retention_days    int
+#   pii               bool  plus pii_handling when true
+#   event_kinds       map   kind -> validation block
+#
+# A validation block (this is the machine-readable part):
+#   required   list[str]                     absent or null => REJECT (no event row)
+#   numeric    field -> {min, max, unit}     non-numeric => REJECT
+#                                            out of [min,max] => QUARANTINE
+#   enum       field -> {values: [...]}      not in values => REJECT
+#   rules      list of named quality rules, each {id, field, ..., on_violation}
+#              on_violation: quarantine | flag | reject
+#
+# REJECT vs QUARANTINE is the distinction that matters and it is not cosmetic:
+#   REJECT     the body is not a valid instance of this kind. No event row exists.
+#              accepted=false with a reason, and an audit entry.
+#   QUARANTINE the body is well-formed but the VALUE is not physically possible.
+#              The row IS persisted with quarantined=1 and a reason, stays
+#              queryable, and shows on /data-health. Never silently dropped:
+#              a sensor that has started lying is itself a finding.
+#
+# `numeric` bounds are PHYSICAL PLAUSIBILITY limits, not operational thresholds.
+# Operational thresholds live on the asset (asset.current_state.threshold_m) so
+# that the same sensor can mean different things at different places.
+#
+# Ingest currently keys these blocks by event kind in core/ingest.py::CONTRACTS.
+# Mapping is mechanical: required -> "required", numeric {min,max} -> a (lo, hi)
+# tuple, enum {values} -> "enum".
+# =============================================================================
+
+connector_id: conn_wrd_scada
+name: AP Water Resources Dept - Prakasam Barrage & Budameru SCADA
+owner: AP Water Resources Department, Krishna Delta Division (Executive Engineer)
+trust_tier: certified
+contract_version: "4.1.2"
+freshness_sla_s: 300
+dpia_status: cleared
+retention_days: 2555
+pii: false
+rate_limit:
+  max_events_per_min: 600
+  burst: 200
+authority: >
+  Instruments are calibrated annually by the Division and every reading is
+  attributable to a named Assistant Engineer. This connector outranks municipal
+  and citizen feeds on any hydraulic subject, by rule.source_precedence.v1.
+
+event_kinds:
+
+  water_level:
+    required: [asset_id, level_m]
+    numeric:
+      level_m:            {min: -10.0, max: 30.0,      unit: m}
+      discharge_cusecs:   {min: 0.0,   max: 2000000.0, unit: cusecs}
+      freeboard_m:        {min: -5.0,  max: 15.0,      unit: m}
+      sump_pct:           {min: 0.0,   max: 100.0,     unit: "%"}
+      bdc_capacity_cusecs: {min: 0.0,   max: 100000.0,  unit: cusecs}
+    rules:
+      - id: WL_PLAUSIBLE_RANGE
+        field: level_m
+        note: Below MSL -10 m or above 30 m is not a Krishna delta water level.
+        on_violation: quarantine
+      - id: WL_RATE_OF_CHANGE
+        field: level_m
+        max_delta_per_min: 0.60
+        note: >
+          A gauge that jumps more than 0.6 m in a minute is a stuck float or a
+          swapped tag, not a flood. Flagged rather than quarantined because a
+          genuine bund breach can look like this - a human decides.
+        on_violation: flag
+      - id: WL_DISCHARGE_CONSISTENCY
+        fields: [level_m, discharge_cusecs]
+        note: Rising discharge with falling level indicates a mislabelled gauge.
+        on_violation: flag
+      - id: WL_ASSET_KNOWN
+        field: asset_id
+        must_exist_in: asset
+        on_violation: reject
+
+  asset_state:
+    required: [asset_id]
+    numeric:
+      flow_m3h:        {min: 0.0, max: 50000.0, unit: m3/h}
+      capacity_m3h:    {min: 0.0, max: 50000.0, unit: m3/h}
+      gates_open:      {min: 0.0, max: 70.0,    unit: count}
+      gate_lift_ft:    {min: 0.0, max: 25.0,    unit: ft}
+      outflow_cusecs:  {min: 0.0, max: 2000000.0, unit: cusecs}
+      warning_stage:   {min: 0.0, max: 3.0,     unit: stage}
+      pump_sets_running: {min: 0.0, max: 8.0,   unit: count}
+    enum:
+      mode:   {values: [auto, manual, storm, off]}
+      health: {values: [ok, degraded, failed, unknown]}
+    rules:
+      - id: AS_FLOW_LE_CAPACITY
+        fields: [flow_m3h, capacity_m3h]
+        note: A pump reporting more flow than its own rating is a scaling fault.
+        on_violation: flag
+      - id: AS_GATES_LE_TOTAL
+        field: gates_open
+        max: 70
+        note: Prakasam Barrage has exactly 70 crest gates.
+        on_violation: quarantine

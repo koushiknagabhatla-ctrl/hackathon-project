@@ -1,0 +1,61 @@
+# Format spec: see conn_wrd_scada.yaml.
+connector_id: conn_cwc_krishna
+name: Central Water Commission - Krishna Basin flood forecasting (Vijayawada site)
+owner: Central Water Commission, Ministry of Jal Shakti
+trust_tier: statutory
+contract_version: "1.9.1"
+freshness_sla_s: 3600
+dpia_status: not_applicable
+retention_days: 3650
+pii: false
+rate_limit:
+  max_events_per_min: 60
+  burst: 20
+authority: >
+  CWC issues the statutory inflow forecast for the Krishna at Prakasam Barrage.
+  Barrage gate operations are justified against this feed. Where CWC and our own
+  SCADA disagree on Krishna discharge, CWC wins and the disagreement is recorded.
+
+event_kinds:
+
+  water_level:
+    required: [asset_id, level_m]
+    numeric:
+      level_m:          {min: -10.0, max: 30.0,      unit: m}
+      pond_level_ft:    {min: 0.0,   max: 70.0,      unit: ft}
+      discharge_cusecs: {min: 0.0,   max: 2000000.0, unit: cusecs}
+      warning_stage:    {min: 0.0,   max: 3.0,       unit: stage}
+    rules:
+      - id: CWC_POND_LEVEL_RANGE
+        field: pond_level_ft
+        max: 60.0
+        note: >
+          Prakasam Barrage FRL is 57.30 ft. Above 60 ft is not a reading, it is a
+          fault. Carried in feet because that is the unit the AP Water Resources
+          Department and CWC actually operate and publish in.
+        on_violation: quarantine
+      - id: CWC_WARNING_STAGE_CONSISTENT
+        fields: [discharge_cusecs, warning_stage]
+        thresholds_cusecs: {1: 750000, 2: 1000000, 3: 1200000}
+        note: >
+          Declared warning stage must match discharge against the published
+          Prakasam Barrage warning levels (7.50 / 10.00 / 12.00 lakh cusecs).
+        on_violation: flag
+
+  flood_forecast:
+    required: [asset_id, horizon_h, p50_cusecs]
+    numeric:
+      horizon_h:  {min: 1.0, max: 168.0,     unit: h}
+      p50_cusecs: {min: 0.0, max: 2000000.0, unit: cusecs}
+      p10_cusecs: {min: 0.0, max: 2000000.0, unit: cusecs}
+      p90_cusecs: {min: 0.0, max: 2000000.0, unit: cusecs}
+    rules:
+      - id: FC_ENVELOPE_ORDERED
+        fields: [p10_cusecs, p50_cusecs, p90_cusecs]
+        note: p10 <= p50 <= p90, or the envelope is meaningless.
+        on_violation: reject
+      - id: FC_ENVELOPE_REQUIRED
+        note: >
+          A forecast without p10 and p90 is refused outright. A point estimate is
+          not a forecast and must not be renderable as one.
+        on_violation: reject

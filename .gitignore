@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+auralis.db
+auralis.db-wal
+auralis.db-shm
+node_modules/
+.next/
+out/
+.env
+.env.local
+.venv/
+*.log

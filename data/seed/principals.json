@@ -1,0 +1,203 @@
+{
+  "$comment": [
+    "Humans and workloads share one identity model (schema.sql: principal).",
+    "The two fields that carry safety weight are `role` and `trust_domain`.",
+    "  role       -> policy ROLE_TIER: auditor R0, sim R1, agent R2, operator R3,",
+    "                approver/admin R4. Nobody gets R5; R5 is prohibited outright.",
+    "  trust_domain -> policy SIMULATION_BARRIER: any principal in 'sim' is refused",
+    "                every production tool at the gateway, with an audit event.",
+    "pr_sim_replay is the credential the counterfactual simulator runs under and is the",
+    "negative case in tests/test_acceptance.py::test_gate_simulation_barrier.",
+    "pr_auditor_rekha is the negative case for authorization: an auditor can read the",
+    "whole ledger and approve nothing.",
+    "Names are fictional; the offices, authorities and jurisdictions are real."
+  ],
+  "tenant": {
+    "id": "ten_vijayawada",
+    "name": "Vijayawada Municipal Corporation / AP State Disaster Management Authority",
+    "jurisdiction": "IN-AP-KRISHNA-VIJAYAWADA",
+    "data_region": "ap-south"
+  },
+  "principals": [
+    {
+      "id": "pr_operator_ravi",
+      "display_name": "Ravi Teja Kolli - Duty Officer, VMC Emergency Operations Centre",
+      "role": "operator",
+      "authority": "VMC EOC Duty Officer (Krishna District Disaster Management Plan, Annexure 4)",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/eoc-duty-officer",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "Runs the console. May execute up to R3 unassisted; cannot approve R4."
+    },
+    {
+      "id": "pr_approver_meena",
+      "display_name": "Dr. Meena Prasad, IAS - Municipal Commissioner, VMC",
+      "role": "approver",
+      "authority": "Municipal Commissioner, Vijayawada Municipal Corporation (Incident Commander, VMC area)",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/vmc-commissioner",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "Named approver for R4. First half of dual control."
+    },
+    {
+      "id": "pr_approver_srinivas",
+      "display_name": "K. Srinivasa Rao - Executive Engineer, Krishna Delta Division (WRD)",
+      "role": "approver",
+      "authority": "Executive Engineer, AP Water Resources Department - statutory authority over Prakasam Barrage gate operations and the Budameru bunds",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/wrd-ee-krishna-delta",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA"],
+      "note": "Second half of dual control for anything touching water infrastructure. Distinct human, distinct organisation - that is the point of dual control."
+    },
+    {
+      "id": "pr_approver_apsdma",
+      "display_name": "Lakshmi Narayana G. - Duty Controller, APSDMA State EOC, Amaravati",
+      "role": "approver",
+      "authority": "AP State Disaster Management Authority - the only office that may authorise a public evacuation alert under the Disaster Management Act 2005",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/apsdma-duty-controller",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP"],
+      "note": "Public alerting authority. Auralis drafts; APSDMA publishes."
+    },
+    {
+      "id": "pr_auditor_rekha",
+      "display_name": "Rekha Sundaram - Principal Accountant General (Audit), Andhra Pradesh",
+      "role": "auditor",
+      "authority": "Statutory audit access under CAG's (DPC) Act 1971 - read only, no operational authority",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/ag-audit-ap",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP"],
+      "note": "Sees everything, changes nothing. Policy caps this role at R0."
+    },
+    {
+      "id": "pr_admin_platform",
+      "display_name": "Auralis platform administrator (VMC IT, dual-custody account)",
+      "role": "admin",
+      "authority": "Platform administration only. No operational authority over city assets.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/platform-admin",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "Holds the agent kill switch. R4-gated and dual control, same as anyone else."
+    },
+    {
+      "id": "pr_field_anand",
+      "display_name": "Anand Kumar - VMC field crew lead, Singh Nagar sector",
+      "role": "operator",
+      "authority": "VMC Engineering field crew lead - may confirm and close work orders on site",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/field-crew-singhnagar",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "Field PWA user. Ground truth comes back through this principal."
+    },
+    {
+      "id": "pr_svc_ingest",
+      "display_name": "Connector ingest gateway (service account)",
+      "role": "agent",
+      "authority": "Ingest only. May POST /v1/events. Holds no tool grants at all.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/ingest-gateway",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "The scenario player posts as this principal, because replaying a recorded feed IS ingest. It is deliberately not pr_sim_replay: the events represent real instrument readings, and the sim credential must stay unusable for anything operational."
+    },
+    {
+      "id": "pr_agent_hydrology",
+      "display_name": "Hydrology agent (Budameru / Krishna)",
+      "role": "agent",
+      "authority": "Reads evidence, writes claims. No tool grants above R2.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-hydrology",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_agent_forecast",
+      "display_name": "Forecast agent (rainfall-runoff and inundation)",
+      "role": "agent",
+      "authority": "Reads evidence, writes forecasts with an explicit p10/p90 envelope.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-forecast",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_agent_traffic",
+      "display_name": "Traffic and access agent",
+      "role": "agent",
+      "authority": "Reads evidence, writes claims about route viability and access times.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-traffic",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_agent_power",
+      "display_name": "Power dependency agent (APTRANSCO / APSPDCL)",
+      "role": "agent",
+      "authority": "Reads the twin, writes claims about cascading loss of supply.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-power",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_agent_cyber",
+      "display_name": "OT security agent",
+      "role": "agent",
+      "authority": "Reads SOC detections, writes containment RECOMMENDATIONS only. Never executes containment.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-cyber",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_agent_planner",
+      "display_name": "Planning agent",
+      "role": "agent",
+      "authority": "Assembles candidate plans from grounded claims. Proposes; never approves, never executes.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-planner",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_agent_critic",
+      "display_name": "Adversarial critic agent",
+      "role": "agent",
+      "authority": "Attacks the plan: unsupported claims, stale evidence, unstated assumptions.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-critic",
+      "trust_domain": "prod",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"]
+    },
+    {
+      "id": "pr_sim_replay",
+      "display_name": "Counterfactual replay harness (SIMULATION)",
+      "role": "sim",
+      "authority": "Simulation only. Refused by the tool gateway for every production tool, by rule SIMULATION_BARRIER, with an audit event on each attempt.",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/sim/sa/replay-harness",
+      "trust_domain": "sim",
+      "status": "active",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "Note the SPIFFE path: ns/sim, not ns/prod. The barrier is an identity property, not a flag someone can forget to set."
+    },
+    {
+      "id": "pr_agent_revoked",
+      "display_name": "Deprecated inundation agent v0.3 (REVOKED)",
+      "role": "agent",
+      "authority": "none",
+      "spiffe_id": "spiffe://auralis.ap.gov.in/ns/prod/sa/agent-inundation-v03",
+      "trust_domain": "prod",
+      "status": "revoked",
+      "jurisdictions": ["IN-AP-KRISHNA-VIJAYAWADA"],
+      "note": "Seeded revoked so the kill switch has something to show and IDENTITY_VALID has a live negative case."
+    }
+  ]
+}

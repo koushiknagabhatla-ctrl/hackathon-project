@@ -1,0 +1,63 @@
+# Format spec: see conn_wrd_scada.yaml.
+connector_id: conn_vmc_traffic
+name: VMC Smart City CCC - traffic counters and adaptive signals
+owner: Vijayawada Municipal Corporation, Smart City Command & Control Centre
+trust_tier: verified
+contract_version: "3.0.4"
+freshness_sla_s: 300
+dpia_status: cleared_with_conditions
+retention_days: 400
+pii: false
+pii_handling: >
+  ANPR plate reads are hashed at the edge and never leave the CCC. The DPIA
+  condition is that only aggregate counts cross this connector; a payload
+  carrying a plate, a face crop or a device identifier is REJECTED at ingest,
+  not stored and then redacted.
+rate_limit:
+  max_events_per_min: 1200
+  burst: 400
+
+event_kinds:
+
+  traffic_flow:
+    required: [asset_id, flow_vph]
+    numeric:
+      flow_vph:      {min: 0.0, max: 20000.0, unit: veh/h}
+      baseline_vph:  {min: 0.0, max: 20000.0, unit: veh/h}
+      speed_kph:     {min: 0.0, max: 300.0,   unit: km/h}
+      occupancy_pct: {min: 0.0, max: 100.0,   unit: "%"}
+    rules:
+      - id: TF_PLAUSIBLE_FLOW
+        field: flow_vph
+        note: 20,000 veh/h past one counter is not a road, it is a broken loop.
+        on_violation: quarantine
+      - id: TF_BASELINE_REQUIRED_FOR_COLLAPSE
+        fields: [flow_vph, baseline_vph]
+        note: >
+          det.traffic.flow_collapse.v1 needs both. A flow with no baseline is
+          evidence but can never be a detection - "low" is meaningless without
+          "compared to what".
+        on_violation: flag
+      - id: TF_NO_PII
+        forbidden_fields: [plate, plate_hash, face_crop, device_id, imsi, mac]
+        on_violation: reject
+
+  water_level:
+    required: [asset_id, level_m]
+    numeric:
+      level_m: {min: -2.0, max: 6.0, unit: m}
+    enum:
+      method: {values: [cctv_operator_estimate, cctv_ml_estimate, staff_gauge]}
+    rules:
+      - id: CCTV_DEPTH_IS_AN_ESTIMATE
+        field: method
+        note: >
+          Depth read off a camera by a shift operator. Same VERIFIED tier as the
+          LoRaWAN mesh, so when the two disagree neither wins on precedence and
+          the conflict stays unresolved on purpose.
+        on_violation: flag
+
+  road_closure:
+    required: [asset_id, closed]
+    enum:
+      closed: {values: [true, false]}

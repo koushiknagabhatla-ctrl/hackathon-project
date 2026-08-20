@@ -1,0 +1,625 @@
+/* Global shell: navbar, mega-panel, mobile sheet, bottom bar, status rail,
+   data-mode indicator, offline indicator. One module, one visual language. */
+
+/* ------------------------------------------------------------------ navbar */
+.nav {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  /* height is animated but the header is fixed and contained, so the document
+     below it never reflows. */
+  contain: layout paint;
+  transition: height var(--t-base) var(--ease-out),
+    background-color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out);
+}
+.nav[data-scrolled="true"] {
+  background: var(--bg);
+  border-bottom-color: var(--line);
+}
+.nav[data-compact="true"] {
+  height: 52px;
+}
+@media (max-width: 639px) {
+  .nav[data-compact="true"] {
+    height: 48px;
+  }
+}
+
+.inner {
+  width: 100%;
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding-inline: var(--pad-x);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+/* wordmark ---------------------------------------------------------------- */
+.wordmark {
+  font-family: var(--font-brand);
+  font-weight: 500;
+  font-size: 19px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 8px 4px 8px 0;
+  transform-origin: left center;
+  transition: transform var(--t-base) var(--ease-out);
+  white-space: nowrap;
+  flex: none;
+}
+.nav[data-compact="true"] .wordmark {
+  transform: scale(0.9);
+}
+@media (max-width: 639px) {
+  .wordmark {
+    font-size: 16px;
+    letter-spacing: 0.26em;
+  }
+}
+
+/* primary destinations ---------------------------------------------------- */
+.primary {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline: auto;
+}
+@media (max-width: 1023px) {
+  .primary {
+    display: none;
+  }
+}
+
+.link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--r-control);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color var(--t-hover) var(--ease-out),
+    background-color var(--t-hover) var(--ease-out);
+}
+.link svg {
+  opacity: 0.75;
+}
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+/* Active = orange bar AND heavier text AND aria-current. Never colour alone. */
+.link[data-active="true"] {
+  color: var(--text);
+  font-weight: 600;
+}
+.link[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* right cluster ----------------------------------------------------------- */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex: none;
+}
+@media (max-width: 1023px) {
+  .right {
+    margin-left: auto;
+  }
+}
+
+.ctl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0 10px;
+  border-radius: var(--r-control);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--t-hover) var(--ease-out),
+    background-color var(--t-hover) var(--ease-out),
+    transform var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ctl:hover {
+    border-color: var(--line);
+    background: var(--surface);
+  }
+}
+.ctl:active {
+  transform: scale(0.98);
+}
+.ctlBordered {
+  border-color: var(--line);
+  background: var(--surface);
+}
+@media (max-width: 767px) {
+  .ctl {
+    min-width: 44px;
+    height: 44px;
+  }
+}
+
+/* live status ------------------------------------------------------------- */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ok);
+  flex: none;
+  position: relative;
+}
+.dot[data-state="live"]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1px solid var(--ok);
+  animation: ping 2.4s var(--ease-out) infinite;
+}
+.dot[data-state="degraded"] {
+  background: transparent;
+  border: 2px solid var(--warn);
+}
+.dot[data-state="connecting"] {
+  background: var(--line-strong);
+}
+@keyframes ping {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  70%,
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot[data-state="live"]::after {
+    animation: none;
+    opacity: 0.5;
+    transform: scale(1);
+  }
+}
+@media (max-width: 1023px) {
+  .statusText {
+    display: none;
+  }
+  .status {
+    padding: 0 10px;
+  }
+}
+
+/* ------------------------------------------------------------- mega panel */
+.panelWrap {
+  position: relative;
+}
+.panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(680px, calc(100vw - 2 * var(--pad-x)));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  box-shadow: var(--sh-3);
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+  transform-origin: top right;
+  animation: panelIn 150ms var(--ease-out);
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+.panelGroup {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.panelGroupLabel {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.panelItem {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: var(--r-control);
+  transition: background-color var(--t-hover) var(--ease-out);
+}
+.panelItem svg {
+  margin-top: 3px;
+  color: var(--muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .panelItem:hover {
+    background: var(--bg);
+  }
+  .panelItem:hover svg {
+    color: var(--accent);
+  }
+}
+.panelItem[data-active="true"] {
+  background: var(--bg);
+}
+.panelItemLabel {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.panelItemBlurb {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------ mobile sheet */
+.burger {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .burger {
+    display: inline-flex;
+  }
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  animation: sheetIn 220ms var(--ease-out);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}
+.sheetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: var(--nav-h);
+  padding-inline: var(--pad-x);
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.sheetBody {
+  padding: 20px var(--pad-x) calc(40px + env(safe-area-inset-bottom));
+  display: grid;
+  gap: 26px;
+}
+.sheetItem {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+}
+.sheetItem[data-active="true"] {
+  border-color: var(--accent);
+  border-left-width: 4px;
+  padding-left: 11px;
+}
+.sheetItemLabel {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.sheetItemBlurb {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  grid-column: 2 / -1;
+  margin-top: -6px;
+}
+
+/* -------------------------------------------------------------- bottom nav */
+.bottom {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 110;
+  display: none;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (max-width: 767px) {
+  .bottom {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+.bottomItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 58px;
+  min-width: 44px;
+  padding: 8px 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  position: relative;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.bottomItem[data-active="true"] {
+  color: var(--text);
+}
+.bottomItem[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 0 0 2px 2px;
+}
+.bottomBadge {
+  position: absolute;
+  top: 6px;
+  right: 22%;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--sev-critical);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  font-family: var(--font-num);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------- status rail */
+/* Deliberately quieter than the navbar: it informs, it does not shout over
+   the primary chrome. Colour + word + icon + hatch, never colour alone. */
+.rail {
+  position: fixed;
+  inset-inline: 0;
+  top: var(--nav-h);
+  z-index: 99;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  border-top: 2px solid var(--sev-critical);
+  transition: top var(--t-base) var(--ease-out);
+}
+.nav[data-compact="true"] + .rail {
+  top: 52px;
+}
+.railInner {
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding: 8px var(--pad-x);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  flex-wrap: wrap;
+}
+.railMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--sev-critical);
+  color: var(--sev-critical);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  flex: none;
+}
+.railTitle {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.railMeta {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.railLink {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  min-height: 36px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .railLink:hover {
+    border-color: var(--accent);
+  }
+}
+@media (max-width: 639px) {
+  .railTitle {
+    width: 100%;
+  }
+  .railLink {
+    margin-left: 0;
+  }
+}
+
+/* --------------------------------------------------------- data mode badge */
+.demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 8px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--accent-ink);
+  background: var(--accent-wash);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.demoBar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 115;
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .demoBar {
+    bottom: calc(62px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ------------------------------------------------------ offline indicator */
+.offline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.offline[data-state="offline"] {
+  border-color: var(--bad);
+}
+.offline[data-state="queued"] {
+  border-color: var(--warn);
+}
+.offline[data-state="synced"] {
+  border-color: var(--ok);
+}
+.offlineCount {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ search */
+.searchForm {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.searchInput {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  font-size: var(--fs-body);
+}
+.searchHint {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 12px;
+}
+.searchList {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}

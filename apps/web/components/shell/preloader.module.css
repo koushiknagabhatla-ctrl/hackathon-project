@@ -1,0 +1,126 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--bg);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: clamp(20px, 5vw, 56px);
+  will-change: clip-path, opacity;
+}
+
+.centre {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: clamp(16px, 3vw, 28px);
+  max-width: var(--max-w);
+  width: 100%;
+  margin-inline: auto;
+}
+
+.wordmark {
+  font-family: var(--font-brand);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.34em;
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+.counter {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.count {
+  font-family: var(--font-num);
+  font-size: clamp(3.5rem, 14vw, 9rem);
+  line-height: 0.85;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.of {
+  font-family: var(--font-num);
+  font-size: clamp(1rem, 2.4vw, 1.5rem);
+  color: var(--muted);
+}
+
+.stage {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  min-height: 1.2em;
+}
+
+.bottom {
+  max-width: var(--max-w);
+  width: 100%;
+  margin-inline: auto;
+  display: grid;
+  gap: 18px;
+}
+
+.track {
+  height: 2px;
+  background: var(--line);
+  position: relative;
+  overflow: hidden;
+}
+.fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 0%;
+  background: var(--accent);
+  transition: width 240ms var(--ease-out);
+}
+
+.lines {
+  display: grid;
+  gap: 6px;
+}
+.line {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--line-strong);
+  transition: color 200ms var(--ease-out);
+}
+.line[data-state="ready"] {
+  color: var(--text);
+}
+.line[data-state="degraded"] {
+  color: var(--warn);
+}
+.line[data-state="pending"] {
+  color: var(--line-strong);
+}
+.lineMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lineNote {
+  font-family: var(--font-num);
+  letter-spacing: 0;
+  color: var(--muted);
+  text-transform: none;
+}
+
+@media (max-width: 639px) {
+  .line {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+}

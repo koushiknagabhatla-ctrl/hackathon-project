@@ -1,0 +1,157 @@
+.wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+  padding-block: clamp(40px, 8vw, 104px);
+}
+@media (max-width: 899px) {
+  .wrap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.code {
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.title {
+  font-size: clamp(2.25rem, 5.6vw, 3.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  margin-top: 18px;
+  max-width: 14ch;
+}
+
+.sub {
+  margin-top: 18px;
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 44ch;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+@media (max-width: 639px) {
+  .actions > * {
+    flex: 1 1 100%;
+  }
+}
+
+.search {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  max-width: 460px;
+  flex-wrap: wrap;
+}
+.searchInput {
+  flex: 1 1 220px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: var(--fs-body);
+}
+
+/* ------------------------------------------------------------ the visual */
+.art {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  fill: none;
+}
+.block {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.blockFill {
+  fill: #ececec;
+  stroke: none;
+}
+
+/* the one orange fragment, drawn once in 500ms, never looping */
+.route {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  animation: draw 500ms var(--ease-out) 180ms forwards;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.routeEnd {
+  fill: var(--accent);
+  opacity: 0;
+  animation: appear 220ms var(--ease-out) 680ms forwards;
+}
+
+/* the node that is not there */
+.missing {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+  opacity: 0;
+  animation: appear 260ms var(--ease-out) 760ms forwards;
+}
+.missingMark {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: appear 260ms var(--ease-out) 820ms forwards;
+}
+.missingLabel {
+  font-family: var(--font-num);
+  font-size: 11px;
+  fill: var(--muted);
+  letter-spacing: 0.12em;
+  opacity: 0;
+  animation: appear 260ms var(--ease-out) 880ms forwards;
+}
+
+@keyframes appear {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route,
+  .routeEnd,
+  .missing,
+  .missingMark,
+  .missingLabel {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  .missing {
+    opacity: 1;
+  }
+}

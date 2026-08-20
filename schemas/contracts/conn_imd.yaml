@@ -1,0 +1,57 @@
+# Format spec: see conn_wrd_scada.yaml (documented once, in full, at the top).
+connector_id: conn_imd
+name: India Meteorological Department - Amaravati Met Centre (AWS + DWR)
+owner: India Meteorological Department, Ministry of Earth Sciences
+trust_tier: statutory
+contract_version: "2.3.0"
+freshness_sla_s: 900
+dpia_status: not_applicable
+retention_days: 3650
+pii: false
+rate_limit:
+  max_events_per_min: 120
+  burst: 60
+authority: >
+  IMD is the statutory forecasting authority for India. Its colour-coded warnings
+  are the legal trigger for district administration action. Nothing in this system
+  outranks it on a meteorological subject; conflicts resolve in its favour by
+  rule.source_precedence.v1.
+
+event_kinds:
+
+  rainfall:
+    required: [asset_id, rate_mm_h]
+    numeric:
+      rate_mm_h: {min: 0.0, max: 400.0, unit: mm/h}
+      accum_mm:  {min: 0.0, max: 2000.0, unit: mm}
+    enum:
+      imd_category:
+        values: [light, moderate, heavy, very heavy, extremely heavy, exceptionally heavy]
+        note: >
+          IMD 24-hour categories: heavy 64.5-115.5 mm, very heavy 115.6-204.4 mm,
+          extremely heavy above 204.5 mm.
+    rules:
+      - id: RAIN_PLAUSIBLE_RATE
+        field: rate_mm_h
+        note: >
+          400 mm/h is roughly three times the highest one-hour rate ever recorded
+          anywhere. Nothing above it is a measurement.
+        on_violation: quarantine
+      - id: RAIN_ACCUM_MONOTONIC
+        field: accum_mm
+        note: A 24-hour accumulator that decreases has been reset or swapped.
+        on_violation: flag
+      - id: RAIN_RATE_ACCUM_CONSISTENT
+        fields: [rate_mm_h, accum_mm]
+        note: Sustained high rate with a flat accumulator means a stuck tipping bucket.
+        on_violation: flag
+
+  weather_warning:
+    required: [asset_id, colour, valid_until]
+    enum:
+      colour: {values: [green, yellow, orange, red]}
+    rules:
+      - id: WARN_AUTHORITY
+        field: issued_by
+        note: A warning on this connector must name an IMD office. It is a legal instrument.
+        on_violation: reject
