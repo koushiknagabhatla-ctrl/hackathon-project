@@ -18,6 +18,13 @@ export interface NavItem {
 /** Centre of the navbar. Five highest-value destinations, nothing more. */
 export const PRIMARY: NavItem[] = [
   {
+    href: "/",
+    label: "Home",
+    blurb: "City operational overview, live GIS twin, and module launchpads.",
+    icon: "layers",
+    group: "operate",
+  },
+  {
     href: "/command",
     label: "Command",
     blurb: "Live incidents, twin and the evidence that supports them.",
