@@ -1,0 +1,33 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Vercel Deployment Optimization Matrix — Exclusion of Non-Production Assets
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Backend & Python Services
+services/
+tests/
+policies/
+schemas/
+scripts/
+docs/
+data/cache/
+*.py
+*.sql
+*.yaml
+*.db
+*.db-shm
+*.db-wal
+
+# Python Caches & Virtualenvs
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local Configs & Documentation
+README.md
+.env.example
+.git/
+.github/
+
+# Development Tools & Logs
+*.log

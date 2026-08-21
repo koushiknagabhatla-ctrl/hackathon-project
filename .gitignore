@@ -1,13 +1,105 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Version Control Exclusion Matrix — Auralis / CitySense
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Python Runtime & Caches
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Unit Testing & Coverage
 .pytest_cache/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+htmlcov/
+
+# Node.js & Web Bundlers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Next.js Build Artifacts
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# SQLite & Local Databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 auralis.db
 auralis.db-wal
 auralis.db-shm
-node_modules/
-.next/
-out/
+data/cache/
+
+# Local Environment Secrets & Tokens
 .env
 .env.local
-.venv/
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.cert
+
+# Operating System & IDE Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Logs & Diagnostics
+logs/
 *.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*

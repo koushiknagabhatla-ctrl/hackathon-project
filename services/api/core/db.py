@@ -37,9 +37,10 @@ from pathlib import Path
 from typing import Any
 
 API_DIR = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = API_DIR / "schema.sql"
 PG_SCHEMA_PATH = API_DIR / "db" / "postgres_schema.sql"
-DEFAULT_PATH = API_DIR / "auralis.db"
+DEFAULT_PATH = Path(os.environ.get("AURALIS_DB", str(REPO_ROOT / "auralis.db"))).resolve()
 
 _lock = threading.RLock()
 _conn: Any = None

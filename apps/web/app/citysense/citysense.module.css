@@ -1,0 +1,323 @@
+/* ──────────────────────────────────────────────── CitySense Pan-India Map CSS
+   Matches Auralis design system tokens. */
+
+.citySensePage {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--nav-h) - var(--rail-h));
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─────────────────── Top Control Bar */
+.controlBar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--pad-x);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .controlBar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--sp-2) var(--sp-3);
+  }
+}
+
+.brandBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.brandIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-control);
+  background: linear-gradient(135deg, var(--accent), #e06a10);
+  color: #fff;
+  font-family: var(--font-brand);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-body);
+}
+
+.brandTitle {
+  font-family: var(--font-brand);
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.searchWrapper {
+  flex: 1;
+  position: relative;
+  max-width: 380px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-4);
+  padding-left: 36px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--t-hover) var(--ease-out);
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(250, 129, 40, 0.12);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.filterSelect {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  border-color: var(--accent);
+}
+
+.statsPill {
+  margin-left: auto;
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  background: var(--bg-sunken);
+  padding: 4px var(--sp-3);
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .statsPill {
+    display: none;
+  }
+}
+
+/* ─────────────────── Map View Container */
+.mapContainer {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #ececec;
+}
+
+.mapCanvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─────────────────── Floating City Detail Drawer / Card */
+.cityDrawer {
+  position: absolute;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  padding: var(--sp-5);
+  box-shadow: var(--sh-3);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  animation: slideIn 0.25s var(--ease-out);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.drawerCityName {
+  font-family: var(--font-brand);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.drawerState {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.closeDrawerBtn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.closeDrawerBtn:hover {
+  color: var(--text);
+}
+
+.cityMetaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+  background: var(--bg-sunken);
+  padding: var(--sp-3);
+  border-radius: var(--r-control);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.metaVal {
+  font-family: var(--font-num);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.drawerActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+.primaryActionBtn {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-control);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-hover) var(--ease-out);
+}
+
+.primaryActionBtn:hover {
+  background: #e06a10;
+}
+
+.secondaryActionBtn {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-hover) var(--ease-out);
+}
+
+.secondaryActionBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─────────────────── Quick Zone Filter Bar */
+.zoneBar {
+  position: absolute;
+  bottom: var(--sp-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--sp-1);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  padding: 4px;
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-2);
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  .zoneBar {
+    bottom: var(--sp-2);
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+  }
+}
+
+.zoneBtn {
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  border: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--t-hover) var(--ease-out);
+  white-space: nowrap;
+}
+
+.zoneBtn:hover {
+  color: var(--text);
+}
+
+.zoneBtn[data-active="true"] {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}

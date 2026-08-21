@@ -1,0 +1,272 @@
+/* ──────────────────────────────────────────────── Proactive Hazards & Alerts CSS
+   Matches Auralis design system tokens. */
+
+.alertsPage {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--pad-x) var(--sp-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* ─────────────────── Header */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.pageHeader h1 {
+  font-family: var(--font-brand);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.pageHeader p {
+  font-size: var(--fs-body);
+  color: var(--muted);
+  margin: 0;
+  max-width: 700px;
+  line-height: 1.5;
+}
+
+/* ─────────────────── Top Risk Gauge Banner */
+.riskBanner {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  padding: var(--sp-6);
+  box-shadow: var(--sh-1);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--sp-6);
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .riskBanner {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
+
+.riskBadge {
+  width: 90px;
+  height: 90px;
+  border-radius: var(--r-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-brand);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ok);
+  box-shadow: 0 6px 24px rgba(26, 107, 50, 0.25);
+}
+
+.riskBadge[data-tier="R1"] {
+  background: var(--sev-info);
+  box-shadow: 0 6px 24px rgba(26, 79, 138, 0.25);
+}
+
+.riskBadge[data-tier="R2"] {
+  background: #6b5300;
+}
+
+.riskBadge[data-tier="R3"] {
+  background: var(--accent);
+  box-shadow: 0 6px 24px rgba(250, 129, 40, 0.25);
+}
+
+.riskBadge[data-tier="R4"] {
+  background: var(--warn);
+  box-shadow: 0 6px 24px rgba(138, 75, 0, 0.25);
+}
+
+.riskBadge[data-tier="R5"] {
+  background: var(--bad);
+  box-shadow: 0 6px 24px rgba(179, 38, 30, 0.35);
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.riskInfo h2 {
+  font-family: var(--font-brand);
+  font-size: var(--fs-h1);
+  font-weight: 600;
+  margin: 0 0 var(--sp-1);
+  color: var(--text);
+}
+
+.riskInfo p {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin: 0;
+}
+
+.scoreMeter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-1);
+}
+
+@media (max-width: 768px) {
+  .scoreMeter {
+    align-items: center;
+  }
+}
+
+.scoreNum {
+  font-family: var(--font-num);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.scoreLabel {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+/* ─────────────────── Layout Grid */
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gutter);
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  padding: var(--sp-6);
+  box-shadow: var(--sh-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.panelTitle {
+  font-family: var(--font-brand);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* ─────────────────── Signal Correlation Matrix */
+.signalList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.signalItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  font-size: var(--fs-sm);
+  transition: all var(--t-hover) var(--ease-out);
+}
+
+.signalItem[data-exceeded="true"] {
+  background: #fff8e1;
+  border-color: var(--accent);
+}
+
+.signalTitle {
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+}
+
+.signalSource {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.signalValue {
+  font-family: var(--font-num);
+  font-weight: 600;
+}
+
+/* ─────────────────── Active Threat Advisories */
+.threatCard {
+  background: #ffebee;
+  border: 1px solid var(--bad);
+  border-radius: var(--r-control);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.threatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.threatTitle {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--bad);
+  margin: 0;
+}
+
+.threatBody {
+  font-size: var(--fs-xs);
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+/* ─────────────────── Mitigations List */
+.mitigationList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.mitigationItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-control);
+  font-size: var(--fs-sm);
+  color: var(--accent-ink);
+  line-height: 1.4;
+}
+
+.mitigationIcon {
+  font-size: 1.1rem;
+}

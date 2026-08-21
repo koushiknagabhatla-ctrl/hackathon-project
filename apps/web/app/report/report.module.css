@@ -1,0 +1,592 @@
+/* ──────────────────────────────────────────────── Civic Reporting CSS
+   Premium, responsive civic issue reporting & visual AI verification styles.
+   Matches Auralis design system tokens. */
+
+.reportPage {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--pad-x) var(--sp-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* ─────────────────── Header */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.pageHeader h1 {
+  font-family: var(--font-brand);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.pageHeader p {
+  font-size: var(--fs-body);
+  color: var(--muted);
+  margin: 0;
+  max-width: 680px;
+  line-height: 1.5;
+}
+
+/* ─────────────────── Tabs */
+.tabs {
+  display: flex;
+  gap: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--sp-2);
+}
+
+.tabBtn {
+  padding: var(--sp-2) var(--sp-5);
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--t-hover) var(--ease-out);
+}
+
+.tabBtn:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.tabBtn[data-active="true"] {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ─────────────────── Main Grid Layout */
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gutter);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─────────────────── Form Panel */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  padding: var(--sp-6);
+  box-shadow: var(--sh-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.panelTitle {
+  font-family: var(--font-brand);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* ─────────────────── Photo Upload Area */
+.dropZone {
+  border: 2px dashed var(--line);
+  border-radius: var(--r-control);
+  background: var(--bg);
+  padding: var(--sp-6);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--t-hover) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+
+.dropZone:hover {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.dropZone[data-has-image="true"] {
+  padding: 0;
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.uploadPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--muted);
+}
+
+.uploadIcon {
+  font-size: 2.2rem;
+}
+
+.uploadPrompt strong {
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+
+.uploadPrompt span {
+  font-size: var(--fs-xs);
+}
+
+.imagePreviewContainer {
+  position: relative;
+  width: 100%;
+  max-height: 320px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.imagePreview {
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+}
+
+.removeImageBtn {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: background var(--t-hover) var(--ease-out);
+}
+
+.removeImageBtn:hover {
+  background: var(--bad);
+}
+
+/* ─────────────────── AI Detection Overlay Banner */
+.visionBadge {
+  background: var(--accent-wash);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-control);
+  padding: var(--sp-3) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  animation: fadeIn 0.3s var(--ease-out);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.visionBadgeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+
+.visionBadgeBody {
+  font-size: var(--fs-xs);
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+/* ─────────────────── Form Fields */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--t-hover) var(--ease-out);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(250, 129, 40, 0.12);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* ─────────────────── Category Grid */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--sp-2);
+}
+
+.categoryBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-1);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  color: var(--text);
+  transition: all var(--t-hover) var(--ease-out);
+  text-align: center;
+}
+
+.categoryBtn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.categoryBtn[data-selected="true"] {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.categoryIcon {
+  font-size: 1.3rem;
+}
+
+/* ─────────────────── Severity Options */
+.severityRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+
+.severityBtn {
+  padding: var(--sp-2) var(--sp-2);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  transition: all var(--t-hover) var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.severityBtn span:last-child {
+  font-size: var(--fs-micro);
+  opacity: 0.7;
+}
+
+.severityBtn[data-level="low"][data-selected="true"] {
+  background: #e8f5e9;
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.severityBtn[data-level="medium"][data-selected="true"] {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.severityBtn[data-level="high"][data-selected="true"] {
+  background: #fff3e0;
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.severityBtn[data-level="critical"][data-selected="true"] {
+  background: #ffebee;
+  border-color: var(--bad);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+/* ─────────────────── Location Row */
+.locationRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.geoBtn {
+  height: 42px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+  transition: all var(--t-hover) var(--ease-out);
+}
+
+.geoBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─────────────────── Submit Button */
+.submitBtn {
+  width: 100%;
+  padding: var(--sp-3) var(--sp-6);
+  border-radius: var(--r-surface);
+  border: none;
+  background: linear-gradient(135deg, var(--accent), #e06a10);
+  color: #ffffff;
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(250, 129, 40, 0.25);
+  transition: all var(--t-hover) var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(250, 129, 40, 0.35);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─────────────────── Reports List / Triage Feed */
+.reportsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.reportCard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  padding: var(--sp-4);
+  box-shadow: var(--sh-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  transition: transform var(--t-hover) var(--ease-out);
+}
+
+.reportCard:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+}
+
+.reportCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.reportTitle {
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.reportMeta {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.badgeGroup {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+
+.statusBadge {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusBadge[data-status="submitted"] {
+  background: var(--bg-sunken);
+  color: var(--muted);
+}
+
+.statusBadge[data-status="verified"] {
+  background: #e3f2fd;
+  color: var(--sev-info);
+}
+
+.statusBadge[data-status="in_progress"] {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+
+.statusBadge[data-status="resolved"] {
+  background: #e8f5e9;
+  color: var(--ok);
+}
+
+.severityBadge {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.severityBadge[data-sev="critical"] {
+  background: #ffebee;
+  color: var(--bad);
+}
+
+.severityBadge[data-sev="high"] {
+  background: #fff3e0;
+  color: var(--warn);
+}
+
+.severityBadge[data-sev="medium"] {
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+
+.severityBadge[data-sev="low"] {
+  background: #e8f5e9;
+  color: var(--ok);
+}
+
+.reportCardBody {
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.reportCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-2);
+}
+
+.slaIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--warn);
+  font-weight: 500;
+}
+
+.evidenceTag {
+  font-family: var(--font-num);
+  letter-spacing: 0.05em;
+}
+
+/* ─────────────────── Stats Overview Cards */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-3);
+}
+
+@media (max-width: 768px) {
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.statCard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statNumber {
+  font-family: var(--font-num);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.statLabel {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

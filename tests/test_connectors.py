@@ -174,7 +174,7 @@ def test_seismic_ingests_real_provenance_and_filters_by_radius(monkeypatch):
     # Trust tier is COPIED from the registry's connector row, never inferred.
     assert row["trust_tier"] == "certified", "USGS is certified, not statutory"
     assert row["evidence_class"] == "observation"
-    assert row["observed_at"] == "2026-08-21T09:33:20Z"
+    assert row["observed_at"] == NEAR_ISO
 
     value = db.jload(row["value_json"], {})
     assert value["metric"] == "seismic" and value["value"] == 4.6

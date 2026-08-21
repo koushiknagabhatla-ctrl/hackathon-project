@@ -21,6 +21,20 @@ export interface NavItem {
  */
 export const PRIMARY: NavItem[] = [
   {
+    href: "/chat",
+    label: "Auralis AI",
+    blurb: "Conversational AI assistant connected to every city service.",
+    icon: "recommendation",
+    group: "operate",
+  },
+  {
+    href: "/citysense",
+    label: "CitySense AP",
+    blurb: "Real-time Andhra Pradesh geospatial intelligence map across all 26 districts.",
+    icon: "map",
+    group: "operate",
+  },
+  {
     href: "/command",
     label: "Command",
     blurb: "Live incidents, the city twin and the evidence that supports them.",
@@ -60,6 +74,27 @@ export const PRIMARY: NavItem[] = [
 /** Everything else, grouped, behind "More". */
 export const SECONDARY: NavItem[] = [
   {
+    href: "/alerts",
+    label: "Hazard Alerts",
+    blurb: "Predictive multi-signal hazard detection and early warning broadcasts.",
+    icon: "critical",
+    group: "operate",
+  },
+  {
+    href: "/routes",
+    label: "Safe Routes",
+    blurb: "Turn-by-turn navigation with dynamic flood & accident avoidance.",
+    icon: "map",
+    group: "operate",
+  },
+  {
+    href: "/report",
+    label: "Report Issue",
+    blurb: "Citizen issue reporting with AI visual inspection and triage.",
+    icon: "activity",
+    group: "communicate",
+  },
+  {
     href: "/emergency",
     label: "Emergency 112",
     blurb: "Multi-signal accident corroboration and ERSS 112 dispatch.",
@@ -95,6 +130,13 @@ export const SECONDARY: NavItem[] = [
     group: "communicate",
   },
   {
+    href: "/analytics",
+    label: "Analytics",
+    blurb: "Operational KPIs, SLA compliance rates and AI gateway metrics.",
+    icon: "trace",
+    group: "communicate",
+  },
+  {
     href: "/public",
     label: "Public status",
     blurb: "The redacted, disclosure-delayed view the city sees.",
@@ -118,9 +160,9 @@ export const ALL_NAV: NavItem[] = [...PRIMARY, ...SECONDARY];
  */
 export const BOTTOM_NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Home", icon: "layers" },
+  { href: "/chat", label: "Auralis AI", icon: "recommendation" },
   { href: "/command", label: "Command", icon: "activity" },
   { href: "/actions", label: "Actions", icon: "action" },
-  { href: "/trace", label: "Trace", icon: "trace" },
 ];
 
 /** True when `pathname` is inside `href`. Used for aria-current. */

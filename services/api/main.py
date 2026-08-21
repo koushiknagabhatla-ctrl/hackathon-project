@@ -159,12 +159,24 @@ def readiness() -> dict[str, Any]:
 
 
 def _register_routers() -> None:
-    """Attach the v1 surface and emergency incident response system."""
+    """Attach the v1 surface, emergency incident response, chat, civic reports, routing, alerts, analytics, and cities."""
+    from services.api.routers import alerts as alerts_router
+    from services.api.routers import analytics as analytics_router
     from services.api.routers import api as api_router
+    from services.api.routers import chat as chat_router
+    from services.api.routers import cities as cities_router
     from services.api.routers import emergency as emergency_router
+    from services.api.routers import reports as reports_router
+    from services.api.routers import routing as routing_router
 
     app.include_router(api_router.router)
     app.include_router(emergency_router.router)
+    app.include_router(chat_router.router)
+    app.include_router(reports_router.router)
+    app.include_router(routing_router.router)
+    app.include_router(alerts_router.router)
+    app.include_router(analytics_router.router)
+    app.include_router(cities_router.router)
 
 
 _register_routers()

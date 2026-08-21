@@ -78,7 +78,7 @@ SOURCES: list[Source] = [
         licence="CC-BY-4.0",
         note=(
             "Aggregates national meteorological services (incl. ECMWF/DWD/NOAA "
-            "model output). It is NOT the India Meteorological Department, so it "
+            "model output). It is NOT the India Meteorological Department (not IMD), so it "
             "is 'verified', not 'statutory'. Keyless and open."
         ),
     ),
@@ -188,6 +188,30 @@ SOURCES: list[Source] = [
             "coordinates and no forecast fields when probed. Building a parser "
             "on it would be inventing a contract. Reports 'unconfigured'."
         ),
+    ),
+    Source(
+        id="conn_gdelt",
+        name="GDELT Global & Civic Event Intelligence",
+        trust_tier="verified",
+        freshness_sla_s=3600,
+        poll_interval_s=1800,
+        endpoint="https://api.gdeltproject.org/api/v2/doc/doc",
+        env_vars=("GDELT_API_KEY",),
+        licence="GDELT Project Open License",
+        note=(
+            "Global Database of Events, Language, and Tone. Real-time global and "
+            "regional monitoring for natural disasters, civic hazards, and emergency news."
+        ),
+    ),
+    Source(
+        id="conn_open311",
+        name="Auralis Open311 Civic Reporting Gateway",
+        trust_tier="crowdsourced",
+        freshness_sla_s=86400,
+        poll_interval_s=3600,
+        endpoint="internal://civic-reporting",
+        licence="Municipal Open311 Protocol",
+        note="Standardized municipal civic issue ingest channel.",
     ),
 ]
 
