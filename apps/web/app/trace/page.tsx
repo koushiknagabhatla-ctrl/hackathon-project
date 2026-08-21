@@ -16,7 +16,7 @@ import { RiskBadge } from "@/components/ui/RiskBadge";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { TwinQueryResult, IncidentDetail, AuditEvent } from "@/lib/types";
-import { TWIN as FIXTURE_TWIN, INCIDENT_DETAIL as FIXTURE_INCIDENT, AUDIT as FIXTURE_AUDIT } from "@/lib/fixtures";
+import { ErrorState } from "@/components/ui/ErrorState";
 import s from "../pages.module.css";
 
 export default function TracePage() {
@@ -26,14 +26,44 @@ export default function TracePage() {
 
   const [activeStep, setActiveStep] = useState<number>(0);
 
-  const twin = twinData ?? FIXTURE_TWIN;
-  const detail = incidentDetail ?? FIXTURE_INCIDENT;
-  const audit = auditEvents ?? FIXTURE_AUDIT;
+  // NO SILENT SUBSTITUTION. An AI Trace exists to prove which evidence, model
+  // and policy decision produced a claim. Filling it with demo content when the
+  // API is unreachable would fabricate the very provenance it is meant to
+  // prove, so an unreachable API renders as unavailable instead.
+  const twin = twinData;
+  const detail = incidentDetail;
+  const audit = auditEvents ?? [];
+  const unavailable = !twinData || !incidentDetail;
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.05 }),
     [],
   );
+
+  if (unavailable || !detail || !twin) {
+    return (
+      <section className="container section">
+        <div className={s.pageHeader}>
+          <div>
+            <span className="eyebrow">Assure · Decision Provenance</span>
+            <h1>AI Trace</h1>
+          </div>
+        </div>
+        <ErrorState
+          error={new Error("Trace source unavailable")}
+          what="the evidence, twin and audit records this trace is built from"
+          onRetry={() => window.location.reload()}
+        />
+        <p style={{ marginTop: 16, color: "var(--muted)", fontSize: "0.875rem", maxWidth: "60ch" }}>
+          A trace is a claim about which evidence, model version and policy
+          decision produced an output. With the API unreachable none of that can
+          be read, so nothing is shown. No substitute content is displayed here
+          by design — a fabricated provenance chain would defeat the purpose of
+          this screen.
+        </p>
+      </section>
+    );
+  }
 
   const STEPS = [
     {

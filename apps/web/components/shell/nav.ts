@@ -15,27 +15,16 @@ export interface NavItem {
   group: "operate" | "assure" | "communicate";
 }
 
-/** Centre of the navbar. Five highest-value destinations, nothing more. */
+/**
+ * Centre of the navbar. Five destinations, no more: past five the bar stops
+ * being scannable and starts being a sitemap. Everything else is behind More.
+ */
 export const PRIMARY: NavItem[] = [
-  {
-    href: "/",
-    label: "Home",
-    blurb: "City operational overview, live GIS twin, and module launchpads.",
-    icon: "layers",
-    group: "operate",
-  },
   {
     href: "/command",
     label: "Command",
-    blurb: "Live incidents, twin and the evidence that supports them.",
+    blurb: "Live incidents, the city twin and the evidence that supports them.",
     icon: "activity",
-    group: "operate",
-  },
-  {
-    href: "/emergency",
-    label: "Emergency 112",
-    blurb: "Multi-signal accident corroboration & ERSS 112 CAD dispatch.",
-    icon: "shield",
     group: "operate",
   },
   {
@@ -48,16 +37,41 @@ export const PRIMARY: NavItem[] = [
   {
     href: "/trace",
     label: "Trace",
-    blurb: "Reconstruct any decision from evidence to effect.",
+    blurb: "Reconstruct any decision from claim to evidence to verified effect.",
     icon: "trace",
     group: "assure",
   },
   {
     href: "/data-health",
     label: "Data health",
-    blurb: "Connector freshness, quality and open conflicts.",
+    blurb: "Connector freshness, schema status and open conflicts.",
     icon: "source",
     group: "assure",
+  },
+  {
+    href: "/audit",
+    label: "Audit",
+    blurb: "Append-only, hash-chained record with chain verification.",
+    icon: "shield",
+    group: "assure",
+  },
+];
+
+/** Everything else, grouped, behind "More". */
+export const SECONDARY: NavItem[] = [
+  {
+    href: "/emergency",
+    label: "Emergency 112",
+    blurb: "Multi-signal accident corroboration and ERSS 112 dispatch.",
+    icon: "shield",
+    group: "operate",
+  },
+  {
+    href: "/field",
+    label: "Field",
+    blurb: "Offline-capable work orders for crews on the ground.",
+    icon: "map",
+    group: "operate",
   },
   {
     href: "/simulation",
@@ -66,21 +80,10 @@ export const PRIMARY: NavItem[] = [
     icon: "synthetic",
     group: "assure",
   },
-];
-
-/** Everything else, grouped, behind "More". */
-export const SECONDARY: NavItem[] = [
-  {
-    href: "/audit",
-    label: "Audit ledger",
-    blurb: "Append-only, hash-chained record with chain verification.",
-    icon: "shield",
-    group: "assure",
-  },
   {
     href: "/governance",
     label: "Governance",
-    blurb: "Policy bundles, agent authority and the kill switch.",
+    blurb: "Policy bundles, roles, connectors, tool manifests and the kill switch.",
     icon: "lock",
     group: "assure",
   },
@@ -98,13 +101,6 @@ export const SECONDARY: NavItem[] = [
     icon: "user",
     group: "communicate",
   },
-  {
-    href: "/field",
-    label: "Field",
-    blurb: "Offline-capable work orders for crews on the ground.",
-    icon: "map",
-    group: "operate",
-  },
 ];
 
 export const GROUP_LABEL: Record<NavItem["group"], string> = {
@@ -116,15 +112,15 @@ export const GROUP_LABEL: Record<NavItem["group"], string> = {
 export const ALL_NAV: NavItem[] = [...PRIMARY, ...SECONDARY];
 
 /**
- * Mobile bottom bar — exactly five, fixed.
- * "Incidents" is the command surface and "Twin" is the trace surface; there is
- * no separate route for either in the contract.
+ * Mobile bottom bar. Four destinations plus More, which raises the same
+ * full-screen sheet the desktop burger opens, so nothing is unreachable.
+ * Every target is at least 44x44px.
  */
 export const BOTTOM_NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Home", icon: "layers" },
-  { href: "/command", label: "Incidents", icon: "activity" },
-  { href: "/trace", label: "Twin", icon: "trace" },
+  { href: "/command", label: "Command", icon: "activity" },
   { href: "/actions", label: "Actions", icon: "action" },
+  { href: "/trace", label: "Trace", icon: "trace" },
 ];
 
 /** True when `pathname` is inside `href`. Used for aria-current. */

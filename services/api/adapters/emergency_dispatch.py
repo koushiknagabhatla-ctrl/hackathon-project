@@ -42,10 +42,49 @@ def create_emergency_dispatch_request(
     tenant_id: str = "ten_vijayawada",
 ) -> dict[str, Any]:
     """Create and submit a formal emergency dispatch request to ERSS 112 CAD gateway."""
+    from services.api.core import config
+
     dispatch_id = f"dsp_{uuid.uuid4().hex[:12]}"
     now = datetime.now(timezone.utc).isoformat()
     erss_api_url = os.environ.get("ERSS_112_GATEWAY_URL")
     erss_api_key = os.environ.get("ERSS_112_API_KEY")
+
+    # SIMULATION BARRIER. Incidents in a MOCK_MODE environment are fabricated.
+    # Sending one to a real ERSS 112 CAD gateway would dispatch a real ambulance
+    # or police unit to an event that never happened — irreversible, and a
+    # criminal-nuisance risk. A simulated identity must never reach production
+    # tooling, so the barrier is enforced here rather than trusted upstream.
+    if config.MOCK_MODE:
+        return {
+            "dispatch_id": dispatch_id,
+            "status": "blocked_simulation_barrier",
+            "transmitted": False,
+            "confirmed": False,
+            "created_at": now,
+            "service_type": service_type,
+            "reason": (
+                "Environment is running simulated data (MOCK_MODE=true). Outbound "
+                "emergency dispatch is blocked so fabricated incidents cannot "
+                "summon real responders."
+            ),
+        }
+
+    # Contacting emergency services is irreversible. It stays off unless
+    # someone deliberately turns it on, independently of having credentials.
+    if not config.ALLOW_OUTBOUND_NOTIFICATIONS:
+        return {
+            "dispatch_id": dispatch_id,
+            "status": "blocked_outbound_disabled",
+            "transmitted": False,
+            "confirmed": False,
+            "created_at": now,
+            "service_type": service_type,
+            "reason": (
+                "Outbound emergency dispatch is disabled. Set "
+                "ALLOW_OUTBOUND_NOTIFICATIONS=true to enable real transmission. "
+                "Escalated to manual operator dispatch."
+            ),
+        }
 
     payload = {
         "dispatch_id": dispatch_id,

@@ -26,6 +26,7 @@ downgraded to a "low confidence" claim.
 from __future__ import annotations
 
 import hashlib
+import os
 import json
 import time
 from collections.abc import Mapping, Sequence
@@ -80,6 +81,32 @@ class AgentSpec:
             "runtime_budget_s": self.runtime_budget_s,
             "tool_call_budget": self.tool_call_budget, "writes": self.writes,
         }
+
+
+def runtime_budget_for(spec_budget_s: float) -> float:
+    """The budget actually enforced, scaled to the backend in play.
+
+    The per-agent budgets assume a hosted model that answers in seconds. A
+    local CPU model legitimately needs minutes, and discarding a run that
+    FINISHED — throwing away good, grounded analysis — because it overran a
+    hosted-model budget is a bug, not a safety control.
+
+    The budget exists to stop a runaway loop, so it must stay finite and it
+    must still bound the local path. It is derived here rather than edited into
+    each AgentSpec so there is one rule, not four drifting copies.
+    """
+    override = os.environ.get("AURALIS_AGENT_RUNTIME_BUDGET_S", "").strip()
+    if override:
+        return float(override)
+
+    backends = os.environ.get("AURALIS_LLM_BACKEND", "local,anthropic,deterministic")
+    if "local" in [b.strip() for b in backends.split(",")]:
+        # Bound by the model's own wall-clock timeout, plus headroom for
+        # tokenisation and claim assembly around the generate() call.
+        local_timeout = float(os.environ.get("AURALIS_LOCAL_MODEL_TIMEOUT_S", "300"))
+        return max(spec_budget_s, local_timeout + 60.0)
+
+    return spec_budget_s
 
 
 # --------------------------------------------------------------- snapshot
@@ -348,11 +375,12 @@ class Agent:
         # preempt `_work`. Ceiling: a hung agent still blocks its caller.
         # Upgrade path: run `_work` in a thread with a join timeout if an
         # external tool ever makes the body genuinely unbounded.
-        if elapsed > self.spec.runtime_budget_s:
+        budget = runtime_budget_for(self.spec.runtime_budget_s)
+        if elapsed > budget:
             status = "budget_exceeded"
             drafts = []
             output = dict(output, budget_note=(
-                f"runtime {elapsed:.1f}s exceeded the {self.spec.runtime_budget_s}s "
+                f"runtime {elapsed:.1f}s exceeded the {budget}s "
                 f"budget; claims from this run were discarded"
             ))
 

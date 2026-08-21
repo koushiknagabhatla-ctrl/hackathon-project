@@ -6,3 +6,11 @@ pyproj>=3.6
 httpx>=0.27
 python-multipart>=0.0.9
 pytest>=8.3
+
+# Local fine-tuned backend (agents/local_model.py). Optional at runtime: with
+# these absent the gateway reports `local: local backend not installed` and
+# answers from the deterministic path. torch is NOT pinned here - install the
+# build that matches your hardware (CPU wheels for the reference deployment).
+transformers>=4.45
+peft>=0.20
+accelerate>=1.0

@@ -17,6 +17,22 @@ What this module owns:
   * per-workflow token and cost budget, persisted for cost-per-incident
   * one retry, then deterministic fallback - never an exception at the caller
   * full request/response logging into `agent_run`
+  * backend routing, and reporting WHICH backend actually answered
+
+BACKENDS, in the order `AURALIS_LLM_BACKEND` names them (default
+`local,anthropic,deterministic`):
+
+  local          the fine-tuned Andhra Pradesh adapter in `local_model.py`.
+                 No API key, no per-token cost, no data egress. Refuses to run
+                 outside its declared geographic envelope.
+  anthropic      the hosted path, used when ANTHROPIC_API_KEY is set.
+  deterministic  the agent's own template generator. Always available, always
+                 last, and the one the demo runs on.
+
+Each backend is tried in turn; the first that answers wins and the rest are
+skipped. Falling through is never silent: `GatewayResult.backend`,
+`model_version` and `reason` all say what happened, the same three values land
+in `agent_run`, and the API response carries them up.
 """
 
 from __future__ import annotations
@@ -39,6 +55,8 @@ import httpx
 
 from services.api.core import db
 
+from . import local_model
+
 log = logging.getLogger("auralis.llm")
 
 # ----------------------------------------------------------------- settings
@@ -46,6 +64,16 @@ API_URL = "https://api.anthropic.com/v1/messages"
 API_VERSION = "2023-06-01"
 MODEL_ID = os.environ.get("AURALIS_LLM_MODEL", "claude-sonnet-5")
 DETERMINISTIC_VERSION = "deterministic-template-1.0.0"
+DEFAULT_BACKENDS = ("local", "anthropic", "deterministic")
+
+
+def backends() -> tuple[str, ...]:
+    """Routing order. `deterministic` is always the terminal element, whatever
+    the operator configured - there is no configuration in which a request can
+    end with no answer at all."""
+    raw = os.environ.get("AURALIS_LLM_BACKEND", "").strip()
+    order = tuple(p.strip().lower() for p in raw.split(",") if p.strip()) or DEFAULT_BACKENDS
+    return order if order[-1] == "deterministic" else (*order, "deterministic")
 
 # claude-sonnet-5 list price, USD per million tokens. The $2/$10 introductory
 # rate runs to 2026-08-31; budgeting at list price never under-reserves.
@@ -111,6 +139,9 @@ class GatewayResult:
     reason: str = ""          # why the deterministic path was taken, if it was
     injection_flags: tuple[str, ...] = ()
     pii_redactions: int = 0
+    backend: str = "deterministic"   # which one ACTUALLY answered
+    in_envelope: bool = True         # was the request inside the model envelope
+    envelope_reason: str = ""        # and if not, why not
 
 
 # ------------------------------------------------------------- templates
@@ -283,7 +314,7 @@ def cache_key(template_name: str, prompt_version: str,
               variables: Any, schema: Mapping[str, Any]) -> str:
     canonical = json.dumps(
         {"t": template_name, "v": prompt_version, "m": MODEL_ID,
-         "vars": variables, "schema": schema},
+         "b": list(backends()), "vars": variables, "schema": schema},
         sort_keys=True, separators=(",", ":"), default=str,
     )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -322,15 +353,32 @@ def cost_report(workflow_id: str | None = None) -> dict[str, Any]:
     )
     if row is None:
         return {"llm_calls": 0, "llm_tokens": 0, "llm_cost_usd": 0.0,
-                "cost_per_incident_usd": 0.0, "degraded": False}
+                "cost_per_incident_usd": 0.0, "degraded": False,
+                "model_versions": [], "backends": []}
     incidents = max(1, int(row["incidents"]))
+    used = db.q(f"SELECT DISTINCT model_version FROM agent_run {where}", *args)
+    versions = sorted({str(r["model_version"]) for r in used})
     return {
         "llm_calls": int(row["calls"]),
         "llm_tokens": int(row["ti"]) + int(row["to_"]),
         "llm_cost_usd": round(float(row["c"]), 6),
         "cost_per_incident_usd": round(float(row["c"]) / incidents, 6),
         "degraded": bool(row["d"]),
+        # WHICH model actually answered. Never inferred from configuration -
+        # read back out of the rows the calls themselves wrote.
+        "model_versions": versions,
+        "backends": sorted({_backend_of(v) for v in versions}),
     }
+
+
+def _backend_of(model_version: str) -> str:
+    if model_version == DETERMINISTIC_VERSION:
+        return "deterministic"
+    if model_version == local_model.MODEL_VERSION:
+        return "local"
+    if model_version in ("", "n/a"):
+        return "none"
+    return "anthropic"
 
 
 # ------------------------------------------------------------------- call
@@ -374,42 +422,118 @@ def complete(
         reason = (f"budget_exceeded: workflow has spent {tokens_used} tokens / "
                   f"${usd_used:.4f} (limits {token_budget()} / "
                   f"${cost_budget_usd():.2f}) - refusing to call the model")
-    elif not os.environ.get("ANTHROPIC_API_KEY"):
-        reason = "no_api_key: deterministic path (this is a supported mode)"
 
     request: dict[str, Any] = {}
     response: dict[str, Any] = {}
+    in_envelope, envelope_reason = True, ""
     if not reason:
         version, system, user = render(template_name, safe_vars)
-        request = _build_request(system, user, schema, max_tokens)
-        try:
-            response = _post(request)
-            parsed, text, ti, to = _parse(response, schema)
-            result = GatewayResult(
-                text=text, parsed=parsed, tokens_in=ti, tokens_out=to,
-                cost_usd=price(ti, to), model_version=MODEL_ID,
-                prompt_version=version, degraded=False, cache_hit=False,
-                injection_flags=flags, pii_redactions=pii_hits,
-            )
+        skipped: list[str] = []
+        for name in backends():
+            if name == "deterministic":
+                break
+            try:
+                if name == "local":
+                    ok, why = local_model.available()
+                    if not ok:
+                        skipped.append(f"local: {why}")
+                        continue
+                    in_envelope, envelope_reason = local_model.check_envelope(safe_vars)
+                    local_model.record_envelope_decision(
+                        tenant_id=tenant_id, workflow_id=workflow_id,
+                        incident_id=incident_id, agent_id=agent_id,
+                        in_envelope=in_envelope, reason=envelope_reason,
+                    )
+                    if not in_envelope:
+                        # ABSTAIN. Outside the envelope the model does not get
+                        # to guess - the deterministic path answers instead.
+                        skipped.append(f"local: out_of_envelope: {envelope_reason}")
+                        continue
+                    result, request, response = _call_local(
+                        system, user, schema, version, flags, pii_hits)
+                elif name == "anthropic":
+                    if not os.environ.get("ANTHROPIC_API_KEY"):
+                        skipped.append(
+                            "no_api_key: anthropic backend skipped "
+                            "(this is a supported mode)")
+                        continue
+                    result, request, response = _call_anthropic(
+                        system, user, schema, max_tokens, version, flags, pii_hits)
+                else:
+                    skipped.append(f"{name}: unknown backend name")
+                    continue
+            except Exception as exc:  # noqa: BLE001 - degrading is the contract
+                skipped.append(f"{name}: {type(exc).__name__}: {exc}")
+                log.warning("llm backend %s failed for %s/%s: %s",
+                            name, agent_id, template_name, exc)
+                continue
             _CACHE[key] = result
             _log_run(tenant_id, workflow_id, agent_id, incident_id, template_name,
-                     prompt_version, MODEL_ID, snapshot_id, result, request, response)
+                     prompt_version, result.model_version, snapshot_id, result,
+                     request, response)
             return result
-        except Exception as exc:  # noqa: BLE001 - degrading is the contract
-            reason = f"{type(exc).__name__}: {exc}"
-            log.warning("llm call failed for %s/%s: %s", agent_id, template_name, reason)
+        reason = "; ".join(skipped) or (
+            "backend order is deterministic-only (this is a supported mode)")
 
     result = GatewayResult(
         text="", parsed=dict(fallback(safe_vars)), tokens_in=0, tokens_out=0,
         cost_usd=0.0, model_version=DETERMINISTIC_VERSION,
         prompt_version=prompt_version, degraded=True, cache_hit=False,
         reason=reason, injection_flags=flags, pii_redactions=pii_hits,
+        backend="deterministic", in_envelope=in_envelope,
+        envelope_reason=envelope_reason,
     )
     _CACHE[key] = result
     _log_run(tenant_id, workflow_id, agent_id, incident_id, template_name,
              prompt_version, DETERMINISTIC_VERSION, snapshot_id, result,
              request, response)
     return result
+
+
+def _call_anthropic(
+    system: str, user: str, schema: Mapping[str, Any], max_tokens: int,
+    version: str, flags: tuple[str, ...], pii_hits: int,
+) -> tuple[GatewayResult, dict[str, Any], dict[str, Any]]:
+    request = _build_request(system, user, schema, max_tokens)
+    response = _post(request)
+    parsed, text, ti, to = _parse(response, schema)
+    return GatewayResult(
+        text=text, parsed=parsed, tokens_in=ti, tokens_out=to,
+        cost_usd=price(ti, to), model_version=MODEL_ID, prompt_version=version,
+        degraded=False, cache_hit=False, injection_flags=flags,
+        pii_redactions=pii_hits, backend="anthropic",
+    ), request, response
+
+
+def _call_local(
+    system: str, user: str, schema: Mapping[str, Any], version: str,
+    flags: tuple[str, ...], pii_hits: int,
+) -> tuple[GatewayResult, dict[str, Any], dict[str, Any]]:
+    """The fine-tuned adapter, in-process, on CPU.
+
+    Tokens are counted and attributed exactly as on the hosted path; the cost
+    is genuinely zero, and that zero is a measured fact rather than a missing
+    number. Nothing leaves the process, so the PII redaction above is not the
+    only thing standing between municipal data and a third party - there is no
+    third party.
+    """
+    parsed, text, ti, to = local_model.complete_json(system, user, schema)
+    request = {
+        "backend": "local", "model": local_model.MODEL_VERSION,
+        "base_model": local_model.BASE_MODEL, "temperature": 0,
+        "max_new_tokens": local_model.max_new_tokens(),
+        "timeout_s": local_model.timeout_s(),
+        "envelope": local_model.envelope(),
+        "system": system, "messages": [{"role": "user", "content": user}],
+    }
+    response = {"text": text, "stop_reason": "end_turn",
+                "usage": {"input_tokens": ti, "output_tokens": to}}
+    return GatewayResult(
+        text=text, parsed=parsed, tokens_in=ti, tokens_out=to, cost_usd=0.0,
+        model_version=local_model.MODEL_VERSION, prompt_version=version,
+        degraded=False, cache_hit=False, injection_flags=flags,
+        pii_redactions=pii_hits, backend="local", in_envelope=True,
+    ), request, response
 
 
 def _build_request(system: str, user: str, schema: Mapping[str, Any],
@@ -494,6 +618,10 @@ def _log_run(
     output = {
         "status": status,
         "reason": result.reason,
+        "backend": result.backend,
+        "model_version": result.model_version,
+        "in_envelope": result.in_envelope,
+        "envelope_reason": result.envelope_reason,
         "injection_flags": list(result.injection_flags),
         "pii_redactions": result.pii_redactions,
         "request": dict(request),

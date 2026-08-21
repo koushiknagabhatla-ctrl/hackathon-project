@@ -14,71 +14,26 @@ import { RiskBadge } from "@/components/ui/RiskBadge";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
-import type { PolicyDecision } from "@/lib/types";
-import { POLICY_DECISIONS as FIXTURE_POLICIES } from "@/lib/fixtures";
+import type { PolicyDecision, ToolManifest } from "@/lib/types";
 import s from "../pages.module.css";
 
-const REGISTERED_TOOLS = [
-  {
-    id: "tool.pump.set_capacity",
-    version: "1.0.0",
-    risk_class: "R2",
-    description: "Adjust operational unit count at municipal stormwater pump stations.",
-    sandbox_ref: "sandbox.pump",
-    verification_method: "read-back after 60s",
-    reversible: true,
-    rollback_tool_id: "tool.pump.set_capacity",
-  },
-  {
-    id: "tool.gate.set_position",
-    version: "1.0.0",
-    risk_class: "R3",
-    description: "Actuate motorized floodgate vertical position percentage.",
-    sandbox_ref: "sandbox.gate",
-    verification_method: "read-back within 120s",
-    reversible: true,
-    rollback_tool_id: "tool.gate.set_position",
-  },
-  {
-    id: "tool.diversion.activate",
-    version: "1.0.0",
-    risk_class: "R3",
-    description: "Trigger digital road signs to divert traffic away from flooded corridors.",
-    sandbox_ref: "sandbox.diversion",
-    verification_method: "read-back within 60s",
-    reversible: true,
-    rollback_tool_id: "tool.diversion.deactivate",
-  },
-  {
-    id: "tool.public.siren",
-    version: "1.0.0",
-    risk_class: "R5",
-    description: "Activate civil emergency sounders across designated urban flood zones.",
-    sandbox_ref: "sandbox.siren",
-    verification_method: "citizen confirmation",
-    reversible: false,
-    rollback_tool_id: null,
-  },
-  {
-    id: "forecast.run",
-    version: "1.0.0",
-    risk_class: "R1",
-    description: "Execute deterministic hydraulic routing and stage prediction model.",
-    sandbox_ref: "sandbox.forecast",
-    verification_method: "deterministic replay",
-    reversible: true,
-    rollback_tool_id: null,
-  },
-];
 
 export default function GovernancePage() {
   const { data: decisionsData, loading } = useApi<PolicyDecision[]>("/v1/policies/decisions");
+  // The tool registry is server-side truth: manifests are signed, and which
+  // tools a principal may even SEE is itself a policy decision. Rendering a
+  // hardcoded list here would show tools that may not be registered, may be
+  // revoked, or may not be visible to this role.
+  const { data: toolsData, loading: toolsLoading } = useApi<ToolManifest[]>("/v1/tools");
   const toast = useToast();
   const [revoking, setRevoking] = useState(false);
   const [secondApprover, setSecondApprover] = useState("p_approver");
   const [revokeReason, setRevokeReason] = useState("Precautionary emergency freeze");
 
-  const decisions = decisionsData ?? FIXTURE_POLICIES;
+  // No silent substitution. If the API is unreachable we say so; we never
+  // quietly swap in demo data and let it read as the real policy log.
+  const decisions = decisionsData ?? [];
+  const tools = toolsData ?? [];
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
@@ -124,7 +79,7 @@ export default function GovernancePage() {
 
       <div className={`${s.kpiStrip} js-reveal`}>
         <MetricTile label="Active Policy Bundle" value="v3.0.7" />
-        <MetricTile label="Registered Tools" value={String(REGISTERED_TOOLS.length)} />
+        <MetricTile label="Registered Tools" value={String(tools.length)} />
         <MetricTile label="Evaluated Decisions" value={String(decisions.length)} />
         <MetricTile label="Prohibited Rules (R5)" value="Enforced" />
       </div>
@@ -199,7 +154,7 @@ export default function GovernancePage() {
       {/* Tool Manifest Registry */}
       <div className={`${s.card} js-reveal`} style={{ marginBottom: 24 }}>
         <div className={s.cardHeader}>
-          <h2>Governed Tool Registry ({REGISTERED_TOOLS.length})</h2>
+          <h2>Governed Tool Registry ({tools.length})</h2>
           <span className="label">Deterministic Gateway Sandbox Bindings</span>
         </div>
 
@@ -215,7 +170,22 @@ export default function GovernancePage() {
             </tr>
           </thead>
           <tbody>
-            {REGISTERED_TOOLS.map((t) => (
+            {toolsLoading && (
+              <tr>
+                <td colSpan={6}><Skeleton variant="text" lines={3} /></td>
+              </tr>
+            )}
+            {!toolsLoading && tools.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ padding: 20, color: "var(--muted)" }}>
+                  <strong style={{ color: "var(--text)" }}>Tool registry unavailable.</strong>
+                  {" "}Could not reach the gateway registry, so no manifests are
+                  shown. This is not a claim that zero tools are registered —
+                  it means the registry could not be read.
+                </td>
+              </tr>
+            )}
+            {tools.map((t) => (
               <tr key={t.id}>
                 <td>
                   <code className="mono" style={{ fontWeight: 600 }}>{t.id}</code>

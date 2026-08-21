@@ -30,5 +30,5 @@ export {
 export { Skeleton, type SkeletonProps, type SkeletonVariant } from "./Skeleton";
 export { StaleBadge, type StaleBadgeProps } from "./StaleBadge";
 export { SyntheticBanner, type SyntheticBannerProps } from "./SyntheticBanner";
-export { EmptyState, type EmptyStateProps } from "./EmptyState";
+export { EmptyState, NoData, type EmptyStateProps, type NoDataProps } from "./EmptyState";
 export { ErrorState, type ErrorStateProps } from "./ErrorState";

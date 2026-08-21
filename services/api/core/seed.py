@@ -20,10 +20,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-import uuid
+import os
 from datetime import datetime, timezone
 
-from services.api.core import audit, claims, db, ingest, policy, repo
+from services.api.core import audit, claims, config, db, ingest
 from services.api.models import EventIn
 
 
@@ -106,40 +106,75 @@ TOOLS = [
 ]
 
 
-def ensure_emergency_tables_seeded() -> None:
-    now = _now()
+def load_verified_contacts() -> dict[str, object]:
+    """Load emergency contacts from configuration. Never invents one.
+
+    NOTHING SEEDS A CONTACT OR A DEVICE. Earlier revisions inserted contacts
+    carrying invented phone numbers (+9198765432xx) attributed to the District
+    Disaster Management Officer and the Traffic Police Control Room, each
+    flagged `consent_verified = 1`, plus a device row with an invented FCM
+    token and GPS position. Three independent reasons that must never return:
+
+    1. Those are real-format Indian mobile numbers. They may belong to actual
+       people unconnected to this system. An outbound path firing against them
+       would contact a stranger while claiming to be disaster management.
+    2. `consent_verified = 1` on an invented record is a forged compliance
+       artifact. Consent is something a person gives; it is never a default.
+    3. An invented device position is fabricated personal data.
+
+    Expects AURALIS_EMERGENCY_CONTACTS as JSON:
+      [{"id","name","role","phone_e164","consent_reference"}]
+
+    `consent_reference` is mandatory and must point at the record proving this
+    person agreed to be contacted. No consent reference, no contact row. With
+    nothing configured the table stays empty and the UI reports that no
+    verified contact exists — which is the honest state, not a failure.
+    """
+    raw = os.environ.get("AURALIS_EMERGENCY_CONTACTS", "").strip()
+    if not raw:
+        return {"loaded": 0, "status": "no_verified_contacts_configured"}
+
+    try:
+        entries = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return {"loaded": 0, "status": "invalid_configuration", "detail": str(exc)}
+
+    loaded, rejected = 0, []
     with db.tx() as c:
-        for cid, name, trust, sla in CONNECTORS:
+        for e in entries:
+            if not e.get("consent_reference") or not e.get("phone_e164"):
+                rejected.append({"id": e.get("id"), "reason": "missing consent_reference or phone_e164"})
+                continue
             c.execute(
-                "INSERT OR IGNORE INTO connector(id,tenant_id,name,trust_tier,contract_version,freshness_sla_s,owner,quality_score) "
-                "VALUES(?,?,?,?,?,?,?,?)",
-                (cid, TENANT, name, trust, "1.0.0", sla, "Auralis Command", 1.0),
+                "INSERT OR IGNORE INTO emergency_contact"
+                "(id, tenant_id, name, role, phone_e164, consent_verified, active) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (e["id"], TENANT, e["name"], e.get("role", "contact"), e["phone_e164"], 1, 1),
             )
-        c.execute(
-            "INSERT OR IGNORE INTO emergency_contact(id, tenant_id, name, role, phone_e164, consent_verified, active) "
-            "VALUES(?,?,?,?,?,?,?)",
-            ("cnt_disaster_01", TENANT, "District Disaster Management Officer", "disaster_officer", "+919876543210", 1, 1),
-        )
-        c.execute(
-            "INSERT OR IGNORE INTO emergency_contact(id, tenant_id, name, role, phone_e164, consent_verified, active) "
-            "VALUES(?,?,?,?,?,?,?)",
-            ("cnt_traffic_01", TENANT, "Traffic Police Control Room", "traffic_police", "+919876543211", 1, 1),
-        )
-        c.execute(
-            "INSERT OR IGNORE INTO registered_device(id, tenant_id, user_id, fcm_token, device_type, last_lat, last_lon, opt_in_emergency, permissions_granted, registered_at, last_seen_at) "
-            "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-            ("dev_vja_001", TENANT, "p_operator", "fcm_token_vja_responder_01", "mobile_pwa", 16.5062, 80.6480, 1, 1, now, now),
-        )
+            loaded += 1
+    return {"loaded": loaded, "rejected": rejected, "status": "ok" if loaded else "none_valid"}
 
 
 def ensure_seeded() -> None:
-    """Seed the database with the live operational city model if empty."""
-    ensure_emergency_tables_seeded()
-    conn = db.get_conn()
-    row = conn.execute("SELECT COUNT(*) c FROM incident").fetchone()
-    if row and row["c"] > 0:
-        return  # already fully seeded with operational data
+    """Boot entry point.
 
+    Configuration always loads. Fabricated world data loads ONLY when
+    MOCK_MODE is explicitly enabled, and never silently.
+    """
+    seed_system()
+    load_verified_contacts()
+    if config.MOCK_MODE:
+        seed_simulation()
+
+
+def seed_system() -> None:
+    """Tenant, identities, connector registry, policy bundle, tool manifests,
+    model registry.
+
+    This is CONFIGURATION — how the platform is set up — not observation about
+    the world. Loading it asserts nothing about Vijayawada, so it is always
+    safe and always required.
+    """
     now = _now()
     with db.tx() as c:
         # tenant
@@ -165,8 +200,11 @@ def ensure_seeded() -> None:
                 (cid, TENANT, cname, tier, "2.1.0", sla, "data-eng", now),
             )
 
-        # assets
-        for aid, kind, name, lon, lat, crit, dept, state in ASSETS:
+        # Assets are WORLD DATA, not configuration. These coordinates were
+        # written by hand, not surveyed or sourced. On the real path the twin
+        # is populated from OpenStreetMap via connectors/osm_gis.py, which
+        # carries genuine provenance. Hand-written geometry is SIMULATION only.
+        for aid, kind, name, lon, lat, crit, dept, state in (ASSETS if config.MOCK_MODE else []):
             geom = json.dumps({"type": "Point", "coordinates": [lon, lat]})
             c.execute(
                 "INSERT OR IGNORE INTO asset(id,tenant_id,kind,name,geometry,criticality,"
@@ -176,8 +214,8 @@ def ensure_seeded() -> None:
                  json.dumps(state), "{}", "{}", 5.0),
             )
 
-        # dependencies
-        for dep, on, rel in DEPS:
+        # Dependency edges describe the real world too, so they follow assets.
+        for dep, on, rel in (DEPS if config.MOCK_MODE else []):
             c.execute(
                 "INSERT OR IGNORE INTO asset_dependency(dependent_id,depends_on_id,relation) "
                 "VALUES(?,?,?)",
@@ -228,7 +266,40 @@ def ensure_seeded() -> None:
                  now, "active"),
             )
 
-    # ------------------------------------------------ Ingest Live Events
+    # The fine-tuned local LLM registers itself with its declared envelope, so
+    # AI Trace can name the model behind a claim. Outside the transaction: it
+    # opens its own, and it no-ops when the adapter is not installed.
+    from services.api.agents import local_model
+
+    local_model.register()
+
+
+def seed_simulation() -> None:
+    """FABRICATED DEMONSTRATION DATA. Loads only when MOCK_MODE=true.
+
+    Everything below this line is invented: sensor readings, incidents,
+    forecasts, plans, actions and work orders. None of it is an observation of
+    Vijayawada or anywhere else.
+
+    It exists so the safety architecture — policy blocks, evidence conflicts,
+    verification, audit replay — can be exercised without waiting on real
+    weather. It is NOT a substitute for a real source, and the UI labels this
+    entire environment SIMULATION so no viewer can mistake it for fact.
+
+    The previous version of this code ran unconditionally at boot and labelled
+    its hardcoded readings "Ingest Live Events". That comment was wrong and it
+    is exactly the failure this split prevents.
+    """
+    config.require_mock_mode("demonstration city scenario")
+
+    conn = db.get_conn()
+    row = conn.execute("SELECT COUNT(*) c FROM incident").fetchone()
+    if row and row["c"] > 0:
+        return  # already loaded
+
+    now = _now()
+
+    # --------------------------------------- SIMULATED events (not observed)
     # 1. Gauge overtopping event (triggers incident detection)
     evt_gauge = EventIn(
         connector_id="conn_hydro_scada",
@@ -426,12 +497,17 @@ def ensure_seeded() -> None:
         c.execute(
             "INSERT OR IGNORE INTO emergency_contact(id, tenant_id, name, role, phone_e164, consent_verified, active) "
             "VALUES(?,?,?,?,?,?,?)",
-            ("cnt_disaster_01", TENANT, "District Disaster Management Officer", "disaster_officer", "+919876543210", 1, 1),
+            # Non-dialable sentinel, and consent_verified=0. A simulated contact
+            # must never carry a number that could reach a real person, and must
+            # never assert a consent that nobody gave.
+            ("cnt_disaster_01", TENANT, "[SIMULATED] District Disaster Management Officer",
+             "disaster_officer", "SIMULATED-NOT-DIALABLE-01", 0, 1),
         )
         c.execute(
             "INSERT OR IGNORE INTO emergency_contact(id, tenant_id, name, role, phone_e164, consent_verified, active) "
             "VALUES(?,?,?,?,?,?,?)",
-            ("cnt_traffic_01", TENANT, "Traffic Police Control Room", "traffic_police", "+919876543211", 1, 1),
+            ("cnt_traffic_01", TENANT, "[SIMULATED] Traffic Police Control Room",
+             "traffic_police", "SIMULATED-NOT-DIALABLE-02", 0, 1),
         )
         # Sample Consenting Registered Device (Benz Circle / MG Road corridor)
         c.execute(

@@ -255,61 +255,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --------------------------------------------------------------- metric tile */
-.metric {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.metricLabel {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.metricValue {
-  font-family: var(--font-num);
-  font-size: 1.45rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--text);
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.metricUnit {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-.metricDelta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.metricDeltaValue {
-  font-weight: 600;
-}
-
-.metricFoot {
-  font-size: 0.7rem;
-  color: var(--muted);
-}
-
 /* --------------------------------------------------------------- risk badge */
 .risk {
   --tone: var(--muted);
@@ -885,4 +830,35 @@
 }
 .staleFresh svg {
   color: var(--ok);
+}
+
+/* ------------------------------------------------------- no verified data
+   The correct rendering of an absent value. Never a zero, never a dash.
+   Reads as a deliberate statement, not as a broken cell. */
+.nodata {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.nodata svg {
+  flex: none;
+  opacity: 0.75;
+}
+.nodataSince {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  font-weight: 400;
 }

@@ -8,8 +8,52 @@
 
 import Link from "next/link";
 import { Icon, type IconName } from "./Icon";
-import { cx } from "@/lib/format";
+import { cx, stamp } from "@/lib/format";
 import s from "./ui.module.css";
+
+export interface NoDataProps {
+  /** Why the value is absent. Defaults to "not verified". */
+  reason?: "unverified" | "unavailable" | "stale" | "never";
+  /** Last time this value WAS verified, if it ever was. */
+  lastVerifiedAt?: string | null;
+  className?: string;
+}
+
+const NO_DATA_COPY: Record<NonNullable<NoDataProps["reason"]>, string> = {
+  unverified: "No verified data",
+  unavailable: "Source unavailable",
+  stale: "Stale, not current",
+  never: "Never reported",
+};
+
+/**
+ * NoData — the correct rendering of an absent value, anywhere one would sit.
+ *
+ * A missing reading is NEVER a zero, a dash or a plausible number. This reads
+ * as a deliberate statement so it can never be mistaken for a measurement, and
+ * carries the last verified time when one exists.
+ *
+ *   <NoData />
+ *   <NoData reason="unavailable" lastVerifiedAt={conn.last_seen_at} />
+ */
+export function NoData({ reason = "unverified", lastVerifiedAt, className }: NoDataProps) {
+  const label = NO_DATA_COPY[reason];
+  return (
+    <span className={cx(s.nodata, className)} role="note">
+      <Icon name={reason === "stale" ? "clock" : "offline"} size={12} />
+      {label}
+      {lastVerifiedAt && (
+        <span className={s.nodataSince}>· last verified {stamp(lastVerifiedAt)}</span>
+      )}
+      <span className="sr-only">
+        {label}.
+        {lastVerifiedAt
+          ? ` The last verified value was recorded at ${stamp(lastVerifiedAt)}.`
+          : " This value has never been verified from a configured source."}
+      </span>
+    </span>
+  );
+}
 
 export interface EmptyStateProps {
   title: string;

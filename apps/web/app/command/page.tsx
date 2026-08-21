@@ -6,13 +6,31 @@ import type { Layer } from "@deck.gl/core";
 import { CityMap } from "@/components/map/CityMap";
 import { IncidentCard } from "@/components/ui/IncidentCard";
 import { MetricTile } from "@/components/ui/MetricTile";
+import { EmptyState, NoData } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { useShell } from "@/components/shell/ShellState";
 import { useApi } from "@/lib/api";
 import { useGsap, sectionReveal } from "@/lib/motion";
-import { CITY } from "@/lib/fixtures";
-import type { OpsMetrics } from "@/lib/types";
+import type { IncidentState, Json, OpsMetrics } from "@/lib/types";
+
+interface TwinAsset {
+  id: string;
+  name?: string;
+  kind?: string;
+  current_state?: Json;
+}
 import s from "../pages.module.css";
+
+/** The incident lifecycle from the contract, in order. Counts are real. */
+const WORKFLOW: { state: IncidentState; label: string }[] = [
+  { state: "detected", label: "Detected" },
+  { state: "assessing", label: "Assessing" },
+  { state: "planning", label: "Planning" },
+  { state: "awaiting_approval", label: "Awaiting approval" },
+  { state: "acting", label: "Acting" },
+  { state: "verifying", label: "Verifying" },
+  { state: "closed", label: "Closed" },
+];
 
 const SEVERITY_TINT: Record<string, [number, number, number, number]> = {
   critical: [220, 38, 38, 220],
@@ -24,6 +42,7 @@ const SEVERITY_TINT: Record<string, [number, number, number, number]> = {
 export default function CommandCenter() {
   const { incidents, location } = useShell();
   const { data: ops } = useApi<OpsMetrics>("/v1/metrics/ops");
+  const { data: assets } = useApi<TwinAsset[]>("/v1/twin/assets");
   const [layers, setLayers] = useState<Layer[]>([]);
   const ref = useGsap<HTMLElement>((_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }), []);
 
@@ -84,11 +103,11 @@ export default function CommandCenter() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link href="/emergency" className="btn btn-sm btn-critical" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <Link href="/emergency" className="btn btn--sm" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <Icon name="shield" size={15} />
             <span>Emergency 112 CAD</span>
           </Link>
-          <Link href="/actions" className="btn btn-sm btn-secondary" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <Link href="/actions" className="btn btn--sm btn--primary" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <Icon name="action" size={15} />
             <span>Action Queue</span>
           </Link>
@@ -98,11 +117,37 @@ export default function CommandCenter() {
       <div className={`${s.kpiStrip} js-reveal`} style={{ marginBottom: "1rem" }}>
         <MetricTile label="Active Incidents" value={String(open.length)} />
         <MetricTile label="Critical" value={String(criticals.length)} />
-        <MetricTile label="Time to Detect" value={ops?.time_to_detect_s ? `${ops.time_to_detect_s}s` : "14s"} />
-        <MetricTile label="Policy Blocks (24h)" value={String(ops?.policy_blocks_24h ?? 0)} />
-        <MetricTile label="CAD Zone" value={location.cad_zone} />
-        <MetricTile label="LLM Cost (24h)" value={ops?.llm_cost_usd !== undefined ? `$${ops.llm_cost_usd.toFixed(2)}` : "$0.12"} />
+        <MetricTile
+          label="Time to detect"
+          value={ops?.time_to_detect_s ?? null}
+          unit="s"
+          decimals={1}
+          lowerIsBetter
+        />
+        <MetricTile label="Policy blocks, 24h" value={ops?.policy_blocks_24h ?? null} />
+        <MetricTile label="CAD zone" value={location.cad_zone} />
+        <MetricTile
+          label="LLM cost, 24h"
+          value={ops?.llm_cost_usd ?? null}
+          unit="USD"
+          decimals={2}
+        />
       </div>
+
+      <nav
+        className={`${s.workflow} js-reveal`}
+        aria-label="Incident workflow"
+      >
+        {WORKFLOW.map((stage) => {
+          const n = incidents.filter((i) => i.state === stage.state).length;
+          return (
+            <div key={stage.state} className={s.workflowStage} data-live={n > 0}>
+              <span className={s.workflowCount}>{n}</span>
+              <span className={s.workflowLabel}>{stage.label}</span>
+            </div>
+          );
+        })}
+      </nav>
 
       <div className={`${s.splitView} js-reveal`} style={{ gridTemplateColumns: "1.7fr 1fr", gap: "1rem" }}>
         <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden" }}>
@@ -131,33 +176,63 @@ export default function CommandCenter() {
             {open.length === 0 && <p className={s.empty} style={{ padding: "1rem" }}>No open incidents.</p>}
             <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
               {open.map((inc) => (
-                <IncidentCard key={inc.id} incident={inc} href={`/command/${inc.id}`} />
+                <IncidentCard key={inc.id} incident={inc} href={`/incidents/${inc.id}`} />
               ))}
             </div>
           </div>
 
           <div className={s.card} style={{ padding: "0.9rem" }}>
             <h2 className={s.sectionTitle} style={{ margin: "0 0 0.65rem 0", fontSize: "0.8rem" }}>
-              Critical Infrastructure Status
+              Critical infrastructure
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.78rem" }}>
-              <div style={{ padding: "6px 8px", background: "rgba(0,0,0,0.02)", borderRadius: "6px", border: "1px solid var(--line)" }}>
-                <div style={{ fontWeight: 600 }}>Gate BD-04</div>
-                <div style={{ color: "#16a34a" }}>● Nominal (2.8m flow)</div>
-              </div>
-              <div style={{ padding: "6px 8px", background: "rgba(0,0,0,0.02)", borderRadius: "6px", border: "1px solid var(--line)" }}>
-                <div style={{ fontWeight: 600 }}>Pump House P-12</div>
-                <div style={{ color: "#16a34a" }}>● 4/4 Units Online</div>
-              </div>
-              <div style={{ padding: "6px 8px", background: "rgba(0,0,0,0.02)", borderRadius: "6px", border: "1px solid var(--line)" }}>
-                <div style={{ fontWeight: 600 }}>Substation PK-3</div>
-                <div style={{ color: "#16a34a" }}>● 33kV Operational</div>
-              </div>
-              <div style={{ padding: "6px 8px", background: "rgba(0,0,0,0.02)", borderRadius: "6px", border: "1px solid var(--line)" }}>
-                <div style={{ fontWeight: 600 }}>ERSS 112 CAD</div>
-                <div style={{ color: "#16a34a" }}>● Standby / Active</div>
-              </div>
-            </div>
+            {assets && assets.length > 0 ? (
+              <ul style={{ display: "grid", gap: "0.5rem" }}>
+                {assets.slice(0, 8).map((a) => {
+                  const state = (a.current_state ?? {}) as Record<string, unknown>;
+                  const keys = Object.keys(state);
+                  return (
+                    <li
+                      key={String(a.id)}
+                      style={{
+                        padding: "10px 12px",
+                        background: "var(--bg)",
+                        borderRadius: "var(--r-control)",
+                        border: "1px solid var(--line)",
+                        display: "grid",
+                        gap: 4,
+                      }}
+                    >
+                      <strong style={{ fontSize: "0.8125rem" }}>
+                        {String(a.name ?? a.id)}
+                      </strong>
+                      {keys.length > 0 ? (
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--muted)",
+                            fontFamily: "var(--font-num)",
+                          }}
+                        >
+                          {keys
+                            .slice(0, 3)
+                            .map((k) => `${k.replace(/_/g, " ")} ${String(state[k])}`)
+                            .join(" · ")}
+                        </span>
+                      ) : (
+                        <NoData reason="unverified" />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState
+                inline
+                icon="offline"
+                title="No asset state on the record"
+                body="The twin returned no current state for any asset. Nothing is shown in its place: a nominal reading that nobody reported would be worse than a blank."
+              />
+            )}
           </div>
         </div>
       </div>

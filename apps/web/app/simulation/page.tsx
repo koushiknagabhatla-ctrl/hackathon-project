@@ -10,45 +10,23 @@ import { useState } from "react";
 import { useApi, api } from "@/lib/api";
 import { useGsap, sectionReveal } from "@/lib/motion";
 import { SyntheticBanner } from "@/components/ui/SyntheticBanner";
-import { MetricTile } from "@/components/ui/MetricTile";
 import { RiskBadge } from "@/components/ui/RiskBadge";
+import { EmptyState, NoData } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { useToast } from "@/components/ui/Toast";
-import type { SimulationRequest, SimulationResult } from "@/lib/types";
+import { num } from "@/lib/format";
+import type { RiskTier, SimulationRequest, SimulationResult } from "@/lib/types";
+
+const TIERS: RiskTier[] = ["R0", "R1", "R2", "R3", "R4", "R5"];
+const isTier = (v: unknown): v is RiskTier =>
+  typeof v === "string" && (TIERS as string[]).includes(v);
 import s from "../pages.module.css";
 
-const DEFAULT_SIM: SimulationResult = {
-  id: "sim_budameru_extreme_42",
-  scenario: "flood",
-  seed: 42,
-  overrides: { rain_mm_hr: 110 },
-  trust_domain: "sim",
-  evidence_class: "synthetic",
-  results_hash: "sha256:8f4c2e19d7a220b3e5b61a9c402179836efd7a9b01",
-  baseline: {
-    peak_forecast_m: 5.7,
-    premises_at_risk: 1240,
-    risk_tier: "R3",
-  },
-  counterfactual: {
-    peak_forecast_m: 6.85,
-    premises_at_risk: 2850,
-    risk_tier: "R4",
-  },
-  deltas: [{ metric: "peak_stage_delta_m", value: 1.15 }],
-  policy_changes: [
-    {
-      impact: "Gate BD-04 Discharge Authorization",
-      baseline: "R3 — Duty Officer approval",
-      counterfactual: "R4 — Dual District Magistrate & Chief Engineer authorization required",
-    },
-    {
-      impact: "Downstream Evacuation Alert SLA",
-      baseline: "Advisory monitoring",
-      counterfactual: "Mandatory 1.2km radius citizen warning broadcast (FCM & SMS)",
-    },
-  ],
-};
+/** Reads one number out of a simulator payload without inventing one. */
+function simNum(bag: Record<string, unknown> | undefined, key: string): number | null {
+  const v = bag?.[key];
+  return typeof v === "number" ? v : null;
+}
 
 export default function SimulationPage() {
   const toast = useToast();
@@ -56,7 +34,7 @@ export default function SimulationPage() {
   const [seed, setSeed] = useState<number>(42);
   const [rainOverride, setRainOverride] = useState<number>(110);
   const [running, setRunning] = useState<boolean>(false);
-  const [simResult, setSimResult] = useState<SimulationResult | null>(DEFAULT_SIM);
+  const [simResult, setSimResult] = useState<SimulationResult | null>(null);
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
@@ -69,10 +47,7 @@ export default function SimulationPage() {
       const payload: SimulationRequest = {
         scenario,
         seed,
-        overrides: {
-          rain_mm_hr: rainOverride,
-          water_level_m: 4.82,
-        },
+        overrides: { rain_mm_hr: rainOverride },
       };
       const res = await api.post<SimulationResult>("/v1/simulations", payload);
       setSimResult(res);
@@ -161,13 +136,23 @@ export default function SimulationPage() {
         </div>
       </div>
 
+      {!simResult && !running && (
+        <div className="js-reveal">
+          <EmptyState
+            icon="synthetic"
+            title="No simulation has been run"
+            body="Nothing is shown here until you run one. A pre-filled comparison would be invented numbers wearing the shape of a result, which is the one thing this platform will not do."
+          />
+        </div>
+      )}
+
       {/* Simulation Results Comparison */}
       {simResult && (
         <div className={`${s.card} js-reveal`}>
           <div className={s.cardHeader}>
             <h2>Baseline vs Counterfactual Comparison</h2>
             <span className="mono" style={{ fontSize: "0.75rem" }}>
-              Hash: {simResult.results_hash}
+              {simResult.results_hash ? `Hash: ${simResult.results_hash}` : "Run not hashed"}
             </span>
           </div>
 
@@ -178,18 +163,34 @@ export default function SimulationPage() {
               <h3 style={{ fontSize: "1.25rem", margin: "8px 0 16px" }}>Standard Forecast (68mm rain)</h3>
               <div className={s.kpiStrip}>
                 <div className={s.stat}>
-                  <span className={s.statValue}>{String((simResult.baseline as Record<string, unknown>).peak_forecast_m ?? "5.7")}m</span>
-                  <span className={s.statLabel}>Peak Stage</span>
+                  <span className={s.statValue}>
+                    {simNum(simResult.baseline, "peak_forecast_m") !== null ? (
+                      `${simNum(simResult.baseline, "peak_forecast_m")}m`
+                    ) : (
+                      <NoData reason="unverified" />
+                    )}
+                  </span>
+                  <span className={s.statLabel}>Peak stage</span>
                 </div>
                 <div className={s.stat}>
-                  <span className={s.statValue}>{String((simResult.baseline as Record<string, unknown>).premises_at_risk ?? "1,240")}</span>
-                  <span className={s.statLabel}>Premises at Risk</span>
+                  <span className={s.statValue}>
+                    {simNum(simResult.baseline, "premises_at_risk") !== null ? (
+                      num(simNum(simResult.baseline, "premises_at_risk") as number)
+                    ) : (
+                      <NoData reason="unverified" />
+                    )}
+                  </span>
+                  <span className={s.statLabel}>Premises at risk</span>
                 </div>
               </div>
               <div style={{ marginTop: 12 }}>
                 <span className="label">Computed Policy Tier</span>
                 <div style={{ marginTop: 6 }}>
-                  <RiskBadge tier={((simResult.baseline as Record<string, unknown>).risk_tier as any) ?? "R3"} />
+                  {isTier(simResult.baseline.risk_tier) ? (
+                    <RiskBadge tier={simResult.baseline.risk_tier} />
+                  ) : (
+                    <NoData reason="unverified" />
+                  )}
                 </div>
               </div>
             </div>
@@ -200,22 +201,37 @@ export default function SimulationPage() {
               <h3 style={{ fontSize: "1.25rem", margin: "8px 0 16px" }}>Overridden Scenario ({rainOverride}mm rain)</h3>
               <div className={s.kpiStrip}>
                 <div className={s.stat}>
-                  <span className={s.statValue} style={{ color: "var(--accent)" }}>
-                    {String((simResult.counterfactual as Record<string, unknown>).peak_forecast_m ?? "6.85")}m
+                  <span className={s.statValue} style={{ color: "var(--accent-ink)" }}>
+                    {simNum(simResult.counterfactual, "peak_forecast_m") !== null ? (
+                      `${simNum(simResult.counterfactual, "peak_forecast_m")}m`
+                    ) : (
+                      <NoData reason="unverified" />
+                    )}
                   </span>
-                  <span className={s.statLabel}>Peak Stage</span>
+                  <span className={s.statLabel}>Peak stage</span>
                 </div>
                 <div className={s.stat}>
-                  <span className={s.statValue} style={{ color: "var(--accent)" }}>
-                    {String((simResult.counterfactual as Record<string, unknown>).premises_at_risk ?? "2,850")}
+                  <span className={s.statValue} style={{ color: "var(--accent-ink)" }}>
+                    {simNum(simResult.counterfactual, "premises_at_risk") !== null ? (
+                      num(simNum(simResult.counterfactual, "premises_at_risk") as number)
+                    ) : (
+                      <NoData reason="unverified" />
+                    )}
                   </span>
-                  <span className={s.statLabel}>Premises at Risk</span>
+                  <span className={s.statLabel}>Premises at risk</span>
                 </div>
               </div>
               <div style={{ marginTop: 12 }}>
                 <span className="label">Elevated Policy Tier</span>
                 <div style={{ marginTop: 6 }}>
-                  <RiskBadge tier={((simResult.counterfactual as Record<string, unknown>).risk_tier as any) ?? "R4"} reason="Elevated downstream blast radius" />
+                  {isTier(simResult.counterfactual.risk_tier) ? (
+                    <RiskBadge
+                      tier={simResult.counterfactual.risk_tier}
+                      reason="Recomputed against the counterfactual blast radius"
+                    />
+                  ) : (
+                    <NoData reason="unverified" />
+                  )}
                 </div>
               </div>
             </div>

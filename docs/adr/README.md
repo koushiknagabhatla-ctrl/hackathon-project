@@ -35,6 +35,7 @@ Status vocabulary used here:
 | [0018](0018-edge-autonomy-ceiling-r2-when-islanded.md) | Edge autonomy ceiling of R2 when islanded | Design only — not built | contracted offline field operation, or >5 outage-prone sites |
 | [0019](0019-federation-by-policy-sovereignty-by-construction.md) | Federation by policy, sovereignty by construction | Design; single-tenant here | **the second tenant** |
 | [0020](0020-exit-drill-as-an-acceptance-gate.md) | Exit drill as an acceptance gate | Accepted (partly manual) | before any pilot agreement; on every schema change touching audit payloads |
+| [0022](0022-local-fine-tuned-model-for-andhra-pradesh.md) | Local fine-tuned model for Andhra Pradesh, behind the same gateway | Implemented (evaluation harness outstanding) | evaluation harness now due per 0011; batching/GPU at >1 concurrent assessment |
 
 ## The three that carry the most weight
 

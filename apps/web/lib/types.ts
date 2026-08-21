@@ -370,3 +370,22 @@ export interface StreamEvent<T = unknown> {
   data: T;
   received_at: string;
 }
+
+/** Server-side tool registry entry, from GET /v1/tools.
+ *  Manifest visibility is itself a policy decision: this list contains only
+ *  the tools the calling principal's role is permitted to see. */
+export interface ToolManifest {
+  id: string;
+  version: string;
+  description: string;
+  risk_class: string;
+  action_class: string;
+  sandbox_ref: string;
+  verification_method: string;
+  rollback_tool_id: string | null;
+  reversible: boolean;
+  write: boolean;
+  public_facing: boolean;
+  trust_domain: string;
+  prohibited: boolean;
+}

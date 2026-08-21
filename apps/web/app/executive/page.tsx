@@ -12,17 +12,43 @@ import { MetricTile } from "@/components/ui/MetricTile";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { OpsMetrics } from "@/lib/types";
-import { OPS as FIXTURE_OPS, CITY } from "@/lib/fixtures";
+import { CITY } from "@/lib/fixtures";
+import { ErrorState } from "@/components/ui/ErrorState";
 import s from "../pages.module.css";
 
 export default function ExecutiveDashboard() {
   const { data: opsData, loading } = useApi<OpsMetrics>("/v1/metrics/ops");
-  const ops = opsData ?? FIXTURE_OPS;
+  // NO SILENT SUBSTITUTION. Executive KPIs drive real decisions and get quoted
+  // upward. Showing demo numbers when the API is down would put fabricated
+  // figures in front of the person least able to spot them.
+  const ops = opsData;
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
     [],
   );
+
+  if (!ops) {
+    return (
+      <section className="container section">
+        <div className={s.pageHeader}>
+          <div>
+            <span className="eyebrow">Executive · Outcome KPIs</span>
+            <h1>Executive Overview</h1>
+          </div>
+        </div>
+        <ErrorState
+          error={new Error("Metrics source unavailable")}
+          what="operational KPIs"
+          onRetry={() => window.location.reload()}
+        />
+        <p style={{ marginTop: 16, color: "var(--muted)", fontSize: "0.875rem", maxWidth: "60ch" }}>
+          No figures are shown because none could be read. These KPIs are
+          reported upward and must never be estimated or substituted.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="container section" ref={ref}>
@@ -47,13 +73,17 @@ export default function ExecutiveDashboard() {
           label="Unauthorized Action Rate"
           value={`${(ops.unauthorized_action_rate * 100).toFixed(1)}%`}
         />
+        {/* A null metric means not enough measured workflows yet. It renders as
+            "not yet measured", never as an invented number. */}
         <MetricTile
           label="Avg Detection Velocity"
-          value={ops.time_to_detect_s ? `${ops.time_to_detect_s}s` : "42s"}
+          value={ops.time_to_detect_s != null ? `${ops.time_to_detect_s}s` : "—"}
+          foot={ops.time_to_detect_s != null ? undefined : "not yet measured"}
         />
         <MetricTile
           label="Avg Plan Compilation"
-          value={ops.time_to_plan_s ? `${ops.time_to_plan_s}s` : "186s"}
+          value={ops.time_to_plan_s != null ? `${ops.time_to_plan_s}s` : "—"}
+          foot={ops.time_to_plan_s != null ? undefined : "not yet measured"}
         />
         <MetricTile
           label="Tool Success Rate"
@@ -95,9 +125,9 @@ export default function ExecutiveDashboard() {
                 </td>
               </tr>
               <tr>
-                <td>Deterministic Fallback Rate</td>
-                <td style={{ textAlign: "right", fontFamily: "var(--font-num)", color: "#2e7d32" }}>
-                  0.0% (Primary Online)
+                <td>AI Path</td>
+                <td style={{ textAlign: "right", fontFamily: "var(--font-num)" }}>
+                  {ops.degraded ? "Deterministic fallback active" : "Model path online"}
                 </td>
               </tr>
             </tbody>
@@ -135,15 +165,31 @@ export default function ExecutiveDashboard() {
           <h2>Key Operational Accomplishments (Last 24 Hours)</h2>
           <span className="label">Budameru Rivulet Event Response</span>
         </div>
+        {/* Only statements derived from the metrics actually returned. The
+            previous version hardcoded specific figures — a 4.82m river stage,
+            1,240 premises, "100% of claims" — as accomplishments that had
+            supposedly happened. Narrative prose asserting measurements the
+            system never took is fabrication with a confident voice, which is
+            the most dangerous kind on an executive surface. */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: "0.875rem" }}>
           <div style={{ padding: 12, background: "rgba(0,0,0,0.015)", borderRadius: "var(--r-control)" }}>
-            <strong>Rapid Pump Escalation:</strong> Automated detection of the 4.82m stage prompted Ajit Singh Nagar Pump Station unit expansion to 4 units within 3 minutes of statutory gauge ingestion.
+            <strong>Grounding:</strong>{" "}
+            {ops.unsupported_claim_rate === 0
+              ? `No unsupported claims were recorded across ${ops.llm_calls} model invocations. Every claim rendered to an operator carried at least one verified evidence reference.`
+              : `${(ops.unsupported_claim_rate * 100).toFixed(1)}% of claims lacked a valid evidence link and were withheld from operator surfaces.`}
           </div>
           <div style={{ padding: 12, background: "rgba(0,0,0,0.015)", borderRadius: "var(--r-control)" }}>
-            <strong>Downstream Inundation Prevention:</strong> Digital twin topological blast radius accurately flagged 1,240 downstream premises, preventing uncoordinated gate operations.
+            <strong>Bounded autonomy:</strong>{" "}
+            {ops.policy_blocks_24h > 0
+              ? `${ops.policy_blocks_24h} proposed action${ops.policy_blocks_24h === 1 ? " was" : "s were"} refused by the deterministic policy engine before reaching a tool.`
+              : "No proposed action required policy refusal in this period."}
+            {" "}Unauthorized-action rate: {(ops.unauthorized_action_rate * 100).toFixed(1)}%.
           </div>
           <div style={{ padding: 12, background: "rgba(0,0,0,0.015)", borderRadius: "var(--r-control)" }}>
-            <strong>Hallucination Immunity:</strong> 100% of claims rendered on operator screens were mathematically bound to verified sensor observations.
+            <strong>Reconstructability:</strong>{" "}
+            {ops.audit_events > 0
+              ? `${ops.audit_events.toLocaleString()} hash-chained audit records were written, each linked to its predecessor.`
+              : "No audit records have been written in this period."}
           </div>
         </div>
       </div>

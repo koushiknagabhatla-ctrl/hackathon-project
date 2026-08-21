@@ -1,10 +1,23 @@
-"""Live real-time telemetry streaming script.
+"""SIMULATED telemetry streaming script — DEMONSTRATION ONLY.
 
-Continuously generates and POSTs real-time SCADA telemetry, rainfall rates,
-and pump status readings into the live Auralis ingestion gateway at http://localhost:8000/v1/events.
+AUDIT NOTE (2026-08-21). This script's docstring used to call its output
+"real-time SCADA telemetry". It is not. Every number below comes from
+`random.uniform`, and it POSTs them to /v1/events under `conn_hydro_scada`
+(trust tier `certified`), where they are minted as `observation` evidence and
+become indistinguishable from a real gauge reading. That is precisely the
+failure this project exists to prevent, and it ran with no guard at all.
+
+It now refuses to start unless MOCK_MODE is on — the same gate every other
+simulated-data path in the system passes through (`services/api/core/config.py`).
+With MOCK_MODE on, the whole environment is labelled SIMULATION in the UI, so
+the fabricated readings this produces are visibly fabricated.
+
+For REAL data, run `python scripts/poll_connectors.py` instead: it refreshes the
+live connectors (Open-Meteo, GloFAS, OpenAQ, USGS, Overpass) and ingests what
+they actually returned.
 
 Usage:
-    python scripts/stream_realtime_events.py [--interval 3.0]
+    MOCK_MODE=true python scripts/stream_realtime_events.py [--interval 3.0]
 """
 
 from __future__ import annotations
@@ -12,9 +25,15 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 import time
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from services.api.core import config  # noqa: E402
 
 BASE_URL = "http://127.0.0.1:8000/v1/events"
 HEADERS = {
@@ -45,7 +64,13 @@ def main():
     parser.add_argument("--interval", type=float, default=4.0, help="Seconds between telemetry beats")
     args = parser.parse_args()
 
-    print(f"[*] Starting live real-time telemetry streaming (cadence: {args.interval}s)...")
+    # THE GATE. Raises FabricationError when MOCK_MODE is off. Every value this
+    # script emits is invented, so it may only run in an environment that is
+    # labelled SIMULATION end to end.
+    config.require_mock_mode("randomly generated SCADA / rainfall / pump telemetry")
+
+    print("[!] SIMULATION — every reading below is randomly generated, not observed.")
+    print(f"[*] Starting SIMULATED telemetry streaming (cadence: {args.interval}s)...")
     print(f"[*] Ingestion Target: {BASE_URL}")
 
     base_stage = 4.82
@@ -83,7 +108,7 @@ def main():
                     {"asset_id": "ast_pump_p12", "units_running": 3 if base_stage > 5.0 else 2, "units_total": 4},
                     [80.6338, 16.5261],
                 )
-                print(f"         Pump Station Telemetry -> Pump P-12 verified online.")
+                print(f"         Pump Station Telemetry -> Pump P-12 (SIMULATED, not observed).")
 
             beat += 1
             time.sleep(args.interval)

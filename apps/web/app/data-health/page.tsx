@@ -12,17 +12,26 @@ import { MetricTile } from "@/components/ui/MetricTile";
 import { Icon } from "@/components/ui/Icon";
 import { StaleBadge } from "@/components/ui/StaleBadge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState, NoData } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { formatAge } from "@/lib/format";
 import type { ConnectorHealth, EvidenceConflict } from "@/lib/types";
-import { CONNECTORS as FIXTURE_CONNECTORS, CONFLICTS as FIXTURE_CONFLICTS } from "@/lib/fixtures";
 import s from "../pages.module.css";
 
 export default function DataHealth() {
-  const { data: connectorsData, loading } = useApi<ConnectorHealth[]>("/v1/data-health");
+  const {
+    data: connectorsData,
+    loading,
+    error,
+    correlationId,
+    reload,
+  } = useApi<ConnectorHealth[]>("/v1/data-health");
   const { data: conflictsData } = useApi<EvidenceConflict[]>("/v1/conflicts");
 
-  const connectors = connectorsData ?? FIXTURE_CONNECTORS;
-  const conflicts = conflictsData ?? FIXTURE_CONFLICTS;
+  // No fallback list. A source register that quietly shows bundled data would
+  // be lying about the exact thing this page exists to report on.
+  const connectors = connectorsData ?? [];
+  const conflicts = conflictsData ?? [];
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
@@ -43,17 +52,53 @@ export default function DataHealth() {
         </div>
       </div>
 
+      {error && (
+        <div className="js-reveal" style={{ marginBottom: 24 }}>
+          <ErrorState
+            error={error}
+            onRetry={reload}
+            correlationId={correlationId}
+            what="the source register"
+          />
+        </div>
+      )}
+
       <div className={`${s.kpiStrip} js-reveal`}>
-        <MetricTile label="Active Connectors" value={String(connectors.length)} />
-        <MetricTile label="Fresh / In SLA" value={`${freshCount}/${connectors.length}`} />
-        <MetricTile label="24h Ingested Events" value={total24hEvents.toLocaleString()} />
-        <MetricTile label="Quarantined (24h)" value={String(totalQuarantined)} />
-        <MetricTile label="Open Conflicts" value={String(conflicts.length)} />
+        <MetricTile label="Active connectors" value={connectorsData ? connectors.length : null} />
+        <MetricTile
+          label="Within freshness SLA"
+          value={connectorsData ? `${freshCount} of ${connectors.length}` : null}
+        />
+        <MetricTile label="Events ingested, 24h" value={connectorsData ? total24hEvents : null} />
+        <MetricTile label="Quarantined, 24h" value={connectorsData ? totalQuarantined : null} />
+        <MetricTile label="Open conflicts" value={conflictsData ? conflicts.length : null} />
       </div>
+
+      {staleCount > 0 && (
+        <p className={`${s.syntheticBanner} js-reveal`} role="status" style={{ marginBottom: 20 }}>
+          <Icon name="clock" size={16} />
+          <span>
+            <strong>
+              {staleCount} of {connectors.length} sources are outside their freshness
+              window.
+            </strong>{" "}
+            Anything derived from them is shown as stale wherever it appears, with the
+            last verified time attached. It is not shown as current.
+          </span>
+        </p>
+      )}
 
       {/* Connectors Table */}
       {loading && !connectors.length ? (
         <Skeleton lines={8} />
+      ) : connectors.length === 0 ? (
+        <div className="js-reveal" style={{ marginBottom: 24 }}>
+          <EmptyState
+            icon="offline"
+            title="No source register available"
+            body="The data-health endpoint returned no connectors. Rather than list sources from a bundled snapshot, this page reports the gap. Every downstream surface treats the same absence as unavailable."
+          />
+        </div>
       ) : (
         <div className={`${s.card} js-reveal`} style={{ marginBottom: 24 }}>
           <div className={s.cardHeader}>
@@ -96,11 +141,13 @@ export default function DataHealth() {
                   </td>
                   <td>
                     {conn.age_s !== null ? (
-                      <span style={{ fontFamily: "var(--font-num)", color: conn.fresh ? "#2e7d32" : "#c62828" }}>
-                        {formatAge(conn.age_s)}
-                      </span>
+                      <StaleBadge
+                        ageS={conn.age_s}
+                        fresh={conn.fresh}
+                        slaS={conn.freshness_sla_s}
+                      />
                     ) : (
-                      <span style={{ color: "var(--muted)" }}>Never</span>
+                      <NoData reason="never" lastVerifiedAt={conn.last_seen_at} />
                     )}
                   </td>
                   <td style={{ fontFamily: "var(--font-num)" }}>
@@ -115,7 +162,11 @@ export default function DataHealth() {
                     {conn.events_24h.toLocaleString()}
                   </td>
                   <td style={{ fontFamily: "var(--font-num)", color: conn.quarantined_24h > 0 ? "var(--accent)" : "inherit" }}>
-                    {conn.quarantined_24h}
+                    {conn.quarantined_24h > 0 ? (
+                      <span style={{ fontWeight: 700 }}>{conn.quarantined_24h} held</span>
+                    ) : (
+                      "0 held"
+                    )}
                   </td>
                   <td>
                     <span className={`${s.tag} ${conn.fresh ? s.tagVerified : s.tagFailed}`}>

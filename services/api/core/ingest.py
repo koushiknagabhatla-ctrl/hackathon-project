@@ -54,6 +54,31 @@ CONTRACTS: dict[str, dict[str, Any]] = {
         "enum": {"severity": ["info", "low", "medium", "high", "critical"]},
     },
     "asset_state": {"required": ["asset_id"], "numeric": {}},
+    # Modelled river discharge (GloFAS via Open-Meteo). Minted as `derived`
+    # evidence by the connector, never as an observed gauge reading.
+    "river_discharge": {
+        "required": ["discharge_m3s"],
+        "numeric": {"discharge_m3s": (0.0, 200000.0), "value": (0.0, 200000.0),
+                    "discharge_mean_m3s": (0.0, 200000.0),
+                    "discharge_max_m3s": (0.0, 200000.0)},
+    },
+    # Air quality. `value` is the concentration in the unit named by `unit`;
+    # the per-pollutant ceilings below are physical-plausibility limits, not
+    # health thresholds.
+    "air_quality": {
+        "required": ["parameter", "value"],
+        "numeric": {"value": (0.0, 100000.0), "pm25": (0.0, 2000.0),
+                    "pm10": (0.0, 5000.0), "no2": (0.0, 2000.0),
+                    "so2": (0.0, 2000.0), "o3": (0.0, 2000.0),
+                    "co": (0.0, 100000.0)},
+    },
+    # Seismic events. Magnitude floor is negative because microquakes are
+    # genuinely reported below zero on the local scales.
+    "seismic": {
+        "required": ["magnitude"],
+        "numeric": {"magnitude": (-2.0, 10.0), "value": (-2.0, 10.0),
+                    "depth_km": (-10.0, 800.0), "distance_km": (0.0, 20000.0)},
+    },
 }
 DEFAULT_CONTRACT: dict[str, Any] = {"required": [], "numeric": {}, "enum": {}}
 
@@ -105,7 +130,13 @@ def _quality_errors(ev: EventIn, contract: dict[str, Any]) -> list[str]:
     return out
 
 
-def ingest_event(ev: EventIn, principal: Any) -> EventAccepted:
+def ingest_event(
+    ev: EventIn, principal: Any, evidence_class: str = "observation"
+) -> EventAccepted:
+    """`evidence_class` defaults to `observation` because most connectors report
+    a measurement. A connector reading a MODEL product (e.g. GloFAS river
+    discharge) passes `derived`, so no surface can render modelled output as
+    something that was observed."""
     actor_id, tenant_id = _principal(principal)
     event_id = db.new_id("evt")
     workflow_id = event_id
@@ -187,7 +218,8 @@ def ingest_event(ev: EventIn, principal: Any) -> EventAccepted:
 
     # 8. mint evidence, then run deterministic detection
     row = db.q1("SELECT * FROM event WHERE id=?", event_id)
-    ev_row = evidence.mint(row, con, actor_id=actor_id, workflow_id=workflow_id)
+    ev_row = evidence.mint(row, con, evidence_class=evidence_class,
+                           actor_id=actor_id, workflow_id=workflow_id)
     incident_id = incident.detect(row, ev_row, actor_id=actor_id)
     return EventAccepted(
         id=event_id, accepted=True, evidence_id=ev_row["id"], incident_id=incident_id

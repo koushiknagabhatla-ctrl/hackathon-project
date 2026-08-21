@@ -1,0 +1,467 @@
+/* Plan Review. Deliberately roomier than the operational screens: this is the
+   one place in Auralis where slowing a person down is the feature. */
+
+.head {
+  display: grid;
+  gap: 10px;
+  margin-bottom: var(--sp-8);
+  padding-bottom: var(--sp-6);
+  border-bottom: 1px solid var(--line);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: start;
+  min-height: 44px;
+  padding-right: 10px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+.back:hover {
+  color: var(--text);
+}
+
+.title {
+  font-size: var(--fs-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  max-width: 22ch;
+}
+
+.rationale {
+  font-size: var(--fs-body);
+  color: var(--text-soft);
+  max-width: 68ch;
+  line-height: 1.6;
+}
+
+.headMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 6px;
+}
+.metaItem {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.honesty {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  max-width: 66ch;
+  line-height: 1.6;
+}
+
+.provenance {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-bottom: var(--sp-6);
+  border: 1px solid var(--warn);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.provenance svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warn);
+}
+
+/* ---------------------------------------------------------------- summary */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  overflow: hidden;
+  margin-bottom: var(--sp-6);
+}
+.summaryCell {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 20px;
+  background: var(--surface);
+}
+
+.big {
+  font-family: var(--font-num);
+  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.big[data-alarm="true"] {
+  color: var(--bad);
+}
+
+.word {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.word[data-expired="true"] {
+  color: var(--bad);
+}
+
+/* ---------------------------------------------------- validation / scores */
+.checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: var(--sp-10);
+}
+.check {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  background: var(--surface);
+}
+.checkTitle {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+}
+.checkNote {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.checkList {
+  display: grid;
+  gap: 8px;
+}
+.checkRow {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--bad);
+  border-radius: var(--r-control);
+  background: var(--bg);
+  font-size: var(--fs-sm);
+}
+.checkRow[data-pass="true"] {
+  border-left-color: var(--ok);
+}
+.checkRow svg {
+  color: var(--bad);
+}
+.checkRow[data-pass="true"] svg {
+  color: var(--ok);
+}
+.checkValue {
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.scores {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.scores > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.scores > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.scores dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.scores dd {
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: 1.35rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- actions */
+.sectionHead {
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--sp-5);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.sectionHeadNote {
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.dossiers {
+  display: grid;
+  gap: var(--sp-6);
+}
+
+.dossier {
+  display: grid;
+  gap: var(--sp-5);
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  background: var(--surface);
+  min-width: 0;
+}
+/* High tiers get a heavier frame. Weight, not colour, does the work. */
+.dossier[data-risk="R4"],
+.dossier[data-risk="R5"] {
+  border-width: 2px;
+  border-color: var(--text);
+}
+
+.dossierHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width: 639px) {
+  .dossierHead {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .dossierHead > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+.seq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-family: var(--font-num);
+  font-size: 1.15rem;
+}
+.dossierTitle {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.toolId {
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  word-break: break-word;
+}
+.toolTarget {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.fact {
+  display: grid;
+  gap: 10px;
+}
+.factTitle {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+}
+.argsEmpty {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.args {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  overflow: hidden;
+}
+.argRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.argRow:last-child {
+  border-bottom: 0;
+}
+.argRow dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.argRow dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 479px) {
+  .argRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+.consequence {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  overflow: hidden;
+}
+.consequenceCell {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 16px;
+  background: var(--bg);
+  min-width: 0;
+}
+.consequenceFoot {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* ----------------------------------------------------------------- policy */
+.policy {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--muted);
+  border-radius: var(--r-control);
+  background: var(--bg);
+}
+.policy[data-effect="deny"] {
+  border-left-color: var(--bad);
+}
+.policy[data-effect="require_approval"] {
+  border-left-color: var(--warn);
+}
+.policy[data-effect="allow"] {
+  border-left-color: var(--ok);
+}
+.policyEffect {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.policyRule {
+  font-size: var(--fs-micro);
+}
+.policyReason {
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text);
+}
+.policyFoot {
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.noPolicy {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.noPolicy svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------- signing */
+.signing {
+  display: grid;
+  gap: 14px;
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line);
+}
+.approver {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+.approver svg {
+  flex: none;
+  margin-top: 2px;
+}
+.approver strong {
+  font-family: var(--font-num);
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.denied {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 16px;
+  border: 2px solid var(--bad);
+  border-radius: var(--r-control);
+  background: var(--surface);
+}
+.deniedMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bad);
+}

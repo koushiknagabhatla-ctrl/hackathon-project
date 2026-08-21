@@ -28,6 +28,7 @@ export type IconName =
   | "chevronDown"
   | "chevronRight"
   | "arrowRight"
+  | "arrowLeft"
   | "offline"
   | "queued"
   | "refresh"
@@ -64,6 +65,7 @@ const PATHS: Record<IconName, string> = {
   chevronDown: "M6 9.5 12 15.5 18 9.5",
   chevronRight: "M9.5 6 15.5 12 9.5 18",
   arrowRight: "M4.5 12h15 M13.5 6l6 6-6 6",
+  arrowLeft: "M19.5 12h-15 M10.5 6l-6 6 6 6",
   offline: "M3 3l18 18 M8.8 15.6a4.6 4.6 0 0 1 6.4 0 M5.2 12.1a9.6 9.6 0 0 1 3.4-2.2 M2 8.6A14.6 14.6 0 0 1 6.6 6 M17.6 9.6a9.6 9.6 0 0 1 3.4 2.5 M12.4 6.1c3 .1 5.9 1 8.2 2.5 M12 19.2h.01",
   queued: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M12 7.5V12l3 1.8 M8 3.4 4.2 5.6 M16 3.4l3.8 2.2",
   refresh: "M20 12a8 8 0 1 1-2.6-5.9 M20 4v4.4h-4.4",

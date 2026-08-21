@@ -15,7 +15,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import type { AuditChainReport, AuditEvent } from "@/lib/types";
-import { AUDIT as FIXTURE_AUDIT, CHAIN as FIXTURE_CHAIN } from "@/lib/fixtures";
 import s from "../pages.module.css";
 
 export default function AuditLedger() {
@@ -25,8 +24,12 @@ export default function AuditLedger() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>("wf_budameru_01");
   const [verifying, setVerifying] = useState(false);
 
-  const chain = chainReport ?? FIXTURE_CHAIN;
-  const events = auditEvents ?? FIXTURE_AUDIT;
+  // NO FALLBACK. `chain` is a tamper-evidence result: rendering a substituted
+  // "chain intact" while the API is unreachable would assert an integrity
+  // verification that never ran. That is the single most dishonest thing this
+  // screen could do, so an unreachable verifier renders as UNVERIFIED instead.
+  const chain = chainReport;
+  const events = auditEvents ?? [];
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
@@ -36,14 +39,33 @@ export default function AuditLedger() {
   const handleVerifyChain = async () => {
     setVerifying(true);
     try {
-      await reloadChain();
-      toast.push({
-        tone: "ok",
-        title: "Verification Complete",
-        body: `All ${chain.checked} events cryptographically verified intact.`,
-      });
+      // Report what the verifier ACTUALLY returned. Announcing success on a
+      // run that came back ok:false would hide a detected tamper, so read the
+      // response directly rather than trusting cached state.
+      const result = (await api.get("/v1/audit/verify")) as AuditChainReport | null;
+      reloadChain();
+      if (!result) {
+        toast.push({
+          tone: "bad",
+          title: "Verifier Unreachable",
+          body: "No integrity check ran. Ledger state is unknown, not intact.",
+        });
+      } else if (result.ok) {
+        toast.push({
+          tone: "ok",
+          title: "Verification Complete",
+          body: `${result.checked} events cryptographically verified intact.`,
+        });
+      } else {
+        toast.push({
+          tone: "bad",
+          critical: true,
+          title: "TAMPER DETECTED",
+          body: `Hash chain broken at seq ${result.first_break_seq ?? "unknown"}. ${result.detail ?? ""}`,
+        });
+      }
     } catch {
-      toast.push({ tone: "bad", title: "Verification Failed", body: "Hash chain integrity check failed." });
+      toast.push({ tone: "bad", title: "Verification Failed", body: "Hash chain integrity check could not complete." });
     } finally {
       setVerifying(false);
     }
@@ -95,37 +117,62 @@ export default function AuditLedger() {
         </div>
       </div>
 
-      {/* Chain Status Banner */}
+      {/* Chain Status Banner.
+          Three distinct states, never two. "Not verified" is its own outcome
+          and must never be rendered as "intact". */}
       <div
         className={`${s.card} js-reveal`}
         style={{
-          borderLeft: chain.ok ? "4px solid #2e7d32" : "4px solid #c62828",
+          borderLeft: !chain
+            ? "4px solid var(--muted)"
+            : chain.ok
+              ? "4px solid #2e7d32"
+              : "4px solid #c62828",
           marginBottom: 24,
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Icon name={chain.ok ? "check" : "critical"} size={18} />
+              <Icon name={!chain ? "critical" : chain.ok ? "check" : "critical"} size={18} />
               <strong style={{ fontSize: "1.0625rem" }}>
-                {chain.ok ? "Cryptographic Chain Intact" : "Integrity Failure Detected"}
+                {!chain
+                  ? "Chain Integrity NOT Verified"
+                  : chain.ok
+                    ? "Cryptographic Chain Intact"
+                    : "Integrity Failure Detected"}
               </strong>
             </div>
             <p style={{ fontSize: "0.8125rem", color: "var(--muted)", margin: "4px 0 0" }}>
-              {chain.detail ?? `Verified ${chain.checked} consecutive events in SHA-256 monotonic sequence.`}
+              {!chain
+                ? "The verifier could not be reached, so no integrity check has run. This is NOT a statement that the ledger is intact — it is unknown."
+                : (chain.detail ?? `Verified ${chain.checked} consecutive events in SHA-256 monotonic sequence.`)}
             </p>
           </div>
-          <span className={`${s.tag} ${chain.ok ? s.tagVerified : s.tagFailed}`}>
-            {chain.ok ? "VALID" : "BROKEN"}
+          <span
+            className={`${s.tag} ${!chain ? "" : chain.ok ? s.tagVerified : s.tagFailed}`}
+          >
+            {!chain ? "UNVERIFIED" : chain.ok ? "VALID" : "BROKEN"}
           </span>
         </div>
       </div>
 
       <div className={`${s.kpiStrip} js-reveal`}>
-        <MetricTile label="Events Verified" value={String(chain.checked)} />
+        <MetricTile
+          label="Events Verified"
+          value={chain ? String(chain.checked) : "—"}
+          foot={chain ? undefined : "verifier unreachable"}
+        />
         <MetricTile label="Hash Algorithm" value="SHA-256" />
-        <MetricTile label="First Break Seq" value={chain.first_break_seq === null ? "None" : String(chain.first_break_seq)} />
-        <MetricTile label="Replay Readiness" value="100%" />
+        <MetricTile
+          label="First Break Seq"
+          value={!chain ? "—" : chain.first_break_seq === null ? "None" : String(chain.first_break_seq)}
+          foot={chain ? undefined : "verifier unreachable"}
+        />
+        <MetricTile
+          label="Ledger Events Loaded"
+          value={String(events.length)}
+        />
       </div>
 
       {/* Audit Log Table */}

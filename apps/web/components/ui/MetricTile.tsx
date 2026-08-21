@@ -12,6 +12,7 @@
 
 import { useEffect, useRef } from "react";
 import { Icon } from "./Icon";
+import { NoData } from "./EmptyState";
 import { countTo, reducedMotion } from "@/lib/motion";
 import { cx, num } from "@/lib/format";
 import s from "./ui.module.css";
@@ -53,12 +54,12 @@ export function MetricTile({
     countTo(ref.current, numeric, { decimals });
   }, [animate, numeric, decimals]);
 
-  const display =
-    value === null || value === undefined
-      ? "—"
-      : typeof value === "number"
-        ? num(value, decimals)
-        : value;
+  /**
+   * An absent metric is stated, never rendered as a zero or a dash. A KPI tile
+   * showing "0" for a value the API never returned is the exact failure this
+   * product exists to prevent.
+   */
+  const missing = value === null || value === undefined || value === "";
 
   const improving =
     delta === null || delta === undefined || delta === 0
@@ -70,11 +71,17 @@ export function MetricTile({
   return (
     <div className={cx(s.metric, className)}>
       <span className={s.metricLabel}>{label}</span>
-      <span className={s.metricValue}>
-        <span ref={ref}>{display}</span>
-        {unit && <span className={s.metricUnit}>{unit}</span>}
-      </span>
-      {delta !== null && delta !== undefined && (
+      {missing ? (
+        <NoData />
+      ) : (
+        <span className={s.metricValue}>
+          <span ref={ref}>
+            {typeof value === "number" ? num(value, decimals) : value}
+          </span>
+          {unit && <span className={s.metricUnit}>{unit}</span>}
+        </span>
+      )}
+      {!missing && delta !== null && delta !== undefined && (
         <span className={s.metricDelta}>
           <Icon
             name={improving === null ? "info" : improving ? "check" : "major"}

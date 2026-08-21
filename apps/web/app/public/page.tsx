@@ -10,7 +10,7 @@ import { useApi } from "@/lib/api";
 import { useGsap, sectionReveal } from "@/lib/motion";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { CITY, PUBLIC_STATUS as FIXTURE_PUBLIC } from "@/lib/fixtures";
+import { CITY } from "@/lib/fixtures";
 import s from "../pages.module.css";
 
 interface Advisory {
@@ -31,12 +31,32 @@ interface PublicStatusData {
 
 export default function PublicStatusPage() {
   const { data: statusData, loading } = useApi<PublicStatusData>("/v1/public/status");
-  const status = statusData ?? FIXTURE_PUBLIC;
+  // NO SILENT SUBSTITUTION. This is the citizen-facing surface. Publishing
+  // fabricated incident status to the public — or worse, a fabricated "all
+  // clear" — is the most damaging failure this system could have.
+  const status = statusData;
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
     [],
   );
+
+  if (!status) {
+    return (
+      <section className="container section" style={{ maxWidth: 880, marginInline: "auto" }}>
+        <h1>City Status</h1>
+        <div className={s.card} style={{ marginTop: 16 }}>
+          <strong>Status information is currently unavailable.</strong>
+          <p style={{ color: "var(--muted)", marginTop: 8, fontSize: "0.9375rem" }}>
+            We cannot reach the verified incident feed, so no status is shown.
+            This is <strong>not</strong> a statement that there are no active
+            incidents. For emergencies call <strong>112</strong>. For local
+            disaster information contact the district authority.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="container section" ref={ref} style={{ maxWidth: 880, marginInline: "auto" }}>

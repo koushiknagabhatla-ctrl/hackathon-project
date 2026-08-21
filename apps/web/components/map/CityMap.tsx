@@ -24,7 +24,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Layer } from "@deck.gl/core";
-import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import type {
+  Map as MapLibreMap,
+  StyleSpecification,
+  IControl as MapLibreIControl,
+} from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Icon } from "@/components/ui/Icon";
 import { revealMap } from "@/lib/motion";
@@ -32,7 +36,13 @@ import { CITY } from "@/lib/fixtures";
 import { useShell } from "@/components/shell/ShellState";
 import s from "./map.module.css";
 
-/** Direct OpenStreetMap tile style — 100% reliable, zero key latency, instant rendering. */
+/**
+ * Primary basemap: OpenFreeMap "liberty". Keyless, free, no account, nothing
+ * to configure and nothing that can rate-limit us mid-demonstration.
+ */
+export const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+
+/** First fallback: raw OSM raster tiles. Different host, different failure mode. */
 export const OSM_STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -58,8 +68,26 @@ export const OSM_STYLE: StyleSpecification = {
   ],
 };
 
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "aqlFHWbQ8m4XIBm9Pw69";
-export const MAP_STYLE = process.env.NEXT_PUBLIC_MAP_STYLE ?? OSM_STYLE;
+/**
+ * Last resort: an empty style with no network dependency at all. The map is
+ * never a single point of failure, so when both tile hosts are unreachable the
+ * canvas still exists, every deck.gl data layer still draws on it, and the
+ * component says the basemap is unavailable rather than pretending otherwise.
+ */
+const BLANK_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [
+    {
+      id: "blank",
+      type: "background",
+      paint: { "background-color": "#ececec" },
+    },
+  ],
+};
+
+export const MAP_STYLE: string | StyleSpecification =
+  process.env.NEXT_PUBLIC_MAP_STYLE ?? OPENFREEMAP_STYLE;
 
 export interface CityMapMarker {
   id: string;
@@ -106,20 +134,23 @@ export function CityMap({
   useEffect(() => {
     let cancelled = false;
     let map: MapLibreMap | null = null;
+    let tileTimer: ReturnType<typeof setTimeout> | null = null;
 
     (async () => {
       const [maplibreglModule, { MapboxOverlay }] = await Promise.all([
         import("maplibre-gl"),
         import("@deck.gl/mapbox"),
       ]);
-      const maplibregl = ((maplibreglModule as any).default || maplibreglModule) as typeof import("maplibre-gl");
+      // maplibre-gl v5 ships named exports and no default, so reaching for
+      // `.default` yields undefined and the Map constructor blows up at runtime.
+      const maplibregl = maplibreglModule;
       if (cancelled || !holder.current) return;
 
       map = new maplibregl.Map({
         container: holder.current,
         style: MAP_STYLE,
-        center,
-        zoom,
+        center: activeCenter,
+        zoom: activeZoom,
         attributionControl: false,
         interactive,
       });
@@ -131,36 +162,50 @@ export function CityMap({
 
       const overlay = new MapboxOverlay({ interleaved: false, layers });
       if (map) {
-        map.addControl(overlay as any);
+        map.addControl(overlay as unknown as MapLibreIControl);
       }
       overlayRef.current = overlay as unknown as {
         setProps: (p: { layers: Layer[] }) => void;
       };
 
-      let degraded = false;
-      const degradeToOsm = () => {
-        if (degraded || cancelled || !map) return;
-        degraded = true;
-        setBasemap("ok");
+      // Degrade ladder, one rung per failure. The data layers survive all of it.
+      let rung = 0;
+      const degrade = () => {
+        if (cancelled || !map || rung >= 2) return;
+        rung += 1;
         try {
-          map.setStyle(OSM_STYLE);
+          map.setStyle(rung === 1 ? OSM_STYLE : BLANK_STYLE);
+          setBasemap(rung === 1 ? "loading" : "unavailable");
         } catch {
-          /* ignore */
+          setBasemap("unavailable");
         }
       };
 
       if (map) {
-        map.on("error", (e: any) => {
-          // Only fallback if the root style itself fails to load
-          const msg = String(e?.error?.message ?? e?.message ?? "");
-          if (msg.includes("Failed to fetch style") || msg.includes("401") || msg.includes("403")) {
-            degradeToOsm();
+        // If the style has not painted within 6s, treat it as failed rather
+        // than leaving an operator staring at an empty rectangle.
+        tileTimer = setTimeout(() => {
+          if (!cancelled) degrade();
+        }, 6000);
+
+        map.on("error", (e: unknown) => {
+          const err = e as { error?: { message?: string }; message?: string };
+          const msg = String(err?.error?.message ?? err?.message ?? "");
+          // Only the root style failing is fatal. A single missing tile is not.
+          if (
+            msg.includes("Failed to fetch") ||
+            msg.includes("style") ||
+            msg.includes("401") ||
+            msg.includes("403")
+          ) {
+            degrade();
           }
         });
 
         map.on("load", () => {
           if (cancelled || !map) return;
-          setBasemap("ok");
+          if (tileTimer) clearTimeout(tileTimer);
+          setBasemap(rung >= 2 ? "unavailable" : "ok");
           revealMap(holder.current);
           onReady?.(map);
         });
@@ -169,6 +214,7 @@ export function CityMap({
 
     return () => {
       cancelled = true;
+      if (tileTimer) clearTimeout(tileTimer);
       overlayRef.current = null;
       map?.remove();
       mapRef.current = null;
@@ -200,11 +246,11 @@ export function CityMap({
       {basemap === "unavailable" && (
         <p className={s.note} role="status">
           <Icon name="offline" size={13} />
-          Basemap unavailable — data layers still live
+          Basemap unavailable. Data layers are still live and correct.
         </p>
       )}
       {basemap === "ok" && (
-        <p className={s.attrib} aria-hidden="true">
+        <p className={s.attrib}>
           <a href="https://openfreemap.org" target="_blank" rel="noreferrer">
             OpenFreeMap
           </a>{" "}

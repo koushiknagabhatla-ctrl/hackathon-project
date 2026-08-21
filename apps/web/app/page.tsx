@@ -1,230 +1,316 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+/**
+ * Landing — /
+ *
+ * Scroll-led and restrained. Four sections, four different layout families,
+ * one dominant visual each. The hero states the promise; the pillars state
+ * what backs it; the vocabulary section shows the actual trust states this
+ * interface renders, because that vocabulary IS the product.
+ *
+ * Every number on this page is read from the API. Nothing falls back to a
+ * plausible figure: when a value cannot be verified the page says so, in the
+ * same place the number would have been.
+ */
+
 import Link from "next/link";
-import type { Layer } from "@deck.gl/core";
-import { CityMap } from "@/components/map/CityMap";
-import { Icon } from "@/components/ui/Icon";
-import { useShell } from "@/components/shell/ShellState";
 import { useApi } from "@/lib/api";
-import { stamp } from "@/lib/format";
+import { useShell } from "@/components/shell/ShellState";
+import { useGsap, sectionReveal } from "@/lib/motion";
+import { Icon, NoData, type IconName } from "@/components/ui";
+import { num } from "@/lib/format";
+import type { AuditChainReport, OpsMetrics } from "@/lib/types";
 import s from "./landing.module.css";
 
-const SEVERITY_TINT: Record<string, [number, number, number, number]> = {
-  critical: [220, 38, 38, 220],
-  major: [234, 88, 12, 220],
-  high: [234, 88, 12, 220],
-  medium: [202, 138, 4, 200],
-  minor: [202, 138, 4, 200],
-  info: [59, 130, 246, 180],
-};
+interface Pillar {
+  n: string;
+  title: string;
+  body: string;
+  proof: string;
+  icon: IconName;
+  href: string;
+  cta: string;
+}
 
-export default function HomePage() {
-  const { incidents, location, weather } = useShell();
-  const { data: metrics } = useApi<{
-    time_to_detect_s: number | null;
-    unsupported_claim_rate: number;
-    tool_success_rate: number;
-    audit_events: number;
-  }>("/v1/metrics/ops");
+const PILLARS: Pillar[] = [
+  {
+    n: "01",
+    title: "Verified evidence",
+    body: "A fact on this platform carries the records it came from, the source that reported them and the moment they were observed. A statement with no evidence behind it cannot be stored, so it can never reach a screen.",
+    proof: "Grounding is enforced in the data layer, not in a prompt.",
+    icon: "fact",
+    href: "/data-health",
+    cta: "Inspect every source",
+  },
+  {
+    n: "02",
+    title: "Bounded autonomy",
+    body: "Risk tier is computed from the target, the blast radius and the age of the evidence, then checked against a policy bundle that lives outside the model. No output from any agent can change that outcome.",
+    proof: "The same tool is R2 on one asset and R4 on another.",
+    icon: "lock",
+    href: "/governance",
+    cta: "Read the policy bundle",
+  },
+  {
+    n: "03",
+    title: "Reconstructable actions",
+    body: "Every decision leaves a hash-chained trail from claim to evidence to model version to tool manifest to policy decision to verified outcome. You can replay it, export it, and check the chain yourself.",
+    proof: "Chain verification is an endpoint, not a promise.",
+    icon: "trace",
+    href: "/audit",
+    cta: "Verify the ledger",
+  },
+];
 
-  const [layers, setLayers] = useState<Layer[]>([]);
+interface StateSpec {
+  label: string;
+  kind: string;
+  meaning: string;
+  icon: IconName;
+}
 
-  const markers = useMemo(
-    () =>
-      incidents
-        .map((i) => {
-          const c = (i.geometry as { coordinates?: [number, number] } | null)?.coordinates;
-          return c
-            ? {
-                id: i.id,
-                label: i.title,
-                detail: `${i.severity?.toUpperCase()} · ${i.state?.replace("_", " ")}`,
-                coordinates: c,
-              }
-            : null;
-        })
-        .filter((m): m is NonNullable<typeof m> => m !== null),
-    [incidents],
-  );
+/** The full vocabulary. If a surface cannot say which of these it is, it does not render. */
+const VOCABULARY: StateSpec[] = [
+  {
+    label: "Fact",
+    kind: "fact",
+    meaning: "Verified observation, with its source, its timestamp and its freshness.",
+    icon: "fact",
+  },
+  {
+    label: "Forecast",
+    kind: "forecast",
+    meaning: "Model output. Always drawn as a range, never reported as one number.",
+    icon: "forecast",
+  },
+  {
+    label: "Recommendation",
+    kind: "recommendation",
+    meaning: "A proposed action. Never styled to look like something already true.",
+    icon: "recommendation",
+  },
+  {
+    label: "Unverified",
+    kind: "unverified",
+    meaning: "Present on the record, but not corroborated by a second source.",
+    icon: "unknown",
+  },
+  {
+    label: "Stale",
+    kind: "stale",
+    meaning: "Past its freshness window. Shown degraded, with the last verified time.",
+    icon: "clock",
+  },
+  {
+    label: "Conflict",
+    kind: "conflict",
+    meaning: "Two sources disagree. Both are shown, both are named, neither is hidden.",
+    icon: "critical",
+  },
+  {
+    label: "Unavailable",
+    kind: "unavailable",
+    meaning: "The source is down or unconfigured. The gap is reported, never filled.",
+    icon: "offline",
+  },
+  {
+    label: "Simulation",
+    kind: "simulation",
+    meaning: "Fabricated for a sandbox run. Hatched, labelled, barred from production tools.",
+    icon: "synthetic",
+  },
+];
 
-  useEffect(() => {
-    let cancelled = false;
-    import("@deck.gl/layers").then(({ ScatterplotLayer }) => {
-      if (cancelled) return;
-      setLayers([
-        new ScatterplotLayer({
-          id: "active-incidents",
-          data: markers.map((m, idx) => ({
-            ...m,
-            severity: incidents[idx]?.severity ?? "info",
-          })),
-          getPosition: (d: { coordinates: [number, number] }) => d.coordinates,
-          getRadius: 350,
-          radiusMinPixels: 8,
-          radiusMaxPixels: 28,
-          stroked: true,
-          lineWidthMinPixels: 2,
-          getFillColor: (d: { severity: string }) => SEVERITY_TINT[d.severity] ?? [59, 130, 246, 180],
-          getLineColor: [255, 255, 255, 240],
-        }),
-      ]);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [markers, incidents]);
+export default function LandingPage() {
+  const { incidents, streamStatus } = useShell();
+  const { data: ops, error: opsError } = useApi<OpsMetrics>("/v1/metrics/ops");
+  const { data: chain, error: chainError } = useApi<AuditChainReport>("/v1/audit/verify");
 
-  const weatherText = weather?.data?.temperature !== undefined
-    ? `${weather.data.temperature}°C · ${weather.data.pressure_hpa} hPa · ${weather.data.weather_description}`
-    : "28.5°C · 1013 hPa · Live Observation";
+  const ref = useGsap<HTMLDivElement>((_, el) => {
+    el.querySelectorAll<HTMLElement>("[data-reveal]").forEach((section) =>
+      sectionReveal(section, ".js-reveal", { stagger: 0.055, start: "top 84%" }),
+    );
+  }, []);
+
+  const openIncidents = incidents.filter((i) => i.state !== "closed").length;
+  const sources = ops?.source_health ?? [];
+  const freshSources = sources.filter((c) => c.fresh).length;
 
   return (
-    <div className={s.container}>
-      {/* Vitals Ribbon */}
-      <div className={s.vitalsBar}>
-        <div className={s.vitalItem}>
-          <span className={s.vitalDot} />
-          <span><strong>Jurisdiction:</strong> {location.name}, {location.state} ({location.coordinates[1].toFixed(4)}°N, {location.coordinates[0].toFixed(4)}°E)</span>
-        </div>
-        <div className={s.vitalItem}>
-          <Icon name="activity" size={14} />
-          <span><strong>OpenWeather:</strong> {weatherText}</span>
-        </div>
-        <div className={s.vitalItem}>
-          <Icon name="shield" size={14} />
-          <span><strong>ERSS 112 CAD:</strong> {location.cad_zone} Active</span>
-        </div>
-        <div className={s.vitalItem}>
-          <Icon name="source" size={14} />
-          <span><strong>Audit Ledger:</strong> {metrics?.audit_events ?? 42} SHA-256 Blocks</span>
-        </div>
-      </div>
-
-      {/* Main Map & Live Incident Center */}
-      <div className={s.heroGrid}>
-        <div className={s.mapWrapper}>
-          <div className={s.mapHeader}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span className={s.liveBadge}>LIVE GIS TWIN</span>
-              <h2 style={{ fontSize: "1.05rem", margin: 0 }}>{location.name} Telemetry & Emergency Map</h2>
+    <div className={s.page} ref={ref}>
+      {/* ============================================================ hero */}
+      <section className={s.hero} data-reveal>
+        <div className={`container ${s.heroInner}`}>
+          <div className={s.heroCopy}>
+            <h1 className={`${s.heroTitle} js-reveal`}>
+              See the city.
+              <br />
+              Understand the evidence.
+              <br />
+              <span className={s.heroAccent}>Act with authority.</span>
+            </h1>
+            <p className={`${s.heroLede} js-reveal`}>
+              An operations layer for city infrastructure where every claim carries its
+              evidence and every action carries its authorisation.
+            </p>
+            <div className={`${s.heroCta} js-reveal`}>
+              <Link className="btn btn--primary" href="/command">
+                Open Command Center
+                <Icon name="arrowRight" size={16} />
+              </Link>
+              <Link className="btn" href="/trace">
+                Follow a decision
+              </Link>
             </div>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              {location.region} · OpenStreetMap & MapTiler Vector
-            </span>
           </div>
 
-          <div style={{ height: "460px", width: "100%", position: "relative" }}>
-            <CityMap
-              layers={layers}
-              markers={markers}
-              height="460px"
-              summary={`${location.name} interactive operational map`}
-            />
+          {/* The one dominant visual: the live state of the platform, honestly. */}
+          <aside className={`${s.vitals} js-reveal`} aria-label="Platform state">
+            <div className={s.vitalsHead}>
+              <span className="label">Right now</span>
+              <span className={s.vitalsStream} data-state={streamStatus}>
+                <Icon
+                  name={streamStatus === "live" ? "activity" : "offline"}
+                  size={13}
+                />
+                {streamStatus === "live"
+                  ? "Stream live"
+                  : streamStatus === "connecting"
+                    ? "Connecting"
+                    : "Stream degraded"}
+              </span>
+            </div>
+
+            <dl className={s.vitalsGrid}>
+              <div className={s.vital}>
+                <dt>Open incidents</dt>
+                <dd>
+                  <span className={s.vitalNum}>{num(openIncidents)}</span>
+                </dd>
+              </div>
+
+              <div className={s.vital}>
+                <dt>Sources within their freshness window</dt>
+                <dd>
+                  {sources.length > 0 ? (
+                    <span className={s.vitalNum}>
+                      {num(freshSources)}
+                      <span className={s.vitalOf}>of {num(sources.length)}</span>
+                    </span>
+                  ) : (
+                    <NoData reason={opsError ? "unavailable" : "unverified"} />
+                  )}
+                </dd>
+              </div>
+
+              <div className={s.vital}>
+                <dt>Audit entries, hash chain</dt>
+                <dd>
+                  {chain ? (
+                    <span className={s.vitalNum}>
+                      {num(chain.checked)}
+                      <span
+                        className={s.vitalVerdict}
+                        data-ok={chain.ok}
+                      >
+                        <Icon name={chain.ok ? "check" : "critical"} size={13} />
+                        {chain.ok
+                          ? "chain intact"
+                          : `break at ${chain.first_break_seq ?? "unknown"}`}
+                      </span>
+                    </span>
+                  ) : (
+                    <NoData reason={chainError ? "unavailable" : "unverified"} />
+                  )}
+                </dd>
+              </div>
+            </dl>
+
+            <p className={s.vitalsFoot}>
+              Read from the running API. Where a value could not be verified this panel
+              says so instead of showing a number.
+            </p>
+          </aside>
+        </div>
+      </section>
+
+      {/* ========================================================= pillars */}
+      <section className={s.pillars} data-reveal aria-labelledby="pillars-title">
+        <div className="container">
+          <h2 id="pillars-title" className={`${s.sectionTitle} js-reveal`}>
+            Three things hold this up.
+          </h2>
+
+          <div className={s.pillarList}>
+            {PILLARS.map((pl) => (
+              <article key={pl.n} className={`${s.pillar} js-reveal`}>
+                <span className={s.pillarN} aria-hidden="true">
+                  {pl.n}
+                </span>
+                <div className={s.pillarBody}>
+                  <h3 className={s.pillarTitle}>
+                    <Icon name={pl.icon} size={18} />
+                    {pl.title}
+                  </h3>
+                  <p className={s.pillarText}>{pl.body}</p>
+                  <p className={s.pillarProof}>{pl.proof}</p>
+                  <Link className={s.pillarLink} href={pl.href}>
+                    {pl.cta}
+                    <Icon name="arrowRight" size={14} />
+                  </Link>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* Quick Launchpad */}
-        <div className={s.launchpad}>
-          <h2 style={{ fontSize: "1.1rem", marginBottom: "0.75rem" }}>Operational Modules</h2>
-
-          <Link href="/emergency" className={s.launchCard}>
-            <div className={s.cardIcon} style={{ background: "rgba(220, 38, 38, 0.1)", color: "#dc2626" }}>
-              <Icon name="shield" size={20} />
-            </div>
-            <div>
-              <div className={s.cardTitle}>Emergency 112 & Accidents</div>
-              <div className={s.cardDesc}>Multi-signal CCTV/traffic correlation & ERSS 112 CAD dispatch.</div>
-            </div>
-          </Link>
-
-          <Link href="/command" className={s.launchCard}>
-            <div className={s.cardIcon} style={{ background: "rgba(59, 130, 246, 0.1)", color: "#2563eb" }}>
-              <Icon name="activity" size={20} />
-            </div>
-            <div>
-              <div className={s.cardTitle}>Command Center</div>
-              <div className={s.cardDesc}>Live physical twin, flood gates, pump houses, and SCADA feeds.</div>
-            </div>
-          </Link>
-
-          <Link href="/actions" className={s.launchCard}>
-            <div className={s.cardIcon} style={{ background: "rgba(234, 88, 12, 0.1)", color: "#ea580c" }}>
-              <Icon name="action" size={20} />
-            </div>
-            <div>
-              <div className={s.cardTitle}>Gated Action Pipeline</div>
-              <div className={s.cardDesc}>R0–R5 safety gates, blast-radius checks, and dual approval.</div>
-            </div>
-          </Link>
-
-          <Link href="/trace" className={s.launchCard}>
-            <div className={s.cardIcon} style={{ background: "rgba(168, 85, 247, 0.1)", color: "#9333ea" }}>
-              <Icon name="trace" size={20} />
-            </div>
-            <div>
-              <div className={s.cardTitle}>AI Trace & Decision Replay</div>
-              <div className={s.cardDesc}>Reconstruct any conclusion back to immutable evidence.</div>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Active City Incidents Table */}
-      <div className={s.tableSection}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <div>
-            <h2 style={{ fontSize: "1.15rem", margin: 0 }}>Active Verified City Incidents</h2>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0" }}>
-              Only grounded incidents with verified evidence are shown under Zero-Fabrication policy
+      {/* ====================================================== vocabulary */}
+      <section className={s.vocab} data-reveal aria-labelledby="vocab-title">
+        <div className="container">
+          <div className={`${s.vocabHead} js-reveal`}>
+            <h2 id="vocab-title" className={s.sectionTitle}>
+              Nothing renders without saying what it is.
+            </h2>
+            <p className={s.vocabLede}>
+              These eight states are the whole vocabulary. A data surface that cannot
+              place itself in one of them does not get drawn, because a blank that looks
+              like a reading is the failure this platform exists to prevent.
             </p>
           </div>
-          <Link href="/command" className="btn btn-sm btn-secondary">
-            Open Full Command Center →
-          </Link>
-        </div>
 
-        {incidents.length === 0 ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", background: "var(--card-bg)", borderRadius: "8px" }}>
-            No active emergency incidents detected. All municipal SCADA sensors reporting nominal.
+          <ul className={s.vocabList}>
+            {VOCABULARY.map((v) => (
+              <li key={v.kind} className={`${s.vocabItem} js-reveal`} data-kind={v.kind}>
+                <span className={s.vocabMark} aria-hidden="true">
+                  <Icon name={v.icon} size={16} />
+                </span>
+                <span className={s.vocabLabel}>{v.label}</span>
+                <span className={s.vocabMeaning}>{v.meaning}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ============================================================= close */}
+      <section className={s.close} data-reveal>
+        <div className={`container ${s.closeInner}`}>
+          <p className={`${s.closeText} js-reveal`}>
+            Every screen in Auralis can be asked the same question: on what evidence,
+            under whose authority, and can you prove it.
+          </p>
+          <div className={`${s.closeCta} js-reveal`}>
+            <Link className="btn btn--accent" href="/command">
+              Open Command Center
+              <Icon name="arrowRight" size={16} />
+            </Link>
+            <Link className="btn btn--ghost" href="/public">
+              See the public view
+            </Link>
           </div>
-        ) : (
-          <table className={s.table}>
-            <thead>
-              <tr>
-                <th>Incident ID</th>
-                <th>Title / Description</th>
-                <th>Classification</th>
-                <th>Severity</th>
-                <th>Status</th>
-                <th>Detected At</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {incidents.map((inc) => (
-                <tr key={inc.id}>
-                  <td><code>{inc.id}</code></td>
-                  <td><strong>{inc.title}</strong></td>
-                  <td>{inc.incident_class}</td>
-                  <td>
-                    <span className={inc.severity === "critical" ? "badge badge-critical" : "badge badge-warning"}>
-                      {inc.severity}
-                    </span>
-                  </td>
-                  <td><span className="badge badge-info">{inc.state}</span></td>
-                  <td>{stamp(inc.opened_at)}</td>
-                  <td>
-                    <Link href={`/command/${inc.id}`} className="btn btn-sm btn-ghost">
-                      Inspect →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
