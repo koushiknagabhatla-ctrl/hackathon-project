@@ -80,6 +80,61 @@ def _point_distance_m(p1: tuple[float, float], p2: tuple[float, float]) -> float
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
+def _fetch_tomtom_route(
+    origin: tuple[float, float],  # (lat, lon)
+    dest: tuple[float, float],    # (lat, lon)
+    waypoints: list[tuple[float, float]] | None = None,
+) -> dict[str, Any] | None:
+    """Fetch real-time traffic-aware route from TomTom Routing API."""
+    key = os.environ.get("TOMTOM_API_KEY")
+    if not key:
+        return None
+
+    pts = [f"{origin[0]},{origin[1]}"]
+    if waypoints:
+        for wp in waypoints:
+            pts.append(f"{wp[0]},{wp[1]}")
+    pts.append(f"{dest[0]},{dest[1]}")
+    locations_str = ":".join(pts)
+
+    url = f"https://api.tomtom.com/routing/1/calculateRoute/{locations_str}/json?key={key}&traffic=true&travelMode=car&instructionsType=text"
+
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            resp = client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                routes = data.get("routes", [])
+                if routes:
+                    r0 = routes[0]
+                    summary = r0.get("summary", {})
+                    legs = r0.get("legs", [])
+
+                    coords: list[list[float]] = []
+                    steps: list[RouteStep] = []
+
+                    for leg in legs:
+                        for pt in leg.get("points", []):
+                            coords.append([pt["longitude"], pt["latitude"]])
+                        for instr in leg.get("instructions", []):
+                            msg = instr.get("message", "Proceed")
+                            dist = float(instr.get("routeOffsetInMeters", 0.0))
+                            dur = float(instr.get("travelTimeInSeconds", 0.0))
+                            street = instr.get("street", "Main Road")
+                            steps.append(RouteStep(instruction=msg, distance_m=dist, duration_s=dur, name=street))
+
+                    return {
+                        "distance": summary.get("lengthInMeters", 0.0),
+                        "duration": summary.get("travelTimeInSeconds", 0.0),
+                        "geometry": {"type": "LineString", "coordinates": coords},
+                        "steps": steps,
+                        "provider": "tomtom_live_traffic",
+                    }
+    except Exception as exc:
+        log.warning("TomTom route fetch error: %s", exc)
+    return None
+
+
 def _fetch_osrm_route(
     origin: tuple[float, float],  # (lat, lon)
     dest: tuple[float, float],    # (lat, lon)
@@ -162,7 +217,19 @@ def calculate_safe_route(
     When avoid_hazards is True, checks if the route intersects any active
     flood, accident, or road blockage zones, and injects safe detour waypoints.
     """
-    # 1. Fetch baseline route
+    # 1. Try TomTom Live Traffic Routing first if key is present
+    tomtom_raw = _fetch_tomtom_route(origin, dest)
+    if tomtom_raw and not avoid_hazards:
+        return RouteResult(
+            distance_km=tomtom_raw["distance"] / 1000.0,
+            duration_min=tomtom_raw["duration"] / 60.0,
+            geometry=tomtom_raw["geometry"],
+            steps=tomtom_raw["steps"],
+            hazard_avoidance=False,
+            provider="tomtom_live_traffic",
+        )
+
+    # 2. Fetch baseline route from TomTom or OSRM
     raw_route = _fetch_osrm_route(origin, dest)
 
     if not raw_route:

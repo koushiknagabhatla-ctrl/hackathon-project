@@ -39,12 +39,25 @@ def is_model_available() -> bool:
     return p.exists() and (p / "adapter_config.json").exists()
 
 
+def is_model_loaded() -> bool:
+    """Check if model is currently loaded in RAM/VRAM."""
+    return _is_loaded and _model is not None
+
+
+def trigger_background_load() -> None:
+    """Load model asynchronously in background thread so HTTP requests remain non-blocking."""
+    if is_model_loaded() or not is_model_available():
+        return
+    t = threading.Thread(target=load_model, daemon=True, name="custom-llm-loader")
+    t.start()
+
+
 def get_model_status() -> dict[str, Any]:
     """Get current runtime status of the local custom LLM."""
     return {
         "available_on_disk": is_model_available(),
         "model_path": DEFAULT_MODEL_PATH,
-        "is_loaded": _is_loaded,
+        "is_loaded": is_model_loaded(),
         "load_error": _load_error,
         "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
         "adapter_type": "LoRA (Auralis AP Urban Intelligence)",

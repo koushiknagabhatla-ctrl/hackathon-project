@@ -13,7 +13,7 @@ import { BOTTOM_NAV, isActive } from "./nav";
 import { useShell } from "./ShellState";
 import s from "./shell.module.css";
 
-export const OPEN_MENU_EVENT = "auralis:open-menu";
+const OPEN_MENU_EVENT = "auralis:open-menu";
 
 export function MobileNav() {
   const pathname = usePathname();

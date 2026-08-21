@@ -49,9 +49,12 @@ def calculate_route_endpoint(
 
 @router.get("/traffic/corridors")
 def list_traffic_corridors_endpoint(
+    city_name: str | None = Query(default=None, description="City name"),
+    lat: float | None = Query(default=None, description="City latitude"),
+    lon: float | None = Query(default=None, description="City longitude"),
     principal: dict = Depends(get_principal),
 ) -> Any:
     """Get real-time traffic speeds, Level of Service (LOS), and delays across major city corridors."""
     tenant_id = principal.get("tenant_id", "ten_vijayawada")
-    corridors = traffic.get_corridor_status(tenant_id)
+    corridors = traffic.get_corridor_status(tenant_id, city_name=city_name, lat=lat, lon=lon)
     return {"corridors": corridors, "count": len(corridors)}

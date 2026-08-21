@@ -6,7 +6,6 @@ import { StatusRail } from "@/components/shell/StatusRail";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { Preloader } from "@/components/shell/Preloader";
 import { RouteTransition } from "@/components/shell/RouteTransition";
-import { DataModeBar } from "@/components/shell/DataModeBar";
 import { ServiceWorkerRegister } from "@/components/shell/ServiceWorkerRegister";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -20,11 +19,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   applicationName: "Auralis",
   appleWebApp: { capable: true, title: "Auralis", statusBarStyle: "default" },
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: [{ url: "/logo.svg", type: "image/svg+xml" }, { url: "/favicon.ico" }] },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F4F4F4",
+  themeColor: "#ff5900",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -58,7 +57,6 @@ export default function RootLayout({
               <RouteTransition>{children}</RouteTransition>
             </main>
             <MobileNav />
-            <DataModeBar />
             <ServiceWorkerRegister />
           </ToastProvider>
         </ShellStateProvider>

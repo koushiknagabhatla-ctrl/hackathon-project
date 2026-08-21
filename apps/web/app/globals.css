@@ -95,7 +95,7 @@
   /* PRD design appendix — exact, do not drift */
   --bg: #f4f4f4;
   --text: #000000;
-  --accent: #fa8128;
+  --accent: #ff5900;
   --surface: #ffffff;
   --muted: #5b5b5b;
   --line: #d8d8d8;
@@ -104,8 +104,8 @@
   --bg-sunken: #ececec;
   --line-strong: #bdbdbd;
   --text-soft: #2b2b2b;
-  --accent-ink: #7a3400; /* 7.4:1 on --surface — accent text never sits on white raw */
-  --accent-wash: #fdf1e7;
+  --accent-ink: #992f00; /* 7.6:1 on --surface — accent text never sits on white raw */
+  --accent-wash: #fff1ea;
   /* legacy alias: several modules were written against --text-muted */
   --text-muted: var(--muted);
 
@@ -316,7 +316,7 @@ hr {
 :focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
-  box-shadow: 0 0 0 5px rgba(250, 129, 40, 0.45);
+  box-shadow: 0 0 0 5px rgba(255, 89, 0, 0.45);
   border-radius: var(--r-control);
 }
 
@@ -447,6 +447,22 @@ hr {
   min-height: calc(100svh - var(--nav-h));
   padding-top: calc(var(--nav-h) + var(--rail-h));
   padding-bottom: var(--sp-8);
+}
+/* Chat fills the viewport exactly: padding-top clears the fixed shell, so the
+   box is 100svh tall and its content area is what is actually left over.
+   Subtracting the shell from the height as well would cut it off twice. */
+body:has([class*="chatContainer"]) .appMain,
+.appMain:has([class*="chatContainer"]) {
+  padding-bottom: 0 !important;
+  min-height: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+/* RouteTransition wraps every page in a bare div. On a full-height page that
+   div has to carry the height through, or the chat pane resolves its 100%
+   against auto and collapses to the height of its own content. */
+.appMain:has([class*="chatContainer"]) > * {
+  height: 100%;
 }
 @media (max-width: 767px) {
   .appMain {

@@ -72,8 +72,13 @@ class CityHazardAssessment:
         }
 
 
-def scan_city_hazards(tenant_id: str = "ten_vijayawada") -> CityHazardAssessment:
-    """Run real-time predictive hazard scan across all physical and digital feeds."""
+def scan_city_hazards(
+    tenant_id: str = "ten_vijayawada",
+    lat: float = registry.JURISDICTION_LAT,
+    lon: float = registry.JURISDICTION_LON,
+    city_name: str = "Vijayawada",
+) -> CityHazardAssessment:
+    """Run real-time predictive hazard scan across all physical and digital feeds for the specified city."""
     now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     signals: list[HazardSignal] = []
     active_threats: list[dict[str, Any]] = []
@@ -82,7 +87,7 @@ def scan_city_hazards(tenant_id: str = "ten_vijayawada") -> CityHazardAssessment
 
     # 1. Weather Telemetry Evaluation
     try:
-        w_data = weather.fetch_live_weather(principal="p_operator")
+        w_data = weather.fetch_live_weather(lat=lat, lon=lon, principal="p_operator")
         sources = w_data.get("sources", {})
         for src_name, src in sources.items():
             if src.get("status") == "ok":
@@ -204,7 +209,48 @@ def scan_city_hazards(tenant_id: str = "ten_vijayawada") -> CityHazardAssessment
     except Exception as exc:
         log.warning("Traffic hazard check failed: %s", exc)
 
-    # 3. Citizen Report Clustering & Critical Defects
+    # 3. Hydrology River Discharge Evaluation
+    try:
+        hydro_res = hydrology.fetch_river_discharge(lat=lat, lon=lon, principal="p_operator")
+        if hydro_res.get("status") == "ok":
+            obs = hydro_res.get("observations", {})
+            discharge = obs.get("river_discharge", {}).get("value")
+            if discharge and discharge > 1000.0:
+                signals.append(
+                    HazardSignal(
+                        source="conn_glofas_hydrology",
+                        category="river_discharge",
+                        severity="critical",
+                        value_summary=f"Severe river discharge: {discharge} m³/s",
+                        threshold_exceeded=True,
+                        confidence=0.94,
+                        detected_at=now_iso,
+                    )
+                )
+                active_threats.append({
+                    "hazard": f"Riverine Surge / Hydrological Flood Risk in {city_name}",
+                    "severity": "critical",
+                    "corridor": "Riverbank & Delta Drainage Corridors",
+                })
+                mitigations.append(f"Deploy flood defense barriers and monitor barrage sluices in {city_name}")
+                risk_points += 35.0
+            elif discharge and discharge > 400.0:
+                signals.append(
+                    HazardSignal(
+                        source="conn_glofas_hydrology",
+                        category="river_discharge",
+                        severity="major",
+                        value_summary=f"Elevated river discharge: {discharge} m³/s",
+                        threshold_exceeded=True,
+                        confidence=0.88,
+                        detected_at=now_iso,
+                    )
+                )
+                risk_points += 15.0
+    except Exception as exc:
+        log.warning("Hydrology hazard check failed: %s", exc)
+
+    # 4. Citizen Report Clustering & Critical Defects
     try:
         rows = db.q(
             "SELECT category, severity, COUNT(*) as c FROM civic_report WHERE status NOT IN ('resolved', 'rejected') GROUP BY category, severity"

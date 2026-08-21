@@ -451,10 +451,6 @@ export default function PlanReview() {
           onRetry={reload}
           what={`plan ${id}`}
         />
-        <p className={p.honesty}>
-          No plan is rendered in its place. An approval screen built on a guessed
-          plan would authorise something nobody proposed.
-        </p>
       </section>
     );
   }

@@ -28,13 +28,6 @@ export const PRIMARY: NavItem[] = [
     group: "operate",
   },
   {
-    href: "/citysense",
-    label: "CitySense AP",
-    blurb: "Real-time Andhra Pradesh geospatial intelligence map across all 26 districts.",
-    icon: "map",
-    group: "operate",
-  },
-  {
     href: "/command",
     label: "Command",
     blurb: "Live incidents, the city twin and the evidence that supports them.",
@@ -55,6 +48,10 @@ export const PRIMARY: NavItem[] = [
     icon: "trace",
     group: "assure",
   },
+];
+
+/** Everything else, grouped, behind "More". */
+export const SECONDARY: NavItem[] = [
   {
     href: "/data-health",
     label: "Data health",
@@ -69,10 +66,13 @@ export const PRIMARY: NavItem[] = [
     icon: "shield",
     group: "assure",
   },
-];
-
-/** Everything else, grouped, behind "More". */
-export const SECONDARY: NavItem[] = [
+  {
+    href: "/cctv",
+    label: "Cameras",
+    blurb: "Registered camera feeds for the selected city, with on-demand analysis.",
+    icon: "activity",
+    group: "operate",
+  },
   {
     href: "/alerts",
     label: "Hazard Alerts",

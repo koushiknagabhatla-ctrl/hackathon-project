@@ -204,6 +204,53 @@ SOURCES: list[Source] = [
         ),
     ),
     Source(
+        id="conn_tomtom",
+        name="TomTom Real-Time Traffic & Probe Network",
+        trust_tier="verified",
+        freshness_sla_s=900,
+        poll_interval_s=300,
+        endpoint="https://api.tomtom.com/traffic/services/4/flowSegmentData",
+        env_vars=("TOMTOM_API_KEY",),
+        licence="TomTom Enterprise License",
+        note=(
+            "Real-time vehicle probe telemetry and congestion analytics "
+            "across Andhra Pradesh arterial transit corridors."
+        ),
+    ),
+    Source(
+        id="conn_mappls",
+        name="MapmyIndia (Mappls) Enterprise GIS",
+        trust_tier="certified",
+        freshness_sla_s=86400,
+        poll_interval_s=43200,
+        endpoint="https://apis.mappls.com/advancedmaps/v1",
+        env_vars=("MAPPLS_API_KEY",),
+        licence="Mappls Enterprise Developer License",
+        note="Authoritative Indian geospatial road layers and geocoding index.",
+    ),
+    Source(
+        id="conn_fast2sms",
+        name="Fast2SMS Emergency Citizen Broadcast Gateway",
+        trust_tier="certified",
+        freshness_sla_s=86400,
+        poll_interval_s=43200,
+        endpoint="https://www.fast2sms.com/dev/bulkV2",
+        env_vars=("FAST2SMS_API_KEY",),
+        licence="Fast2SMS Commercial API License",
+        note="DLT/TRAI compliant direct SMS emergency broadcaster for citizen alerts.",
+    ),
+    Source(
+        id="conn_datagov",
+        name="data.gov.in (National Open Data Portal / CPCB)",
+        trust_tier="statutory",
+        freshness_sla_s=3600,
+        poll_interval_s=1800,
+        endpoint="https://api.data.gov.in/resource",
+        env_vars=("DATA_GOV_IN_API_KEY",),
+        licence="National Data Sharing and Accessibility Policy (NDSAP)",
+        note="Official CPCB Real-Time Ambient Air Quality Index (NAQI) records.",
+    ),
+    Source(
         id="conn_open311",
         name="Auralis Open311 Civic Reporting Gateway",
         trust_tier="crowdsourced",
@@ -365,7 +412,7 @@ def get_json(
     url: str,
     params: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
-    timeout: float = 15.0,
+    timeout: float = 6.0,
     method: str = "GET",
     data: dict[str, Any] | None = None,
 ) -> tuple[Any | None, str | None]:
@@ -379,7 +426,7 @@ def get_json(
     last = "no attempt made"
     for attempt in (0, 1):
         if attempt:
-            time.sleep(2.0)  # polite backoff; free tiers rate-limit hard
+            time.sleep(0.5)  # polite short backoff
         try:
             with httpx.Client(timeout=timeout, headers=hdrs, follow_redirects=True) as c:
                 r = (c.post(url, params=params, data=data) if method == "POST"

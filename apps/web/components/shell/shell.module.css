@@ -194,38 +194,12 @@
   flex: none;
   position: relative;
 }
-.dot[data-state="live"]::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 999px;
-  border: 1px solid var(--ok);
-  animation: ping 2.4s var(--ease-out) infinite;
-}
 .dot[data-state="degraded"] {
   background: transparent;
   border: 2px solid var(--warn);
 }
 .dot[data-state="connecting"] {
   background: var(--line-strong);
-}
-@keyframes ping {
-  0% {
-    transform: scale(0.7);
-    opacity: 0.9;
-  }
-  70%,
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dot[data-state="live"]::after {
-    animation: none;
-    opacity: 0.5;
-    transform: scale(1);
-  }
 }
 @media (max-width: 1023px) {
   .statusText {
@@ -307,15 +281,25 @@
 .panelItem[data-active="true"] {
   background: var(--bg);
 }
+.panelItemText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
 .panelItemLabel {
-  font-size: var(--fs-sm);
+  display: block;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.25;
 }
 .panelItemBlurb {
-  font-size: var(--fs-xs);
+  display: block;
+  font-size: 0.75rem;
   color: var(--muted);
-  line-height: 1.45;
+  line-height: 1.4;
+  margin-top: 1px;
 }
 
 /* ------------------------------------------------------------ mobile sheet */
@@ -540,30 +524,6 @@
 }
 
 /* --------------------------------------------------------- data mode badge */
-.demo {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px 4px 8px;
-  border-radius: var(--r-pill);
-  border: 2px solid var(--accent-ink);
-  background: var(--accent-wash);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.demoBar {
-  position: fixed;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 115;
-  display: flex;
-  justify-content: center;
-  padding: 10px;
-  pointer-events: none;
-}
 @media (max-width: 767px) {
   .demoBar {
     bottom: calc(62px + env(safe-area-inset-bottom));
@@ -571,18 +531,6 @@
 }
 
 /* ------------------------------------------------------ offline indicator */
-.offline {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  white-space: nowrap;
-}
 .offline[data-state="offline"] {
   border-color: var(--bad);
 }
@@ -592,11 +540,6 @@
 .offline[data-state="synced"] {
   border-color: var(--ok);
 }
-.offlineCount {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ------------------------------------------------------------------ search */
 .searchForm {
   display: flex;

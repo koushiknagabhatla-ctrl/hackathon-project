@@ -133,7 +133,7 @@ export default function TracePage() {
                 padding: "8px 10px",
                 borderRadius: "6px",
                 border: activeStep === i ? "2px solid var(--accent)" : "1px solid var(--line)",
-                background: activeStep === i ? "rgba(250, 129, 40, 0.06)" : "var(--surface)",
+                background: activeStep === i ? "rgba(255, 89, 0, 0.06)" : "var(--surface)",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}

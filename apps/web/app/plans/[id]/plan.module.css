@@ -51,13 +51,6 @@
   color: var(--muted);
 }
 
-.honesty {
-  font-size: var(--fs-sm);
-  color: var(--muted);
-  max-width: 66ch;
-  line-height: 1.6;
-}
-
 .provenance {
   display: flex;
   align-items: flex-start;

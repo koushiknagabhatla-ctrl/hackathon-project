@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api, useDataMode, useStream, type DataMode, type StreamStatus } from "@/lib/api";
+import { api, useStream, type StreamStatus } from "@/lib/api";
 import type { Incident, StreamEvent } from "@/lib/types";
 import { DEFAULT_LOCATION, type IndiaLocation } from "@/lib/locations";
 
@@ -17,7 +17,6 @@ interface ShellValue {
   incidents: Incident[];
   criticalIncidents: Incident[];
   streamStatus: StreamStatus;
-  dataMode: DataMode;
   events: StreamEvent[];
   location: IndiaLocation;
   weather: Record<string, any> | null;
@@ -48,7 +47,6 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
   const [weather, setWeather] = useState<Record<string, any> | null>(null);
   const [nonce, setNonce] = useState(0);
   const { events, status } = useStream();
-  const dataMode = useDataMode();
 
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
@@ -122,14 +120,13 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
       incidents,
       criticalIncidents,
       streamStatus: status,
-      dataMode,
       events,
       location,
       weather,
       setLocation,
       refresh,
     }),
-    [incidents, criticalIncidents, status, dataMode, events, location, weather, setLocation, refresh],
+    [incidents, criticalIncidents, status, events, location, weather, setLocation, refresh],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

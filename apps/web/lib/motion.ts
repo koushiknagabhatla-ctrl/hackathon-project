@@ -20,7 +20,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /** Durations in seconds (GSAP units). Mirrors the --t-* tokens in globals.css. */
-export const DUR = {
+const DUR = {
   press: 0.09,
   hover: 0.16,
   menu: 0.15,
@@ -31,7 +31,7 @@ export const DUR = {
   map: 0.9,
 } as const;
 
-export const EASE = {
+const EASE = {
   out: "power3.out",
   inOut: "power2.inOut",
   spring: "back.out(1.25)",
@@ -51,11 +51,6 @@ export function reducedMotion(): boolean {
 }
 
 /** Pointer-device check. Hover transforms are pointer-only. */
-export function finePointer(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-}
-
 type Target = gsap.TweenTarget;
 
 /** Page enter: opacity 0->1 + y 18->0 over ~600ms. */

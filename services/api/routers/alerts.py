@@ -28,25 +28,37 @@ class BroadcastAlertIn(BaseModel):
 
 @router.get("/scan")
 def scan_hazards_endpoint(
+    lat: float | None = Query(default=None, description="City latitude"),
+    lon: float | None = Query(default=None, description="City longitude"),
+    city_name: str | None = Query(default=None, description="City name"),
     principal: dict = Depends(get_principal),
 ) -> Any:
-    """Run real-time multi-signal hazard scan across weather, traffic, hydrology, and reports.
-
-    Returns the computed proactive risk tier (R0-R5), risk score (0-100), active threats,
-    and recommended municipal mitigation actions.
-    """
+    """Run real-time multi-signal hazard scan across weather, traffic, hydrology, and reports for a city."""
     tenant_id = principal.get("tenant_id", "ten_vijayawada")
-    assessment = hazard.scan_city_hazards(tenant_id)
+    assessment = hazard.scan_city_hazards(
+        tenant_id=tenant_id,
+        lat=lat if lat is not None else 16.5062,
+        lon=lon if lon is not None else 80.6480,
+        city_name=city_name or "Vijayawada",
+    )
     return assessment.to_dict()
 
 
 @router.get("/alerts")
 def list_active_alerts_endpoint(
+    lat: float | None = Query(default=None, description="City latitude"),
+    lon: float | None = Query(default=None, description="City longitude"),
+    city_name: str | None = Query(default=None, description="City name"),
     principal: dict = Depends(get_principal),
 ) -> Any:
-    """List active public emergency alerts and advisory broadcasts."""
+    """List active public emergency alerts and advisory broadcasts for a city."""
     tenant_id = principal.get("tenant_id", "ten_vijayawada")
-    assessment = hazard.scan_city_hazards(tenant_id)
+    assessment = hazard.scan_city_hazards(
+        tenant_id=tenant_id,
+        lat=lat if lat is not None else 16.5062,
+        lon=lon if lon is not None else 80.6480,
+        city_name=city_name or "Vijayawada",
+    )
 
     # Convert active threats to CAP-shaped alert objects
     alerts = []

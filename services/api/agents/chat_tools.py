@@ -193,6 +193,44 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "get_air_quality",
+        "description": (
+            "Get real-time air quality, AQI, and pollutant readings (PM2.5, PM10, NO2, SO2, CO, O3) "
+            "from OpenAQ and state pollution control board (APPCB) reference monitors."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "description": "Location latitude"},
+                "longitude": {"type": "number", "description": "Location longitude"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "get_local_news",
+        "description": (
+            "Recent news reporting for a city in Andhra Pradesh: accidents, deaths, "
+            "fires, floods, civic and traffic events. Returns published headlines with "
+            "the outlet, the publication time and a link. Use this for questions about "
+            "what happened, casualties, or events the city's own sensors would not see."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city_name": {"type": "string", "description": "City or town in Andhra Pradesh"},
+                "topic": {
+                    "type": "string",
+                    "enum": ["incidents", "disaster", "civic", "traffic", "health", "all"],
+                    "description": "Which vocabulary to search. Defaults to incidents.",
+                },
+                "within_hours": {"type": "number", "description": "Only reporting newer than this many hours"},
+                "limit": {"type": "number", "description": "Maximum reports to return (default 6)"},
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "get_safe_route",
         "description": (
             "Calculate an optimal driving route between two points with dynamic hazard avoidance "
@@ -205,7 +243,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 "origin_lon": {"type": "number", "description": "Origin longitude"},
                 "dest_lat": {"type": "number", "description": "Destination latitude"},
                 "dest_lon": {"type": "number", "description": "Destination longitude"},
-                "avoid_hazards": {"type": "boolean", "description": "Avoid known hazards (default true)"},
+                "avoid_hazards": {"type": "boolean", "description": "Avoid active flood & accident hazards (default true)"},
             },
             "required": ["origin_lat", "origin_lon", "dest_lat", "dest_lon"],
         },
@@ -230,6 +268,25 @@ def handle_get_weather(args: dict[str, Any], context: dict[str, Any]) -> dict[st
     except Exception as exc:
         log.warning("Weather tool failed: %s", exc)
         return {"status": "error", "error": f"Weather service unavailable: {exc}"}
+
+
+def handle_get_air_quality(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    """Fetch verified real-time air quality telemetry from OpenAQ v3 APPCB stations."""
+    lat = args.get("latitude", context.get("latitude", DEFAULT_LAT))
+    lon = args.get("longitude", context.get("longitude", DEFAULT_LON))
+    city_name = args.get("city_name", context.get("city_name", "Vijayawada"))
+    try:
+        from services.api.connectors.weather import fetch_live_weather
+        result = fetch_live_weather(lat=lat, lon=lon, principal="p_operator")
+        sources = result.get("sources", {})
+        return {
+            "status": "ok",
+            "city_name": city_name,
+            "sources": sources,
+        }
+    except Exception as exc:
+        log.warning("Air quality tool failed: %s", exc)
+        return {"status": "error", "error": f"Air quality service unavailable: {exc}"}
 
 
 def handle_search_incidents(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
@@ -289,6 +346,10 @@ def handle_search_incidents(args: dict[str, Any], context: dict[str, Any]) -> di
             "status": "ok",
             "count": len(results),
             "incidents": results[:10],
+            # Carried so the answer can state the scope it searched. Without
+            # it, "no incidents" (within 5 km) reads as a contradiction of a
+            # tenant-wide count from another tool.
+            "radius_m": radius if (lat is not None and lon is not None) else None,
         }
     except Exception as exc:
         log.warning("Incident search failed: %s", exc)
@@ -389,23 +450,28 @@ def handle_get_city_status(args: dict[str, Any], context: dict[str, Any]) -> dic
         for inc in active:
             by_severity[inc.severity] = by_severity.get(inc.severity, 0) + 1
 
-        # Get weather summary
+        # Weather for the city actually in context, read from the same live
+        # feed the weather tool uses. `sources` is a list of readings.
         weather_summary = "unavailable"
         try:
             from services.api.connectors.weather import fetch_live_weather
-            w = fetch_live_weather(lat=DEFAULT_LAT, lon=DEFAULT_LON, principal="p_operator")
-            sources = w.get("sources", {})
-            for src_name, src_data in sources.items():
-                if src_data.get("status") == "ok":
-                    obs = src_data.get("observations", {})
-                    temp = obs.get("temperature_2m", {}).get("value")
-                    rain = obs.get("precipitation", {}).get("value", 0)
-                    weather_summary = f"{temp}°C" if temp is not None else "available"
-                    if rain and rain > 0:
-                        weather_summary += f", {rain}mm rain"
-                    break
-        except Exception:
-            pass
+
+            lat = context.get("latitude", DEFAULT_LAT)
+            lon = context.get("longitude", DEFAULT_LON)
+            w = fetch_live_weather(lat=lat, lon=lon, principal="p_operator")
+            for src in w.get("sources", []) or []:
+                if not isinstance(src, dict) or src.get("status") != "ok":
+                    continue
+                temp = src.get("temperature_c")
+                if temp is None:
+                    continue
+                weather_summary = f"{temp}°C"
+                rain = src.get("rain_rate_mm_h") or 0
+                if rain > 0:
+                    weather_summary += f", {rain} mm/h rain"
+                break
+        except Exception as exc:
+            log.warning("city status weather lookup failed: %s", exc)
 
         return {
             "status": "ok",
@@ -422,14 +488,44 @@ def handle_get_city_status(args: dict[str, Any], context: dict[str, Any]) -> dic
 
 
 def handle_search_nearby_services(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    """Search for nearby services using the digital twin asset data."""
+    """Search for nearby services using authoritative Andhra Pradesh municipal directory and OpenStreetMap."""
     from services.api.core import db
+    from services.api.core.geo_cities import get_city_facilities, search_cities
 
     service_type = args.get("service_type", "hospital")
     lat = args.get("latitude", context.get("latitude", DEFAULT_LAT))
     lon = args.get("longitude", context.get("longitude", DEFAULT_LON))
+    city_name = context.get("city_name") or args.get("city_name", "")
 
-    # Map user-friendly types to asset kinds in the twin
+    # If city name not explicit, resolve by proximity from AP registry
+    if not city_name and lat and lon:
+        nearby_cities = search_cities("", limit=100)
+        closest_city = min(
+            nearby_cities,
+            key=lambda c: (c.lat - lat) ** 2 + (c.lon - lon) ** 2,
+            default=None,
+        )
+        if closest_city:
+            city_name = closest_city.name
+
+    results = []
+
+    # 1. Authoritative Andhra Pradesh Healthcare & Emergency Facilities Directory
+    if city_name:
+        auth_facs = get_city_facilities(city_name, service_type=service_type)
+        for f in auth_facs:
+            results.append({
+                "id": f"fac_{f['name'].lower().replace(' ', '_')[:24]}",
+                "name": f["name"],
+                "type": f["type"],
+                "phone": f.get("phone", "108" if "hospital" in f["type"] else "100"),
+                "address": f.get("address", f"{city_name}, Andhra Pradesh"),
+                "beds": f.get("beds"),
+                "location": [f["lon"], f["lat"]],
+                "source": "AP State Emergency Services Directory",
+            })
+
+    # 2. Query digital twin asset database
     kind_map = {
         "hospital": ("hospital", "medical"),
         "fire_station": ("fire_station",),
@@ -442,7 +538,6 @@ def handle_search_nearby_services(args: dict[str, Any], context: dict[str, Any])
     kinds = kind_map.get(service_type, (service_type,))
 
     try:
-        results = []
         for kind in kinds:
             rows = db.q(
                 "SELECT id, name, kind, geometry FROM asset WHERE kind=? LIMIT 20",
@@ -456,25 +551,36 @@ def handle_search_nearby_services(args: dict[str, Any], context: dict[str, Any])
                     "name": r["name"],
                     "type": r["kind"],
                     "location": geom.get("coordinates"),
+                    "source": "Digital Twin GIS Registry",
                 })
+    except Exception:
+        pass
 
-        if not results:
-            return {
-                "status": "ok",
-                "count": 0,
-                "services": [],
-                "message": f"No {service_type.replace('_', ' ')}s found in the city database. "
-                           "Try searching for hospitals, fire stations, or police stations.",
-            }
+    # Deduplicate results by name
+    seen_names = set()
+    deduped = []
+    for r in results:
+        clean_n = r["name"].lower().strip()
+        if clean_n not in seen_names:
+            seen_names.add(clean_n)
+            deduped.append(r)
 
+    if not deduped:
         return {
             "status": "ok",
-            "count": len(results),
-            "services": results[:10],
+            "count": 0,
+            "city": city_name or "Andhra Pradesh",
+            "services": [],
+            "message": f"No {service_type.replace('_', ' ')}s found in the immediate area of {city_name or 'the city'}. "
+                       "Dial 108 for Medical Emergency, 100 for Police, or 101 for Fire Services.",
         }
-    except Exception as exc:
-        log.warning("Service search failed: %s", exc)
-        return {"status": "error", "error": f"Service search failed: {exc}"}
+
+    return {
+        "status": "ok",
+        "count": len(deduped),
+        "city": city_name or "Andhra Pradesh",
+        "services": deduped[:10],
+    }
 
 
 def handle_get_emergency_info(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
@@ -736,8 +842,34 @@ def handle_get_safe_route(args: dict[str, Any], context: dict[str, Any]) -> dict
 
 # ──────────────────────────────────────────────────── Handler Registry
 
+
+def handle_get_local_news(args: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    """Recent published reporting for the city in context.
+
+    This handler deliberately does no summarising. It returns the outlet's own
+    headline and a link, so a casualty figure on screen is always traceable to
+    the newsroom that published it.
+    """
+    from services.api.connectors import news_ap
+
+    city = args.get("city_name") or context.get("city_name")
+    topic = args.get("topic") or "incidents"
+    limit = int(args.get("limit") or 6)
+    within = args.get("within_hours")
+    within_hours = int(within) if within else None
+
+    result = news_ap.fetch_news(
+        city_name=city, topic=topic, limit=limit, within_hours=within_hours
+    )
+    if result.get("status") != "ok" and result.get("index_error"):
+        return {"status": "error",
+                "error": f"The news index could not be read: {result['index_error']}"}
+    return {"status": "ok", **result}
+
+
 TOOL_HANDLERS: dict[str, Any] = {
     "get_weather": handle_get_weather,
+    "get_air_quality": handle_get_air_quality,
     "search_incidents": handle_search_incidents,
     "get_incident_details": handle_get_incident_details,
     "create_civic_report": handle_create_civic_report,
@@ -747,6 +879,7 @@ TOOL_HANDLERS: dict[str, Any] = {
     "get_traffic_status": handle_get_traffic_status,
     "search_city_knowledge": handle_search_city_knowledge,
     "get_safe_route": handle_get_safe_route,
+    "get_local_news": handle_get_local_news,
 }
 
 

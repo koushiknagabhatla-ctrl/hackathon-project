@@ -8,6 +8,9 @@
  */
 
 import { api, useApi } from "@/lib/api";
+import { Icon } from "@/components/ui/Icon";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import s from "./analytics.module.css";
 
 interface AnalyticsOverview {
@@ -48,17 +51,38 @@ interface AnalyticsOverview {
 }
 
 export default function AnalyticsPage() {
-  const { data: analytics, loading, reload } = useApi<AnalyticsOverview>("/v1/analytics/overview");
+  const { data: a, loading, error, correlationId, reload } =
+    useApi<AnalyticsOverview>("/v1/analytics/overview");
 
-  const a = analytics || {
-    generated_at: new Date().toISOString(),
-    tenant_id: "ten_vijayawada",
-    jurisdiction: "Vijayawada Urban Corporation",
-    incidents: { total: 12, active: 3, closed: 9, mttd_minutes: 2.4, mttr_minutes: 28.5, resolution_rate_pct: 75.0 },
-    civic_reports: { total: 18, pending: 4, resolved: 14, sla_compliance_pct: 94.4, by_department: { "Roads & Bridges Department": 8, "Solid Waste Management": 5, "Water Supply & Urban Drainage Dept": 3, "Municipal Electrical & Power Wing": 2 }, by_category: {} },
-    emergency_dispatch: { total_dispatches: 6, confirmed: 6, average_eta_minutes: 6.2, erss_integration_status: "ONLINE (ERSS 112 Protocol)" },
-    system_and_ai: { evidence_items_minted: 48, audit_events_chained: 132, agent_runs_total: 24, tokens_processed: 38200, total_llm_cost_usd: 0.084, unsupported_claim_rate: 0.0, policy_enforcement_rate_pct: 100.0 },
-  };
+  // These KPIs are read as operational fact and reported upward. When the
+  // endpoint cannot be read the page says so; it never falls back to a
+  // plausible-looking dashboard, which is indistinguishable from a real one.
+  if (loading && !a) {
+    return (
+      <div className={s.analyticsPage}>
+        <div className={s.pageHeader}>
+          <h1>Analytics</h1>
+        </div>
+        <Skeleton lines={10} />
+      </div>
+    );
+  }
+
+  if (error || !a) {
+    return (
+      <div className={s.analyticsPage}>
+        <div className={s.pageHeader}>
+          <h1>Analytics</h1>
+        </div>
+        <ErrorState
+          error={error ?? new Error("The analytics endpoint returned no data.")}
+          onRetry={reload}
+          correlationId={correlationId}
+          what="operational analytics"
+        />
+      </div>
+    );
+  }
 
   const departments = Object.entries(a.civic_reports.by_department || {});
   const maxDept = Math.max(1, ...departments.map(([, v]) => v));
@@ -69,11 +93,8 @@ export default function AnalyticsPage() {
       <div className={s.pageHeader}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <h1>Municipal Intelligence & Analytics</h1>
-            <p>
-              Executive dashboard tracking civic service level agreements (SLAs),
-              incident lifecycle speeds, emergency response dispatch, and AI token efficiency.
-            </p>
+            <h1>Analytics</h1>
+            <p>SLAs, incident lifecycle, dispatch and token spend.</p>
           </div>
           <button
             type="button"
@@ -88,7 +109,7 @@ export default function AnalyticsPage() {
               color: "var(--muted)",
             }}
           >
-            🔄 Refresh KPIs
+            Refresh
           </button>
         </div>
       </div>
@@ -122,11 +143,16 @@ export default function AnalyticsPage() {
         </div>
 
         <div className={s.kpiCard}>
-          <span className={s.kpiLabel}>Zero-Fabrication Rate</span>
-          <span className={s.kpiValue} style={{ color: "var(--ok)" }}>
-            100%
+          <span className={s.kpiLabel}>Grounded claims</span>
+          <span
+            className={s.kpiValue}
+            style={{ color: a.system_and_ai.unsupported_claim_rate === 0 ? "var(--ok)" : "var(--warn)" }}
+          >
+            {((1 - a.system_and_ai.unsupported_claim_rate) * 100).toFixed(1)}%
           </span>
-          <span className={s.kpiSubtext}>0 ungrounded claims across all runs</span>
+          <span className={s.kpiSubtext}>
+            across {a.system_and_ai.agent_runs_total} agent runs
+          </span>
         </div>
       </div>
 
@@ -135,7 +161,7 @@ export default function AnalyticsPage() {
         {/* Left Column: Department Workload & Incident Resolution */}
         <div className={s.panel}>
           <h2 className={s.panelTitle}>
-            <span>🏢</span> Department Workload Allocation
+            <Icon name="layers" size={16} /> Department workload
           </h2>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
             Live civic ticket distribution and work order routing:
@@ -163,7 +189,7 @@ export default function AnalyticsPage() {
           </div>
 
           <h2 className={s.panelTitle} style={{ marginTop: "16px" }}>
-            <span>⏱️</span> Incident Resolution Metrics
+            <Icon name="clock" size={16} /> Incident resolution
           </h2>
           <table className={s.statsTable}>
             <tbody>
@@ -190,7 +216,7 @@ export default function AnalyticsPage() {
         {/* Right Column: AI Gateway, Evidence Ledger & Governance */}
         <div className={s.panel}>
           <h2 className={s.panelTitle}>
-            <span>⚡</span> AI Intelligence & Ledger Economics
+            <Icon name="trace" size={16} /> Model and ledger usage
           </h2>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
             LLM Gateway telemetry, token budget, and cryptographic assurance:
@@ -228,15 +254,6 @@ export default function AnalyticsPage() {
               </tr>
             </tbody>
           </table>
-
-          <div style={{ background: "var(--bg-sunken)", padding: "16px", borderRadius: "12px", marginTop: "8px" }}>
-            <strong style={{ display: "block", marginBottom: "4px", color: "var(--text)" }}>Zero-Fabrication Guarantee</strong>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", lineHeight: 1.4 }}>
-              The Auralis platform guarantees that every fact, prediction, and action proposal
-              is strictly grounded in verified sensor evidence. Mathematical risk tiers and policy gates
-              execute deterministically without probabilistic model override.
-            </span>
-          </div>
         </div>
       </div>
     </div>

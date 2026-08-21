@@ -25,6 +25,9 @@ export type IconName =
   | "search"
   | "menu"
   | "close"
+  | "plus"
+  | "copy"
+  | "trash"
   | "chevronDown"
   | "chevronRight"
   | "arrowRight"
@@ -62,6 +65,9 @@ const PATHS: Record<IconName, string> = {
   search: "M11 18.2a7.2 7.2 0 1 0 0-14.4 7.2 7.2 0 0 0 0 14.4Z M16.4 16.4 20.5 20.5",
   menu: "M4 7h16 M4 12h16 M4 17h16",
   close: "M6 6l12 12 M18 6 6 18",
+  plus: "M12 5v14 M5 12h14",
+  copy: "M9 9h10.5v10.5H9V9Z M15 9V4.5H4.5V15H9",
+  trash: "M4.5 7h15 M9.5 7V4.5h5V7 M6.5 7l1 13h9l1-13 M10 10.5v6 M14 10.5v6",
   chevronDown: "M6 9.5 12 15.5 18 9.5",
   chevronRight: "M9.5 6 15.5 12 9.5 18",
   arrowRight: "M4.5 12h15 M13.5 6l6 6-6 6",

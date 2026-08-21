@@ -25,7 +25,13 @@ def fetch_traffic_flow(
     lon: float = 80.6480,
 ) -> dict[str, Any]:
     """Fetch real traffic flow and congestion metrics from configured provider."""
-    google_key = os.environ.get("GOOGLE_MAPS_API_KEY")
+    # Accept any of the names this key travels under, so a working credential
+    # is not ignored because it was set under a different one.
+    google_key = (
+        os.environ.get("GOOGLE_MAPS_API_KEY")
+        or os.environ.get("GOOGLE_ROUTES_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+    )
     tomtom_key = os.environ.get("TOMTOM_API_KEY")
     here_key = os.environ.get("HERE_API_KEY")
 

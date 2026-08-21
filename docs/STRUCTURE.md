@@ -26,7 +26,7 @@ auralis/
 │       │   ├── shell/          navbar, status rail, preloader, bottom nav
 │       │   ├── ui/             EvidenceChip, ClaimBlock, RiskBadge, ...
 │       │   └── map/            MapLibre + deck.gl surfaces
-│       ├── lib/                api client, types, motion, fixtures
+│       ├── lib/                api client, types, motion, locations
 │       └── public/fonts/       Morhefa · Givonic · Unica One · Quffer
 │
 ├── services/api/               single deployable (see ADR-0021)

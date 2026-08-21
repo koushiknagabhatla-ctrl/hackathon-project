@@ -9,6 +9,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, useApi } from "@/lib/api";
+import { useShell } from "@/components/shell/ShellState";
+import { Icon } from "@/components/ui/Icon";
 import s from "./routes.module.css";
 
 interface RouteStep {
@@ -46,32 +48,32 @@ interface TrafficCorridor {
   updated_at: string;
 }
 
-const PRESETS = [
-  { name: "Benz Circle", lat: 16.5062, lon: 80.6480 },
-  { name: "Railway Station", lat: 16.5180, lon: 80.6200 },
-  { name: "PNBS Bus Station", lat: 16.5120, lon: 80.6180 },
-  { name: "GGH Hospital", lat: 16.5190, lon: 80.6350 },
-  { name: "AIIMS Mangalagiri", lat: 16.4420, lon: 80.5650 },
-  { name: "Airport (Gannavaram)", lat: 16.5300, lon: 80.7960 },
-  { name: "Kanaka Durga Temple", lat: 16.5150, lon: 80.6050 },
-  { name: "Auto Nagar", lat: 16.4950, lon: 80.6720 },
-];
-
 export default function RoutesPage() {
-  const [originIndex, setOriginIndex] = useState(0);
-  const [destIndex, setDestIndex] = useState(1);
-  const [originLat, setOriginLat] = useState(PRESETS[0].lat);
-  const [originLon, setOriginLon] = useState(PRESETS[0].lon);
-  const [destLat, setDestLat] = useState(PRESETS[1].lat);
-  const [destLon, setDestLon] = useState(PRESETS[1].lon);
+  const { location } = useShell();
+  const [lon, lat] = location.coordinates;
+
+  const [originLat, setOriginLat] = useState(lat);
+  const [originLon, setOriginLon] = useState(lon);
+  const [destLat, setDestLat] = useState(lat + 0.025);
+  const [destLon, setDestLon] = useState(lon + 0.035);
   const [avoidHazards, setAvoidHazards] = useState(true);
 
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
 
-  // Live Traffic Corridors
-  const { data: trafficData, loading: trafficLoading, reload: reloadTraffic } = useApi<{ corridors: TrafficCorridor[]; count: number }>("/v1/traffic/corridors");
+  // Live Traffic Corridors for the active city
+  const { data: trafficData, loading: trafficLoading, reload: reloadTraffic } = useApi<{ corridors: TrafficCorridor[]; count: number }>(
+    `/v1/traffic/corridors?city_name=${encodeURIComponent(location.name)}&lat=${lat}&lon=${lon}`
+  );
+
+  // Sync coordinates when location switcher changes
+  useEffect(() => {
+    setOriginLat(location.coordinates[1]);
+    setOriginLon(location.coordinates[0]);
+    setDestLat(location.coordinates[1] + 0.025);
+    setDestLon(location.coordinates[0] + 0.035);
+  }, [location]);
 
   const calculateRoute = useCallback(async () => {
     setIsCalculating(true);
@@ -98,12 +100,23 @@ export default function RoutesPage() {
     calculateRoute();
   }, []);
 
-  const handleOriginPreset = (p: typeof PRESETS[0]) => {
+  const cityPresets = [
+    { name: `${location.name} Central`, lat: location.coordinates[1], lon: location.coordinates[0] },
+    { name: `${location.region} Hub`, lat: location.coordinates[1] + 0.012, lon: location.coordinates[0] + 0.015 },
+    { name: `${location.name} North`, lat: location.coordinates[1] + 0.025, lon: location.coordinates[0] + 0.010 },
+    { name: `${location.name} South`, lat: location.coordinates[1] - 0.020, lon: location.coordinates[0] - 0.015 },
+    { name: `${location.name} East Corridor`, lat: location.coordinates[1] + 0.008, lon: location.coordinates[0] + 0.035 },
+    { name: `${location.name} West Terminal`, lat: location.coordinates[1] - 0.010, lon: location.coordinates[0] - 0.025 },
+    { name: `${location.name} Transit Gate`, lat: location.coordinates[1] + 0.030, lon: location.coordinates[0] + 0.020 },
+    { name: `${location.name} Industrial Belt`, lat: location.coordinates[1] - 0.025, lon: location.coordinates[0] + 0.040 },
+  ];
+
+  const handleOriginPreset = (p: { name: string; lat: number; lon: number }) => {
     setOriginLat(p.lat);
     setOriginLon(p.lon);
   };
 
-  const handleDestPreset = (p: typeof PRESETS[0]) => {
+  const handleDestPreset = (p: { name: string; lat: number; lon: number }) => {
     setDestLat(p.lat);
     setDestLon(p.lon);
   };
@@ -114,25 +127,22 @@ export default function RoutesPage() {
     <div className={s.routesPage}>
       {/* Header */}
       <div className={s.pageHeader}>
-        <h1>Safe Routing & Traffic Intelligence</h1>
-        <p>
-          Dynamic turn-by-turn navigation with real-time flood & incident avoidance,
-          coupled with Level of Service (LOS) congestion tracking across primary arterial corridors.
-        </p>
+        <h1>Safe routes · {location.name}</h1>
+        <p>Turn-by-turn navigation that avoids flooding and open incidents.</p>
       </div>
 
       <div className={s.layoutGrid}>
         {/* Left Column: Route Planner & Navigation */}
         <div className={s.panel}>
           <h2 className={s.panelTitle}>
-            <span>🧭</span> Safe Navigation Planner
+            <Icon name="map" size={16} /> Route planner
           </h2>
 
           {/* Origin Selection */}
           <div className={s.formGroup}>
-            <label className={s.label}>Origin Location</label>
+            <label className={s.label}>Origin Location ({location.name})</label>
             <div className={s.presetGrid}>
-              {PRESETS.slice(0, 4).map((p) => (
+              {cityPresets.slice(0, 4).map((p) => (
                 <button
                   type="button"
                   key={`orig-${p.name}`}
@@ -166,9 +176,9 @@ export default function RoutesPage() {
 
           {/* Destination Selection */}
           <div className={s.formGroup}>
-            <label className={s.label}>Destination Location</label>
+            <label className={s.label}>Destination Location ({location.name})</label>
             <div className={s.presetGrid}>
-              {PRESETS.slice(4).map((p) => (
+              {cityPresets.slice(4).map((p) => (
                 <button
                   type="button"
                   key={`dest-${p.name}`}
@@ -203,7 +213,7 @@ export default function RoutesPage() {
           {/* Hazard Avoidance Toggle */}
           <div className={s.switchRow}>
             <div className={s.switchLabel}>
-              <strong>🛡️ Active Hazard Avoidance</strong>
+              <strong>Active hazard avoidance</strong>
               <span>Automatically divert around floods, accidents, and road blocks</span>
             </div>
             <input
@@ -226,7 +236,7 @@ export default function RoutesPage() {
 
           {routeError && (
             <div style={{ color: "var(--bad)", fontSize: "var(--fs-sm)", background: "#ffebee", padding: "10px", borderRadius: "8px" }}>
-              ⚠️ {routeError}
+              {routeError}
             </div>
           )}
 
@@ -254,7 +264,7 @@ export default function RoutesPage() {
               {routeResult.hazards_avoided && routeResult.hazards_avoided.length > 0 && (
                 <div className={s.hazardAlert}>
                   <div className={s.hazardAlertTitle}>
-                    <span>⚠️</span>
+                    <Icon name="major" size={15} />
                     <span>{routeResult.hazards_avoided.length} Active Hazard(s) Avoided</span>
                   </div>
                   {routeResult.hazards_avoided.map((h, i) => (
@@ -290,7 +300,7 @@ export default function RoutesPage() {
         <div className={s.panel}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 className={s.panelTitle}>
-              <span>🚦</span> Arterial Corridor Congestion
+              <Icon name="activity" size={16} /> Corridor congestion
             </h2>
             <button
               type="button"
@@ -305,7 +315,7 @@ export default function RoutesPage() {
                 color: "var(--muted)",
               }}
             >
-              🔄 Refresh
+              Refresh
             </button>
           </div>
 
@@ -333,7 +343,7 @@ export default function RoutesPage() {
                     </div>
 
                     <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-soft)" }}>
-                      {c.from} ➔ {c.to} ({c.length_km} km)
+                      {c.from} to {c.to} ({c.length_km} km)
                     </div>
 
                     {/* Speed indicator bar */}

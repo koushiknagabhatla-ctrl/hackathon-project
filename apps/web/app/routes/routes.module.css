@@ -128,7 +128,7 @@
 .input:focus,
 .select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(250, 129, 40, 0.12);
+  box-shadow: 0 0 0 3px rgba(255, 89, 0, 0.12);
 }
 
 .switchRow {
@@ -169,19 +169,17 @@
   padding: var(--sp-3) var(--sp-6);
   border-radius: var(--r-surface);
   border: none;
-  background: linear-gradient(135deg, var(--accent), #e06a10);
+  background: var(--accent);
   color: #ffffff;
   font-family: var(--font-ui);
   font-size: var(--fs-body);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(250, 129, 40, 0.25);
   transition: all var(--t-hover) var(--ease-out);
 }
 
 .calculateBtn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(250, 129, 40, 0.35);
 }
 
 .calculateBtn:disabled {

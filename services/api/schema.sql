@@ -375,6 +375,25 @@ CREATE TABLE IF NOT EXISTS alert_publication (
   disclosure_delay_s INTEGER NOT NULL DEFAULT 300
 );
 
+-- Cameras whose feeds are analysed. `authorized_by` is NOT NULL on purpose:
+-- pointing an analyser at a feed is a decision someone has to own.
+CREATE TABLE IF NOT EXISTS camera (
+  id            TEXT PRIMARY KEY,
+  tenant_id     TEXT NOT NULL REFERENCES tenant(id),
+  name          TEXT NOT NULL,
+  stream_url    TEXT NOT NULL,
+  lat           REAL NOT NULL,
+  lon           REAL NOT NULL,
+  road_segment  TEXT,
+  enabled       INTEGER NOT NULL DEFAULT 1,
+  authorized_by TEXT NOT NULL,
+  sample_fps    REAL NOT NULL DEFAULT 3.0,
+  tuning_json   TEXT,
+  registered_at TEXT NOT NULL,
+  last_ok_at    TEXT,
+  last_error    TEXT
+);
+
 -- -------------------------------------------------------- emergency response
 CREATE TABLE IF NOT EXISTS registered_device (
   id                  TEXT PRIMARY KEY,
@@ -424,6 +443,23 @@ CREATE TABLE IF NOT EXISTS emergency_notification (
   created_at   TEXT NOT NULL,
   delivered_at TEXT,
   failure_reason TEXT
+);
+
+-- People who asked to be warned. A row here is not permission:
+-- `consent_verified` is, and delivery code must check it.
+CREATE TABLE IF NOT EXISTS alert_subscriber (
+  id               TEXT PRIMARY KEY,
+  tenant_id        TEXT NOT NULL REFERENCES tenant(id),
+  phone_e164       TEXT NOT NULL,
+  language         TEXT NOT NULL DEFAULT 'en',
+  last_lat         REAL,
+  last_lon         REAL,
+  consent_verified INTEGER NOT NULL DEFAULT 0,
+  consent_source   TEXT,
+  active           INTEGER NOT NULL DEFAULT 1,
+  registered_at    TEXT NOT NULL,
+  last_seen_at     TEXT,
+  UNIQUE(tenant_id, phone_e164)
 );
 
 CREATE TABLE IF NOT EXISTS emergency_contact (

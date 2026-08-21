@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useApi, api } from "@/lib/api";
+import { useShell } from "@/components/shell/ShellState";
 import { stamp } from "@/lib/format";
+import { SyntheticBanner } from "@/components/ui/SyntheticBanner";
 import s from "../pages.module.css";
 
 interface EmergencyDispatch {
@@ -22,11 +24,17 @@ interface EmergencyDispatch {
 }
 
 export default function EmergencyPage() {
+  const { location } = useShell();
+  const [lon, lat] = location.coordinates;
   const { data: dispatches, loading, reload } = useApi<EmergencyDispatch[]>("/v1/emergency/dispatches");
   const [selectedService, setSelectedService] = useState("ambulance");
-  const [roadSegment, setRoadSegment] = useState("MG Road / Benz Circle Intersection");
+  const [roadSegment, setRoadSegment] = useState(`${location.region} Arterial Road`);
   const [dispatchStatus, setDispatchStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setRoadSegment(`${location.region} Arterial Road`);
+  }, [location]);
 
   // Simulating/Triggering real emergency signals for demonstration
   async function triggerSignal(kind: "cctv" | "traffic" | "citizen") {
@@ -40,14 +48,14 @@ export default function EmergencyPage() {
         payload = { speed_kph: 3.5 };
       } else if (kind === "citizen") {
         endpoint = "/v1/emergency/citizen/report";
-        payload = { text: "Major collision reported at Benz Circle. Immediate medical support required." };
+        payload = { text: `Major vehicle collision reported at ${roadSegment}, ${location.name}. Immediate medical dispatch requested.` };
       }
 
       const res = await api.post<{ verification_status: string; confidence: number; decision: { policy_effect: string } }>(
         endpoint,
         {
-          latitude: 16.5062,
-          longitude: 80.6480,
+          latitude: lat,
+          longitude: lon,
           road_segment: roadSegment,
           payload,
         }
@@ -67,14 +75,8 @@ export default function EmergencyPage() {
     <div className={s.page}>
       <header className={s.header}>
         <div>
-          <h1 className={s.title}>Emergency Response & ERSS 112 Dispatch</h1>
-          <p className={s.subtitle}>
-            Multi-signal accident corroboration, deterministic safety policy, and authorized ERSS 112 CAD integration
-          </p>
-        </div>
-        <div className={s.actions}>
-          <span className="badge badge-info">Zero-Fabrication Mode</span>
-          <span className="badge badge-success">ERSS 112 Active</span>
+          <h1 className={s.title}>Emergency dispatch</h1>
+          <p className={s.subtitle}>Accident corroboration and ERSS 112 dispatch.</p>
         </div>
       </header>
 
@@ -90,6 +92,12 @@ export default function EmergencyPage() {
           <h2 style={{ fontSize: "1.2rem", marginBottom: "1rem", color: "var(--accent)" }}>
             1. Multi-Signal Corroboration Engine
           </h2>
+          <div style={{ marginBottom: "1rem" }}>
+            <SyntheticBanner
+              scope="Every signal injected from this console"
+              detail="These buttons post test signals, not observations from the street."
+            />
+          </div>
           <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1.2rem" }}>
             The system requires independent corroboration before escalating to emergency dispatch:
             <br />
@@ -106,21 +114,21 @@ export default function EmergencyPage() {
               disabled={isSubmitting}
               onClick={() => triggerSignal("cctv")}
             >
-              📹 Ingest Signal 1: CCTV Collision Vision (conn_traffic_cam_01)
+              Ingest signal 1: CCTV Collision Vision (conn_traffic_cam_01)
             </button>
             <button
               className="btn btn-secondary"
               disabled={isSubmitting}
               onClick={() => triggerSignal("traffic")}
             >
-              🚗 Ingest Signal 2: Traffic Speed Collapse &lt;5 km/h (conn_tomtom_traffic)
+              Ingest signal 2: Traffic Speed Collapse &lt;5 km/h (conn_tomtom_traffic)
             </button>
             <button
               className="btn btn-secondary"
               disabled={isSubmitting}
               onClick={() => triggerSignal("citizen")}
             >
-              📱 Ingest Signal 3: Citizen Open311 Verified Report (conn_citizen)
+              Ingest signal 3: Citizen Open311 Verified Report (conn_citizen)
             </button>
           </div>
         </div>
@@ -160,7 +168,7 @@ export default function EmergencyPage() {
           <p>Loading dispatch ledger...</p>
         ) : !dispatches || dispatches.length === 0 ? (
           <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>
-            No active emergency dispatch requests. Multi-signal monitoring active on all monitored corridors.
+            No dispatch requests on the record.
           </div>
         ) : (
           <table className={s.table}>
@@ -188,11 +196,11 @@ export default function EmergencyPage() {
                   </td>
                   <td>
                     {d.status === "confirmed" ? (
-                      <span className="badge badge-success">✓ DISPATCH CONFIRMED ({d.eta_minutes}m ETA)</span>
+                      <span className="badge badge-success">Dispatch confirmed ({d.eta_minutes}m ETA)</span>
                     ) : d.status === "awaiting_confirmation" ? (
-                      <span className="badge badge-warning">⏳ AWAITING CONFIRMATION</span>
+                      <span className="badge badge-warning">Awaiting confirmation</span>
                     ) : (
-                      <span className="badge badge-info">ESCALATED TO OPERATOR</span>
+                      <span className="badge badge-info">Escalated to operator</span>
                     )}
                   </td>
                   <td>{d.requesting_authority}</td>

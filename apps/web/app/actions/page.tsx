@@ -15,8 +15,9 @@ import { MetricTile } from "@/components/ui/MetricTile";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import type { Action, PolicyDecision } from "@/lib/types";
-import { ACTIONS as FIXTURE_ACTIONS } from "@/lib/fixtures";
 import s from "../pages.module.css";
 
 function ActionStatusBadge({ status }: { status: string }) {
@@ -34,12 +35,12 @@ function ActionStatusBadge({ status }: { status: string }) {
 }
 
 export default function ActionMonitor() {
-  const { data: actionsData, loading, reload } = useApi<Action[]>("/v1/actions");
+  const { data: actionsData, loading, error, correlationId, reload } = useApi<Action[]>("/v1/actions");
   const toast = useToast();
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
-  const actions = actionsData && actionsData.length > 0 ? actionsData : FIXTURE_ACTIONS;
+  const actions = actionsData ?? [];
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
@@ -133,8 +134,21 @@ export default function ActionMonitor() {
         <MetricTile label="Pending Auth" value={String(proposedCount)} />
       </div>
 
-      {loading && !actions.length ? (
+      {error ? (
+        <ErrorState
+          error={error}
+          onRetry={reload}
+          correlationId={correlationId}
+          what="the action queue"
+        />
+      ) : loading && !actions.length ? (
         <Skeleton lines={8} />
+      ) : actions.length === 0 ? (
+        <EmptyState
+          icon="check"
+          title="No actions on the record"
+          body="Nothing has been proposed or executed. Actions appear here once an incident produces one."
+        />
       ) : (
         <div className={`${s.card} js-reveal`}>
           <div className={s.cardHeader}>

@@ -7,10 +7,10 @@
  */
 
 import { useApi } from "@/lib/api";
+import { useShell } from "@/components/shell/ShellState";
 import { useGsap, sectionReveal } from "@/lib/motion";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { CITY } from "@/lib/fixtures";
 import s from "../pages.module.css";
 
 interface Advisory {
@@ -30,6 +30,7 @@ interface PublicStatusData {
 }
 
 export default function PublicStatusPage() {
+  const { location } = useShell();
   const { data: statusData, loading } = useApi<PublicStatusData>("/v1/public/status");
   // NO SILENT SUBSTITUTION. This is the citizen-facing surface. Publishing
   // fabricated incident status to the public — or worse, a fabricated "all
@@ -62,7 +63,7 @@ export default function PublicStatusPage() {
     <section className="container section" ref={ref} style={{ maxWidth: 880, marginInline: "auto" }}>
       <div className={`${s.pageHeader} js-reveal`}>
         <div>
-          <span className="eyebrow">{CITY.name} Civil Operations · Public Service</span>
+          <span className="eyebrow">{location.name} · Public service</span>
           <h1 style={{ marginTop: 4 }}>Live City Safety & Flood Advisories</h1>
         </div>
         <span className={`${s.tag} ${s.tagProposed}`}>Public Access Mode</span>

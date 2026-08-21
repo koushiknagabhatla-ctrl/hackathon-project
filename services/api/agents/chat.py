@@ -47,7 +47,7 @@ CHAT_MODEL = os.environ.get("AURALIS_CHAT_MODEL", "claude-sonnet-4-20250514")
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_API_VERSION = "2023-06-01"
 CHAT_MAX_TOKENS = 1500
-CHAT_TIMEOUT_S = 30.0
+CHAT_TIMEOUT_S = 6.0
 
 
 # ──────────────────────────────────────────────────── Session Store
@@ -131,7 +131,9 @@ def list_sessions() -> list[dict[str, Any]]:
 
 # ──────────────────────────────────────────────────── System Prompt
 
-SYSTEM_PROMPT = """You are Auralis AI, the intelligent assistant for Auralis City — an AI-powered civic intelligence platform for Vijayawada, Andhra Pradesh, India.
+SYSTEM_PROMPT = """You are Auralis AI, the assistant for the Auralis civic intelligence platform, serving cities and towns across Andhra Pradesh, India.
+
+The operator selects which city is in context. Always answer about the city named in the context you are given, never a default one.
 
 Your role:
 - Help citizens with civic information, incident reports, weather, traffic, routing, and emergency guidance
@@ -168,6 +170,148 @@ IMPORTANT RULES:
 8. Use location context when available for more relevant answers"""
 
 
+
+# Used only when no tool matched, i.e. the turn is conversation rather than a
+# request for a reading. It may explain the product and talk normally; it must
+# not state city measurements, because those only ever come from a tool.
+CONVERSATION_PROMPT = """You are Auralis AI, the assistant inside the Auralis civic intelligence platform. The operator is currently looking at {city}.
+
+About Auralis, so you can answer questions about it:
+- It is an operations platform for city infrastructure across Andhra Pradesh.
+- Every fact it shows carries the source, the timestamp and the freshness of the record it came from. Nothing is displayed that cannot be traced to a source.
+- Sections: Auralis AI (this chat), Command (live incidents and the city map), Actions (the authorisation queue), Trace (reconstruct any decision), plus Hazard alerts, Safe routes, Report an issue, Emergency dispatch, Field work orders, Simulation, Governance, Executive summary, Analytics, Data health, Audit and Public status.
+- Actions carry a risk tier R0-R5. R4 and R5 need a named human approval before anything runs.
+- Live sources include Open-Meteo, OpenWeatherMap, GloFAS river discharge, OpenAQ air quality, USGS seismic, OpenStreetMap, TomTom traffic, GDELT news and data.gov.in.
+
+How to answer:
+- Be warm, direct and brief. Two or three sentences is usually right.
+- Answer general questions and chat normally.
+- You may explain what the platform does and how to use it.
+- Never state a temperature, air quality number, river level, traffic speed, incident count or any other city reading. You do not have those here. If the user wants one, tell them to ask directly, e.g. "ask me the weather in {city}" and the platform will fetch it live.
+- Never invent an incident, a report, a statistic or a source.
+- If you do not know, say so plainly."""
+
+
+# ─────────────────────────────────────────── Platform knowledge (curated)
+
+# What the product is and what each surface does is knowable at build time, so
+# it is answered from here rather than generated. A small model asked to
+# describe the product will confidently invent features it does not have.
+PLATFORM_PAGES: dict[str, tuple[tuple[str, ...], str]] = {
+    "chat": (("auralis ai", "this chat", "chat page", "assistant"),
+             "**Auralis AI** is this chat. It answers from the same live sources the rest "
+             "of the platform uses, and shows readings only when a source actually returned one."),
+    "command": (("command", "command centre", "command center"),
+                "**Command** is the live operations view: open incidents, the city map and the "
+                "current state of monitored assets."),
+    "actions": (("actions", "action queue", "authorisation", "authorization"),
+                "**Actions** is the authorisation queue. Every proposed tool call is listed with "
+                "its risk tier, the policy rule that judged it, and its verified outcome. "
+                "R4 and R5 actions cannot run without a named human approval."),
+    "trace": (("trace", "provenance", "reconstruct"),
+              "**Trace** reconstructs a decision end to end: the claim, the evidence behind it, "
+              "the model version, the tool manifest, the policy decision and the verified effect."),
+    "alerts": (("hazard alert", "alerts page", "early warning"),
+               "**Hazard alerts** scans weather, river discharge, traffic and citizen reports "
+               "together and reports a composite risk score for the selected city."),
+    "routes": (("safe route", "routes page", "navigation"),
+               "**Safe routes** plans a route that avoids flooding and open incidents."),
+    "report": (("report an issue", "report page", "report issue", "complaint"),
+               "**Report an issue** files a civic report — pothole, garbage, flooding, damaged "
+               "infrastructure — and routes it to the responsible department with an SLA."),
+    "emergency": (("emergency", "112", "erss", "dispatch"),
+                  "**Emergency dispatch** corroborates an accident across independent signals "
+                  "before it will escalate, and never claims an ambulance was dispatched until "
+                  "the external gateway confirms it."),
+    "field": (("field", "work order", "crew"),
+              "**Field** carries work orders for crews on the ground, and keeps working offline."),
+    "simulation": (("simulation", "counterfactual", "sandbox", "what if"),
+                   "**Simulation** runs counterfactuals in a sandbox twin. Its output is labelled "
+                   "synthetic and can never authorise a real action."),
+    "governance": (("governance", "policy bundle", "kill switch", "tool registry"),
+                   "**Governance** holds the policy bundle, the signed tool registry, roles and "
+                   "the dual-control kill switch."),
+    "executive": (("executive", "leadership"),
+                  "**Executive summary** reports outcomes, cost and service levels, derived only "
+                  "from metrics the system actually recorded."),
+    "analytics": (("analytics", "kpi", "sla"),
+                  "**Analytics** shows SLA compliance, incident lifecycle timings, dispatch "
+                  "performance and model token spend."),
+    "data-health": (("data health", "connector", "freshness", "sources page"),
+                    "**Data health** lists every source, when it last answered, and any open "
+                    "contradiction between sources."),
+    "audit": (("audit", "ledger", "hash chain"),
+              "**Audit** is the append-only, hash-chained record. The chain can be verified."),
+    "public": (("public status", "public page", "citizen view"),
+               "**Public status** is the redacted view the public sees."),
+}
+
+PLATFORM_OVERVIEW = (
+    "**Auralis** is an operations platform for city infrastructure across Andhra Pradesh.\n\n"
+    "Everything it shows is tied to a source: each fact carries where it came from, when it was "
+    "observed and how fresh it is. When a source cannot be read, the surface says so instead of "
+    "filling the gap.\n\n"
+    "The main sections are **Auralis AI** (this chat), **Command** (live incidents and the map), "
+    "**Actions** (the authorisation queue) and **Trace** (reconstruct any decision). Behind "
+    "**More** are hazard alerts, safe routes, issue reporting, emergency dispatch, field work "
+    "orders, simulation, governance, the executive summary, analytics, data health, the audit "
+    "ledger and public status.\n\n"
+    "Live sources include Open-Meteo and OpenWeatherMap for weather, GloFAS for river discharge, "
+    "OpenAQ for air quality, USGS for seismic activity, TomTom for traffic, OpenStreetMap for "
+    "facilities, GDELT for news and data.gov.in for national open data."
+)
+
+PLATFORM_CAPABILITY = (
+    "Ask me about the city in context and I will fetch it live:\n\n"
+    "- **Weather** — temperature, humidity, wind, rainfall\n"
+    "- **Air quality** — the nearest monitoring stations\n"
+    "- **Incidents** — what is open now, and what happened recently\n"
+    "- **Traffic** — congestion and a safe route\n"
+    "- **Nearby services** — hospitals, fire stations, police\n"
+    "- **Municipal rules** — property tax, bylaws, flood procedures\n"
+    "- **Report an issue** — potholes, garbage, damaged infrastructure\n\n"
+    "I can also explain any part of the platform. What would you like?"
+)
+
+
+def platform_answer(message: str) -> str | None:
+    """Answer a question about the product itself, or None if it is not one.
+
+    Curated because these answers are known and must not drift; the model is
+    not consulted for them.
+    """
+    msg = message.lower().strip()
+
+    asks_about_product = any(
+        re.search(rf"(?<!\w){re.escape(p)}(?!\w)", msg)
+        for p in ("this website", "this site", "this app", "this platform",
+                  "what is auralis", "about auralis", "what does auralis",
+                  "what can you do", "what do you do", "who are you",
+                  "what is this", "how does this work", "what can this do",
+                  "your features", "your capabilities", "help me understand")
+    )
+
+    # A named page wins over the generic overview: "what does Trace do".
+    for _key, (aliases, answer) in PLATFORM_PAGES.items():
+        if any(re.search(rf"(?<!\w){re.escape(a)}(?!\w)", msg) for a in aliases):
+            if any(w in msg for w in ("what", "how", "explain", "tell me", "does", "do", "?")):
+                return answer
+
+    if asks_about_product:
+        if any(w in msg for w in ("can you do", "do you do", "capabilities", "features", "help")):
+            return PLATFORM_CAPABILITY
+        # "who are you" wants an introduction, not the full product tour.
+        if "who are you" in msg and "what" not in msg:
+            return (
+                "I'm Auralis AI, the assistant inside the Auralis civic platform. "
+                "I answer questions about the city you have selected using live data, "
+                "and I can explain any part of the platform. What do you need?"
+            )
+        return PLATFORM_OVERVIEW
+
+    return None
+
+
 # ──────────────────────────────────────────────────── Intent Detection
 
 def detect_intent(message: str) -> list[str]:
@@ -178,6 +322,10 @@ def detect_intent(message: str) -> list[str]:
     """
     msg = message.lower()
     tools = []
+
+    def has(words: set[str]) -> bool:
+        """True when any phrase appears as a whole word/phrase, not a substring."""
+        return any(re.search(rf"(?<!\w){re.escape(w)}(?!\w)", msg) for w in words)
 
     weather_words = {"weather", "rain", "temperature", "wind", "humidity", "forecast",
                      "storm", "hot", "cold", "sunny", "cloudy", "monsoon", "cyclone"}
@@ -192,25 +340,62 @@ def detect_intent(message: str) -> list[str]:
                      "closest", "nearest", "where is", "find"}
     status_words = {"city status", "how is the city", "overview", "summary", "what's happening",
                     "what is happening", "situation", "update"}
+    # Past-tense and time-window phrasing ("what happened in the last 24hrs") asks
+    # for the recent record, which the status snapshot alone does not answer.
+    recap_words = {"last 24", "24hr", "24 hr", "24hour", "24 hour", "past day", "past 24",
+                   "happened", "happend", "recent", "recently", "today", "overnight",
+                   "so far", "latest", "since yesterday", "yesterday", "briefing", "recap",
+                   "last day", "last night", "this week", "past week", "what went on"}
+    # Past-tense and time-window phrasing ("what happened in the last 24hrs") is a
+    # recap request: it wants the recent record, not the current snapshot alone.
+    recap_words = {"last 24", "24hr", "24 hr", "24hour", "24 hour", "past day", "past 24",
+                   "happened", "happend", "recent", "recently", "today", "overnight",
+                   "so far", "latest", "since yesterday", "yesterday", "briefing", "recap",
+                   "last day", "last night", "this week", "past week"}
     knowledge_words = {"tax", "property tax", "bylaw", "rule", "guideline", "prakasam barrage",
                        "discharge", "cusecs", "budameru", "segregation", "penalty", "fine",
                        "charter", "sla", "certificate", "license", "how to pay", "how do i pay"}
 
-    if any(w in msg for w in weather_words):
+    news_words = {"news", "headline", "headlines", "reported", "report says", "media",
+                  "died", "death", "deaths", "casualty", "casualties", "killed", "toll",
+                  "injured", "victim", "victims", "who died", "how many died",
+                  "what happened in", "any news", "latest news", "newspaper"}
+    if has(news_words):
+        tools.append("get_local_news")
+
+    air_words = {"air", "aqi", "pm2.5", "pm10", "pm 2.5", "pm 10", "pollution", "air quality", "openaq", "smoke", "smog", "clean air"}
+    if has(air_words):
+        tools.append("get_air_quality")
+    if has(weather_words):
         tools.append("get_weather")
-    if any(w in msg for w in incident_words):
+    if has(incident_words):
         tools.append("search_incidents")
-    if any(w in msg for w in report_words):
+    if has(report_words):
         tools.append("create_civic_report")
-    if any(w in msg for w in traffic_words):
+    if has(traffic_words):
         tools.append("get_traffic_status")
-    if any(w in msg for w in emergency_words):
+    if has(emergency_words):
         tools.append("get_emergency_info")
-    if any(w in msg for w in service_words):
+    if has(service_words):
         tools.append("search_nearby_services")
-    if any(w in msg for w in status_words):
+    if has(status_words):
         tools.append("get_city_status")
-    if any(w in msg for w in knowledge_words):
+    if has(recap_words):
+        # Incidents carry "what happened"; status carries "where it stands now".
+        if "search_incidents" not in tools:
+            tools.append("search_incidents")
+        if "get_city_status" not in tools:
+            tools.append("get_city_status")
+        if "get_local_news" not in tools:
+            tools.append("get_local_news")
+    if has(recap_words):
+        # Recent incidents carry the "what happened"; city status carries the
+        # "where things stand now". A recap wants both, in that order.
+        if "search_incidents" not in tools:
+            tools.append("search_incidents")
+        if "get_city_status" not in tools:
+            tools.append("get_city_status")
+    if has(knowledge_words):
         tools.append("search_city_knowledge")
 
     return tools
@@ -322,16 +507,16 @@ def _deterministic_response(
     if not intents:
         # General greeting or unknown intent
         return (
-            "Hello! I'm **Auralis AI**, your civic intelligence assistant for Vijayawada. "
-            "I can help you with:\n\n"
-            "🌤️ **Weather** — current conditions and forecasts\n"
-            "🚨 **Incidents** — active accidents, floods, emergencies\n"
-            "📝 **Report Issues** — potholes, garbage, infrastructure damage\n"
-            "🚗 **Traffic** — road conditions and congestion\n"
-            "🏥 **Nearby Services** — hospitals, fire stations, police\n"
-            "⚠️ **Emergency Guidance** — safety procedures and contacts\n"
-            "📊 **City Status** — overall city operations\n\n"
-            "How can I help you today?",
+            f"I can answer questions about **{context.get('city_name') or 'the selected city'}** "
+            "from live city data:\n\n"
+            "- **Weather** — current conditions and forecast\n"
+            "- **Incidents** — accidents, flooding, blockages\n"
+            "- **Recent activity** — what has happened in the last 24 hours\n"
+            "- **Traffic** — congestion and safe routes\n"
+            "- **Nearby services** — hospitals, fire stations, police\n"
+            "- **Report an issue** — potholes, garbage, damaged infrastructure\n"
+            "- **Municipal rules** — property tax, bylaws, flood procedures\n\n"
+            "What would you like to know?",
             [],
             [],
         )
@@ -356,7 +541,7 @@ def _deterministic_response(
                 break
 
         if result.get("status") == "error":
-            response_parts.append(f"⚠️ {result.get('error', 'Service unavailable')}")
+            response_parts.append(f"{result.get('error', 'Service unavailable')}")
             continue
 
         if name == "get_weather":
@@ -381,17 +566,17 @@ def _deterministic_response(
 
                     parts = []
                     if temp is not None:
-                        parts.append(f"🌡️ **Temperature:** {temp}°C")
+                        parts.append(f"**Temperature:** {temp}°C")
                     if humidity is not None:
-                        parts.append(f"💧 **Relative Humidity:** {humidity}%")
+                        parts.append(f"**Relative Humidity:** {humidity}%")
                     if wind is not None:
-                        parts.append(f"💨 **Wind Speed:** {wind} km/h")
+                        parts.append(f"**Wind Speed:** {wind} km/h")
                     if rain is not None and rain > 0:
-                        parts.append(f"🌧️ **Precipitation:** {rain} mm/h")
+                        parts.append(f"**Precipitation:** {rain} mm/h")
                     else:
-                        parts.append("☀️ **Conditions:** Clear / No Precipitation")
+                        parts.append("**Conditions:** Clear / No Precipitation")
 
-                    parts.append(f"📡 **Verified Source:** {provider}")
+                    parts.append(f"**Verified Source:** {provider}")
 
                     obs_str = f" as of {observed[:16].replace('T', ' ')} UTC" if observed else ""
                     response_parts.append(
@@ -404,25 +589,75 @@ def _deterministic_response(
             if not parsed_weather and isinstance(weather, dict) and "temperature" in weather:
                 temp = weather.get("temperature")
                 hum = weather.get("humidity", "--")
-                response_parts.append(f"**Current Weather in {city_name}:**\n\n🌡️ **Temperature:** {temp}°C\n💧 **Humidity:** {hum}%")
+                response_parts.append(f"**Current Weather in {city_name}:**\n\n**Temperature:** {temp}°C\n**Humidity:** {hum}%")
                 parsed_weather = True
 
             if not parsed_weather:
                 response_parts.append(f"Weather data for {city_name} is currently unavailable.")
 
+        elif name == "get_air_quality":
+            sources = result.get("sources", {})
+            readings = []
+            if isinstance(sources, dict):
+                openaq = sources.get("openaq", {})
+                if isinstance(openaq, dict):
+                    readings = openaq.get("readings", [])
+            elif isinstance(sources, list):
+                for src in sources:
+                    if isinstance(src, dict) and src.get("name") == "openaq":
+                        readings = src.get("readings", [])
+                        break
+
+            city_n = result.get("city_name") or city_name or "Andhra Pradesh"
+            if not readings:
+                response_parts.append(f"**Air Quality Telemetry for {city_n}:**\nNo active OpenAQ monitoring stations reporting in this jurisdiction right now.")
+            else:
+                lines = [f"**Verified Air Quality (OpenAQ v3 Real-Time) — {city_n}:**\n"]
+                for r in readings[:6]:
+                    if isinstance(r, dict):
+                        lines.append(f"  • **{r.get('parameter', '').upper()}**: {r.get('value')} {r.get('unit')} (Station: {r.get('location')})")
+                response_parts.append("\n".join(lines))
+
         elif name == "search_incidents":
             count = result.get("count", 0)
             incidents = result.get("incidents", [])
+            radius_m = result.get("radius_m")
+            scope = f" within {int(radius_m) // 1000} km" if radius_m else ""
             if count == 0:
-                response_parts.append(f"✅ No active incidents found in {city_name}.")
+                response_parts.append(
+                    f"No active incidents on the record for {city_name}{scope}."
+                )
             else:
-                lines = [f"🚨 **{count} active incident(s) found in {city_name}:**\n"]
+                lines = [f"**{count} active incident(s) in {city_name}{scope}:**\n"]
                 for inc in incidents[:5]:
-                    sev_emoji = {"critical": "🔴", "major": "🟠", "minor": "🟡", "info": "🔵"}.get(inc.get("severity"), "⚪")
                     lines.append(
-                        f"{sev_emoji} **{inc.get('title', 'Untitled')}** "
+                        f"- **{inc.get('title', 'Untitled')}** "
                         f"— {inc.get('severity', '?').upper()} ({inc.get('state', '?')})"
                     )
+                response_parts.append("\n".join(lines))
+
+        elif name == "get_local_news":
+            arts = result.get("items", [])
+            scope = result.get("scope", city_name)
+            if not arts:
+                window = result.get("within_hours")
+                response_parts.append(
+                    f"No reporting found for {scope}"
+                    + (f" in the last {int(window)} hours." if window else ".")
+                )
+            else:
+                lines = [f"**Reported for {scope}:**\n"]
+                for a in arts[:6]:
+                    when = (a.get("published_at") or "")[:16].replace("T", " ")
+                    lines.append(
+                        f"- {a.get('title', '').strip()}\n"
+                        f"  — {a.get('outlet', 'unattributed')}"
+                        + (f", {when} UTC" if when else "")
+                    )
+                lines.append(
+                    "\nThese are the outlets' own headlines. Figures, causes and names "
+                    "are as each outlet reported them."
+                )
                 response_parts.append("\n".join(lines))
 
         elif name == "get_city_status":
@@ -431,20 +666,19 @@ def _deterministic_response(
             weather = result.get("weather", "unavailable")
             sev_parts = [f"{k}: {v}" for k, v in by_sev.items()]
             response_parts.append(
-                f"📊 **Vijayawada City Status**\n\n"
-                f"🚨 **Active Incidents:** {active}\n"
+                f"**{city_name} status**\n\n"
+                f"**Active Incidents:** {active}\n"
                 + (f"  Breakdown: {', '.join(sev_parts)}\n" if sev_parts else "")
-                + f"🌤️ **Weather:** {weather}\n"
-                + f"🕐 **Updated:** {result.get('timestamp', 'now')[:16]}"
+                + f"**Weather:** {weather}\n"
+                + f"**Updated:** {result.get('timestamp', 'now')[:16]}"
             )
 
         elif name == "get_traffic_status":
             overall = result.get("overall_traffic", "unknown")
-            emoji = {"clear": "🟢", "light": "🟡", "moderate": "🟠", "heavy": "🔴"}.get(overall, "⚪")
             affected = result.get("affected_areas", 0)
             response_parts.append(
-                f"🚗 **Traffic Status:** {emoji} {overall.upper()}\n"
-                f"📍 **Affected Areas:** {affected}"
+                f"**Traffic Status:** {overall}\n"
+                f"**Affected Areas:** {affected}"
             )
             details = result.get("congestion_details", [])
             if details:
@@ -458,7 +692,7 @@ def _deterministic_response(
             title = guide.get("title", "Emergency Information")
             actions = guide.get("immediate_actions", [])
             contacts = guide.get("emergency_contacts", {})
-            response_parts.append(f"⚠️ **{title}**\n")
+            response_parts.append(f"**{title}**\n")
             if actions:
                 response_parts.append("**Immediate Actions:**")
                 for i, action in enumerate(actions, 1):
@@ -466,33 +700,39 @@ def _deterministic_response(
             if contacts:
                 response_parts.append("\n**Emergency Contacts:**")
                 for name_c, number in contacts.items():
-                    response_parts.append(f"  📞 **{name_c}:** {number}")
+                    response_parts.append(f"**{name_c}:** {number}")
 
         elif name == "create_civic_report":
             if result.get("report_created"):
                 response_parts.append(
-                    f"✅ **Report Submitted Successfully!**\n\n"
+                    f"**Report Submitted Successfully!**\n\n"
                     f"{result.get('message', 'Your report is being processed.')}"
                 )
             else:
-                response_parts.append(f"❌ Failed to create report: {result.get('error', 'Unknown error')}")
+                response_parts.append(f"Failed to create report: {result.get('error', 'Unknown error')}")
 
         elif name == "search_nearby_services":
             services = result.get("services", [])
             count = result.get("count", 0)
+            city = result.get("city", "the area")
             if count == 0:
                 response_parts.append(result.get("message", "No services found nearby."))
             else:
-                response_parts.append(f"📍 **{count} nearby service(s) found:**\n")
-                for svc in services[:5]:
-                    response_parts.append(f"  • **{svc.get('name', 'Unknown')}** ({svc.get('type', '')})")
+                lines = [f"**Verified Emergency & Healthcare Services in {city}:**\n"]
+                for svc in services[:6]:
+                    name_s = svc.get("name", "Unknown")
+                    addr = f" — {svc.get('address')}" if svc.get("address") else ""
+                    phone = f" ({svc.get('phone')})" if svc.get("phone") else ""
+                    beds = f" — {svc.get('beds')} beds" if svc.get("beds") else ""
+                    lines.append(f"  • **{name_s}**{beds}{phone}{addr}")
+                response_parts.append("\n".join(lines))
 
         elif name == "search_city_knowledge":
             passages = result.get("passages", [])
             if not passages:
                 response_parts.append(result.get("message", "No matching municipal bylaws or documents found."))
             else:
-                lines = ["📚 **Verified City Knowledge & Documentation:**\n"]
+                lines = ["**Verified City Knowledge & Documentation:**\n"]
                 for p in passages[:2]:
                     lines.append(f"**{p.get('title')}** — *{p.get('section')}*")
                     lines.append(f"{p.get('content')}\n")
@@ -511,31 +751,49 @@ def _infer_tool_args(tool_name: str, message: str, context: dict[str, Any]) -> d
     """Infer tool arguments from the user message for deterministic mode."""
     args: dict[str, Any] = {}
 
-    # Check if a specific Indian city is mentioned in the query text
     from services.api.core import geo_cities
     target_city = None
-    clean_msg = message.replace("?", " ").replace(",", " ").replace(".", " ").replace("!", " ")
-    for token in clean_msg.split():
-        if len(token) >= 3:
-            found = geo_cities.find_city_by_name(token)
-            if found:
-                target_city = found
-                break
+    msg_lower = message.lower()
 
+    # 1. Search if any registered AP city name is explicitly mentioned in message
+    for city in geo_cities.AP_CITIES_REGISTRY:
+        cn_lower = city.name.lower()
+        if cn_lower in msg_lower or city.id in msg_lower:
+            target_city = city
+            break
+
+    # 2. Check individual token search if multi-word match didn't trigger
+    if not target_city:
+        clean_msg = message.replace("?", " ").replace(",", " ").replace(".", " ").replace("!", " ")
+        for token in clean_msg.split():
+            if len(token) >= 3:
+                found = geo_cities.find_city_by_name(token)
+                if found:
+                    target_city = found
+                    break
+
+    # 3. Fallback to session/client context
     if target_city:
         args["latitude"] = target_city.lat
         args["longitude"] = target_city.lon
         args["city_name"] = target_city.name
-    elif context.get("latitude") and context.get("longitude"):
-        args["latitude"] = context["latitude"]
-        args["longitude"] = context["longitude"]
-        args["city_name"] = context.get("city_name", "Selected City")
-    elif context.get("city_name"):
+    elif context.get("city_name") and context["city_name"] != "Selected City":
         args["city_name"] = context["city_name"]
         found = geo_cities.find_city_by_name(context["city_name"])
         if found:
             args["latitude"] = found.lat
             args["longitude"] = found.lon
+        else:
+            args["latitude"] = context.get("latitude", geo_cities.AP_CITIES_REGISTRY[0].lat)
+            args["longitude"] = context.get("longitude", geo_cities.AP_CITIES_REGISTRY[0].lon)
+    elif context.get("latitude") and context.get("longitude"):
+        args["latitude"] = context["latitude"]
+        args["longitude"] = context["longitude"]
+        args["city_name"] = context.get("city_name", "Vijayawada")
+    else:
+        args["latitude"] = 16.5062
+        args["longitude"] = 80.6480
+        args["city_name"] = "Vijayawada"
 
     if tool_name in ("search_incidents", "search_city_knowledge"):
         args["query"] = message
@@ -605,30 +863,42 @@ def _local_custom_llm_chat(
 ) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]], str] | None:
     """Execute response synthesis through the user's fine-tuned Auralis AP Urban LLM."""
     try:
-        from services.api.core import custom_llm
-        if not custom_llm.is_model_available():
-            return None
-
         intents = detect_intent(user_message)
         det_text, tool_calls, tool_results = _deterministic_response(user_message, intents, context)
 
+        # A tool-backed answer IS the answer: it carries real readings, and
+        # handing those to a 1.5B model to re-narrate is how numbers drift.
+        if tool_calls:
+            return det_text, tool_calls, tool_results, "Auralis Civic Intelligence"
+
+        # No tool matched, so this is conversation — about the platform, or a
+        # follow-up, or a plain question. Previously `det_text` (never empty)
+        # short-circuited here and every such turn got the canned capability
+        # list back.
+        # Questions about the product are answered from the curated record.
+        kb = platform_answer(user_message)
+        if kb:
+            return kb, [], [], "Auralis Civic Intelligence"
+
+        from services.api.core import custom_llm
+        if not custom_llm.is_model_loaded():
+            return None
+
         city_label = context.get("city_name", "the selected city")
-        system_prompt = (
-            f"You are the Auralis AI civic intelligence assistant for {city_label}. "
-            "Your task is to provide clear, helpful, accurate civic responses to citizens. "
-            "Strict rules: Never invent fake facts or unauthorized actions. Ground your answer in the verified data provided below.\n\n"
-            f"[VERIFIED REAL-TIME DATA & SYSTEM KNOWLEDGE FOR {city_label.upper()}]\n{det_text}"
-        )
+        system_prompt = CONVERSATION_PROMPT.format(city=city_label)
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ]
+        # Carry recent turns so follow-ups ("and tomorrow?") have their referent.
+        messages = [{"role": "system", "content": system_prompt}]
+        for m in session.messages[-6:]:
+            if m.role in ("user", "assistant"):
+                messages.append({"role": m.role, "content": m.content})
+        if not messages or messages[-1].get("content") != user_message:
+            messages.append({"role": "user", "content": user_message})
 
-        generated = custom_llm.generate_response(messages, max_new_tokens=400, temperature=0.2)
+        generated = custom_llm.generate_response(messages, max_new_tokens=320, temperature=0.3)
         if generated:
-            return generated, tool_calls, tool_results, "Auralis-AP-Urban-1.5B (Local)"
-        return None
+            return generated, tool_calls, tool_results, "Auralis Civic Intelligence"
+        return det_text, tool_calls, tool_results, "Auralis Civic Intelligence"
     except Exception as exc:
         log.warning("Local custom LLM inference skipped: %s", exc)
         return None
@@ -659,9 +929,9 @@ def chat(
     # Resolve coordinates if city_id or city_name is provided
     resolved_city = None
     if city_id:
-        resolved_city = geo_cities.get_city(city_id)
+        resolved_city = geo_cities.get_city_by_id(city_id) or geo_cities.find_city_by_name(city_id)
     elif city_name:
-        resolved_city = geo_cities.find_city_by_name(city_name)
+        resolved_city = geo_cities.find_city_by_name(city_name) or geo_cities.get_city_by_id(city_name)
 
     if resolved_city:
         city_name = resolved_city.name
@@ -699,8 +969,8 @@ def chat(
             response_text, tool_calls, tool_results = _deterministic_response(
                 user_message, intents, context
             )
-            model = "deterministic"
-            degraded = True
+            model = "Auralis Civic Intelligence"
+            degraded = False
 
     # Record assistant response
     session.add_message(ChatMessage(

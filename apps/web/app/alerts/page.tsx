@@ -9,6 +9,10 @@
 
 import { useState } from "react";
 import { api, useApi } from "@/lib/api";
+import { useShell } from "@/components/shell/ShellState";
+import { Icon } from "@/components/ui/Icon";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import s from "./alerts.module.css";
 
 interface HazardSignal {
@@ -33,7 +37,11 @@ interface HazardAssessment {
 }
 
 export default function AlertsPage() {
-  const { data: assessment, loading, reload } = useApi<HazardAssessment>("/v1/hazards/scan");
+  const { location } = useShell();
+  const [lon, lat] = location.coordinates;
+  const { data: assessment, loading, error, correlationId, reload } = useApi<HazardAssessment>(
+    `/v1/hazards/scan?lat=${lat}&lon=${lon}&city_name=${encodeURIComponent(location.name)}`
+  );
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
@@ -41,9 +49,10 @@ export default function AlertsPage() {
     setIsBroadcasting(true);
     try {
       await api.post("/v1/hazards/broadcast", {
-        title: "Vijayawada Municipal Advisory",
-        message: "Severe weather and drainage surge advisory active across municipal zones.",
+        title: `${location.name} Municipal Emergency Advisory`,
+        message: `Active meteorological and civic hazard advisory active across ${location.name} municipal zones.`,
         severity: "major",
+        geofence_name: `${location.name} Urban Zone`,
       });
       setBroadcastSent(true);
       setTimeout(() => setBroadcastSent(false), 5000);
@@ -54,26 +63,50 @@ export default function AlertsPage() {
     }
   };
 
-  const a = assessment || {
-    overall_risk_tier: "R0",
-    risk_score: 5.0,
-    threat_level: "NORMAL",
-    signals_analyzed: 4,
-    active_threats: [],
-    signals: [],
-    recommended_mitigations: ["Maintain standard 24/7 telemetry monitoring across municipal sensors."],
-    assessed_at: new Date().toISOString(),
-  };
+  if (loading && !assessment) {
+    return (
+      <div className={s.alertsPage}>
+        <div className={s.pageHeader}>
+          <div className={s.pageSub}>{location.name}</div>
+          <h1>Hazard alerts</h1>
+        </div>
+        <Skeleton lines={10} />
+      </div>
+    );
+  }
+
+  if (error || !assessment) {
+    return (
+      <div className={s.alertsPage}>
+        <div className={s.pageHeader}>
+          <div className={s.pageSub}>{location.name}</div>
+          <h1>Hazard alerts</h1>
+        </div>
+        <ErrorState
+          error={error ?? new Error("The hazard scan returned no assessment.")}
+          onRetry={reload}
+          correlationId={correlationId}
+          what={`the hazard scan for ${location.name}`}
+        />
+        <p style={{ marginTop: 16, color: "var(--muted)", fontSize: "0.875rem", maxWidth: "60ch" }}>
+          No threat level is shown. An unread scan is not a quiet city, and
+          rendering one as &quot;normal&quot; would read as an all-clear nobody issued.
+        </p>
+      </div>
+    );
+  }
+
+  const a = assessment;
 
   return (
     <div className={s.alertsPage}>
       {/* Page Header */}
       <div className={s.pageHeader}>
-        <h1>Proactive Hazard Intelligence & Alerts</h1>
-        <p>
-          Predictive multi-signal anomaly correlation across meteorological sensors,
-          flood hydrology, traffic collapse, and citizen reports to detect threats before escalation.
-        </p>
+        <div>
+          <div className={s.pageSub}>{location.name}</div>
+          <h1>Hazard alerts</h1>
+        </div>
+        <p>Weather, river levels, traffic and citizen reports, watched together.</p>
       </div>
 
       {/* Top Risk Tier Banner */}
@@ -83,10 +116,9 @@ export default function AlertsPage() {
         </div>
 
         <div className={s.riskInfo}>
-          <h2>Threat Level: {a.threat_level}</h2>
+          <h2>Threat level: {a.threat_level}</h2>
           <p>
-            Continuous Bayesian correlation across {a.signals_analyzed || 5} municipal data streams.
-            Last assessed: {a.assessed_at?.slice(11, 19)} UTC.
+            Across {a.signals_analyzed} data streams. Last checked {a.assessed_at?.slice(11, 19)} UTC.
           </p>
         </div>
 
@@ -102,7 +134,7 @@ export default function AlertsPage() {
         <div className={s.panel}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h2 className={s.panelTitle}>
-              <span>🚨</span> Active Threat Advisories ({a.active_threats.length})
+              <Icon name="critical" size={16} /> Active advisories ({a.active_threats.length})
             </h2>
             <button
               type="button"
@@ -117,13 +149,13 @@ export default function AlertsPage() {
                 color: "var(--muted)",
               }}
             >
-              🔄 Refresh Scan
+              Refresh
             </button>
           </div>
 
           {a.active_threats.length === 0 ? (
             <div style={{ padding: "24px", background: "var(--bg-sunken)", borderRadius: "12px", textAlign: "center", color: "var(--muted)", fontSize: "var(--fs-sm)" }}>
-              ✅ No critical threshold breaches detected in Vijayawada urban sector.
+              No threshold breaches detected.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -136,7 +168,7 @@ export default function AlertsPage() {
                     </span>
                   </div>
                   <div className={s.threatBody}>
-                    Affected Sector: <strong>{t.corridor || "Vijayawada Urban Zone"}</strong>
+                    Affected Sector: <strong>{t.corridor ?? "not reported"}</strong>
                   </div>
                 </div>
               ))}
@@ -145,12 +177,12 @@ export default function AlertsPage() {
 
           {/* Preemptive Mitigations */}
           <h2 className={s.panelTitle} style={{ marginTop: "12px" }}>
-            <span>🛠️</span> Preemptive Mitigation Directives
+            <Icon name="action" size={16} /> Recommended mitigations
           </h2>
           <div className={s.mitigationList}>
             {a.recommended_mitigations.map((m, idx) => (
               <div key={idx} className={s.mitigationItem}>
-                <span className={s.mitigationIcon}>⚡</span>
+                <span className={s.mitigationIcon}><Icon name="chevronRight" size={13} /></span>
                 <span>{m}</span>
               </div>
             ))}
@@ -166,7 +198,7 @@ export default function AlertsPage() {
                 width: "100%",
                 padding: "12px",
                 borderRadius: "12px",
-                background: "linear-gradient(135deg, #b3261e, #8a1f18)",
+                background: "var(--bad)",
                 color: "#fff",
                 border: "none",
                 fontFamily: "var(--font-ui)",
@@ -175,11 +207,11 @@ export default function AlertsPage() {
                 fontSize: "var(--fs-sm)",
               }}
             >
-              {isBroadcasting ? "Transmitting CAP Broadcast..." : "📢 Transmit Public Emergency Alert (CAP 1.2)"}
+              {isBroadcasting ? "Transmitting CAP Broadcast..." : "Transmit public alert (CAP 1.2)"}
             </button>
             {broadcastSent && (
               <div style={{ color: "var(--ok)", fontSize: "var(--fs-xs)", textAlign: "center", marginTop: "6px" }}>
-                ✅ Emergency broadcast transmitted to geofenced mobile devices and public status portal.
+                Broadcast sent to geofenced devices and the public status page.
               </div>
             )}
           </div>
@@ -188,51 +220,18 @@ export default function AlertsPage() {
         {/* Right: Multi-Signal Correlation Matrix */}
         <div className={s.panel}>
           <h2 className={s.panelTitle}>
-            <span>📡</span> Multi-Signal Correlation Matrix
+            <Icon name="activity" size={16} /> Signal correlation
           </h2>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", lineHeight: 1.4 }}>
-            Independent observation streams monitored in real time:
+            Streams being watched:
           </div>
 
           <div className={s.signalList}>
             {a.signals.length === 0 ? (
-              <>
-                <div className={s.signalItem} data-exceeded="false">
-                  <div>
-                    <span className={s.signalTitle}>Precipitation Telemetry</span>
-                    <span className={s.signalSource}>Open-Meteo & OpenWeatherMap</span>
-                  </div>
-                  <span className={s.signalValue}>0.0 mm/h (Normal)</span>
-                </div>
-                <div className={s.signalItem} data-exceeded="false">
-                  <div>
-                    <span className={s.signalTitle}>River Discharge / Hydrology</span>
-                    <span className={s.signalSource}>GloFAS Krishna Basin Model</span>
-                  </div>
-                  <span className={s.signalValue}>Stage 0 (Normal)</span>
-                </div>
-                <div className={s.signalItem} data-exceeded="false">
-                  <div>
-                    <span className={s.signalTitle}>Arterial Traffic Flow</span>
-                    <span className={s.signalSource}>Urban Corridor Speed Sensors</span>
-                  </div>
-                  <span className={s.signalValue}>LOS B (Stable)</span>
-                </div>
-                <div className={s.signalItem} data-exceeded="false">
-                  <div>
-                    <span className={s.signalTitle}>Citizen Report Clustering</span>
-                    <span className={s.signalSource}>Auralis Open311 Ledger</span>
-                  </div>
-                  <span className={s.signalValue}>0 Anomaly Clusters</span>
-                </div>
-                <div className={s.signalItem} data-exceeded="false">
-                  <div>
-                    <span className={s.signalTitle}>Global & Regional News Stream</span>
-                    <span className={s.signalSource}>GDELT Event Intelligence</span>
-                  </div>
-                  <span className={s.signalValue}>Monitored</span>
-                </div>
-              </>
+              <p className={s.signalEmpty}>
+                The scan returned no signals. Nothing is listed here rather than
+                naming streams whose readings were never received.
+              </p>
             ) : (
               a.signals.map((sig, idx) => (
                 <div key={idx} className={s.signalItem} data-exceeded={sig.threshold_exceeded ? "true" : "false"}>

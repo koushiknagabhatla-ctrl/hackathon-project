@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useShell } from "./ShellState";
-import { INDIA_LOCATIONS, searchIndiaLocation, type IndiaLocation } from "@/lib/locations";
+import { INDIA_LOCATIONS, searchIndiaLocation, getSuggestedCity, type IndiaLocation } from "@/lib/locations";
 import { Icon } from "@/components/ui/Icon";
 import s from "./shell.module.css";
 
@@ -33,11 +33,14 @@ export function LocationSwitcher() {
       return;
     }
 
+    setSearching(true);
     const timer = setTimeout(async () => {
-      setSearching(true);
-      const results = await searchIndiaLocation(search);
-      setSearchResults(results);
-      setSearching(false);
+      try {
+        const results = await searchIndiaLocation(search);
+        setSearchResults(results);
+      } finally {
+        setSearching(false);
+      }
     }, 300);
 
     return () => clearTimeout(timer);
@@ -47,9 +50,13 @@ export function LocationSwitcher() {
     ? INDIA_LOCATIONS.filter(
         (l) =>
           l.name.toLowerCase().includes(search.toLowerCase()) ||
-          l.state.toLowerCase().includes(search.toLowerCase()),
+          l.district.toLowerCase().includes(search.toLowerCase()) ||
+          l.region.toLowerCase().includes(search.toLowerCase()),
       )
     : INDIA_LOCATIONS;
+
+  const sortedPreset = [...filteredPreset].sort((a, b) => a.name.localeCompare(b.name));
+  const suggestedCity = getSuggestedCity(search);
 
   return (
     <div className={s.panelWrap} ref={ref}>
@@ -58,7 +65,7 @@ export function LocationSwitcher() {
         className={`${s.ctl} ${s.ctlBordered}`}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label="Select location in India"
+        aria-label="Select Andhra Pradesh city or town"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -74,7 +81,7 @@ export function LocationSwitcher() {
           cursor: "pointer",
         }}
       >
-        <span style={{ color: "var(--accent)" }}>📍</span>
+        <Icon name="map" size={13} />
         <span style={{ maxWidth: "140px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {location.name}
         </span>
@@ -87,24 +94,26 @@ export function LocationSwitcher() {
           style={{
             position: "absolute",
             top: "calc(100% + 8px)",
-            left: 0,
-            right: "auto",
-            width: "320px",
-            maxHeight: "420px",
+            right: 0,
+            left: "auto",
+            width: "360px",
+            maxHeight: "460px",
             display: "flex",
             flexDirection: "column",
             gap: "8px",
-            padding: "12px",
+            padding: "14px",
             zIndex: 100000,
             overflowY: "auto",
             gridTemplateColumns: "1fr",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.22), 0 4px 14px rgba(0,0,0,0.1)",
+            border: "1px solid var(--line-strong, rgba(0,0,0,0.18))",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 8px", background: "var(--bg-sunken)", borderRadius: "6px", border: "1px solid var(--line)" }}>
-            <Icon name="search" size={14} />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px", background: "var(--bg-sunken)", borderRadius: "8px", border: "1px solid var(--line)" }}>
+            <Icon name="search" size={15} />
             <input
               type="text"
-              placeholder="Search ANY city, town or state in India..."
+              placeholder="Search Andhra Pradesh cities, towns, mandals (A-Z)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
@@ -112,22 +121,70 @@ export function LocationSwitcher() {
                 border: "none",
                 background: "transparent",
                 outline: "none",
-                fontSize: "0.8rem",
+                fontSize: "0.82rem",
                 width: "100%",
                 fontFamily: "var(--font-ui)",
+                color: "var(--text)",
               }}
             />
           </div>
 
+          {/* Typo-Tolerant "Did You Mean?" Suggestion Banner */}
+          {suggestedCity && (
+            <div
+              style={{
+                padding: "8px 12px",
+                background: "rgba(234, 88, 12, 0.09)",
+                border: "1px solid rgba(234, 88, 12, 0.3)",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: "0.78rem",
+                color: "var(--text)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>
+                  Did you mean{" "}
+                  <strong style={{ color: "var(--accent)", fontWeight: 700 }}>
+                    {suggestedCity.name}
+                  </strong>
+                  ?
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setLocation(suggestedCity);
+                  setOpen(false);
+                  setSearch("");
+                }}
+                style={{
+                  background: "var(--accent)",
+                  color: "#fff",
+                  border: "none",
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Select
+              </button>
+            </div>
+          )}
+
           {searching && (
             <div style={{ padding: "8px", fontSize: "0.75rem", color: "var(--muted)", textAlign: "center" }}>
-              Searching nationwide geocoding...
+              Searching Andhra Pradesh locations...
             </div>
           )}
 
           {searchResults.length > 0 && (
             <div>
-              <div className={s.panelGroupLabel}>Search Results (India)</div>
+              <div className={s.panelGroupLabel}>Andhra Pradesh Search Results</div>
               {searchResults.map((loc) => (
                 <button
                   key={loc.id}
@@ -142,7 +199,7 @@ export function LocationSwitcher() {
                 >
                   <div>
                     <strong style={{ fontSize: "0.82rem", display: "block" }}>{loc.name}</strong>
-                    <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>{loc.state}</span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>{loc.district} · {loc.region}</span>
                   </div>
                 </button>
               ))}
@@ -150,8 +207,11 @@ export function LocationSwitcher() {
           )}
 
           <div>
-            <div className={s.panelGroupLabel}>Major Metro & Smart Cities</div>
-            {filteredPreset.map((loc) => {
+            <div className={s.panelGroupLabel} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Andhra Pradesh Cities & Towns (A-Z)</span>
+              <span style={{ fontSize: "0.68rem", fontWeight: 500, color: "var(--accent)" }}>{sortedPreset.length} Locations</span>
+            </div>
+            {sortedPreset.map((loc) => {
               const active = loc.id === location.id;
               return (
                 <button
@@ -170,19 +230,20 @@ export function LocationSwitcher() {
                     cursor: "pointer",
                     border: "none",
                     background: active ? "rgba(234, 88, 12, 0.08)" : "transparent",
-                    padding: "6px 8px",
-                    borderRadius: "4px",
+                    padding: "7px 10px",
+                    borderRadius: "6px",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    transition: "background 0.15s ease",
                   }}
                 >
                   <div>
-                    <strong style={{ fontSize: "0.82rem", display: "block", color: active ? "var(--accent)" : "var(--text)" }}>
+                    <strong style={{ fontSize: "0.83rem", display: "block", color: active ? "var(--accent)" : "var(--text)" }}>
                       {loc.name}
                     </strong>
                     <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>
-                      {loc.state} · {loc.cad_zone}
+                      {loc.district} · {loc.cad_zone}
                     </span>
                   </div>
                   {active && <span style={{ fontSize: "0.7rem", color: "var(--accent)", fontWeight: 700 }}>Active</span>}

@@ -7,7 +7,7 @@
  */
 
 /** The one string the whole app uses when a value was never verified. */
-export const NO_DATA = "No verified data";
+const NO_DATA = "No verified data";
 
 /** "2m 22s" / "3h 04m" / "just now". Used for evidence age and incident age. */
 export function duration(seconds: number | null | undefined): string {

@@ -167,3 +167,95 @@ def send_geofence_emergency_push(
         "failed_or_unconfigured": failed_count,
         "danger_radius_m": danger_radius_m,
     }
+
+
+# ---------------------------------------------------------------- HTTP v1
+# Google decommissioned the legacy `fcm/send` endpoint in July 2024. v1 needs a
+# short-lived OAuth token minted from a service-account key, so the old
+# "server key" string cannot work no matter what it is set to.
+FCM_V1_SCOPE = "https://www.googleapis.com/auth/firebase.messaging"
+
+_v1_token_cache: dict[str, Any] = {"token": None, "expires_at": 0.0}
+
+
+def _service_account_token() -> tuple[str | None, str | None]:
+    """Mint (or reuse) an OAuth access token. Returns (token, error)."""
+    import time
+
+    if _v1_token_cache["token"] and _v1_token_cache["expires_at"] > time.time() + 60:
+        return _v1_token_cache["token"], None
+
+    path = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if not path:
+        return None, ("FIREBASE_SERVICE_ACCOUNT_JSON is not set. FCM HTTP v1 needs a "
+                      "service-account key file; the legacy server key was retired in 2024.")
+    if not os.path.isfile(path):
+        return None, f"service account file not found: {path}"
+
+    try:
+        from google.oauth2 import service_account  # type: ignore
+        from google.auth.transport.requests import Request  # type: ignore
+    except ImportError:
+        return None, ("google-auth is not installed. Run: pip install google-auth")
+
+    try:
+        creds = service_account.Credentials.from_service_account_file(
+            path, scopes=[FCM_V1_SCOPE]
+        )
+        creds.refresh(Request())
+        _v1_token_cache["token"] = creds.token
+        _v1_token_cache["expires_at"] = creds.expiry.timestamp() if creds.expiry else 0.0
+        return creds.token, None
+    except Exception as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+
+
+def _fcm_project_id() -> str | None:
+    pid = os.environ.get("FIREBASE_PROJECT_ID")
+    if pid:
+        return pid
+    path = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+    if path and os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                return json.load(fh).get("project_id")
+        except Exception:
+            return None
+    return None
+
+
+def send_to_token(fcm_token: str, title: str, body: str) -> dict[str, Any]:
+    """Push one message via FCM HTTP v1. Transport only.
+
+    Returns {ok, provider_ref, error}. Never raises.
+    """
+    project_id = _fcm_project_id()
+    if not project_id:
+        return {"ok": False, "provider_ref": None,
+                "error": "FIREBASE_PROJECT_ID not set and not derivable from the service account"}
+
+    token, err = _service_account_token()
+    if err:
+        return {"ok": False, "provider_ref": None, "error": err}
+
+    url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(
+                url,
+                headers={"Authorization": f"Bearer {token}",
+                         "Content-Type": "application/json"},
+                json={"message": {
+                    "token": fcm_token,
+                    "notification": {"title": title, "body": body},
+                    "android": {"priority": "HIGH"},
+                    "apns": {"headers": {"apns-priority": "10"}},
+                }},
+            )
+        if resp.status_code == 200:
+            return {"ok": True, "provider_ref": resp.json().get("name"), "error": None}
+        return {"ok": False, "provider_ref": None,
+                "error": f"HTTP {resp.status_code}: {resp.text[:180]}"}
+    except Exception as exc:
+        return {"ok": False, "provider_ref": None,
+                "error": f"{type(exc).__name__}: {exc}"}

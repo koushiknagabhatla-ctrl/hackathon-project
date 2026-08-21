@@ -15,11 +15,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import dotenv
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+dotenv.load_dotenv(REPO_ROOT / ".env")
 DB_PATH = os.environ.get("AURALIS_DB", str(REPO_ROOT / "auralis.db"))
 
 
@@ -38,6 +40,16 @@ async def lifespan(app: FastAPI):
         seed.ensure_seeded()
     except Exception:  # pragma: no cover - seeding is best-effort at boot
         traceback.print_exc()
+
+    # Warm the local model off the request path. Loading takes tens of seconds
+    # on CPU; doing it lazily inside the first chat turn would stall that turn
+    # and silently push it onto the deterministic path instead.
+    try:
+        from services.api.core import custom_llm
+
+        custom_llm.trigger_background_load()
+    except Exception:  # pragma: no cover - the chat path degrades on its own
+        traceback.print_exc()
     yield
 
 
@@ -54,7 +66,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:3000", "http://localhost:3000"],
+    allow_origin_regex=r"https?://.*",
+    allow_origins=[
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

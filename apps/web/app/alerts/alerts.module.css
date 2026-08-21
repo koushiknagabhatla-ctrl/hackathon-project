@@ -81,23 +81,14 @@
 
 .riskBadge[data-tier="R3"] {
   background: var(--accent);
-  box-shadow: 0 6px 24px rgba(250, 129, 40, 0.25);
 }
 
 .riskBadge[data-tier="R4"] {
   background: var(--warn);
-  box-shadow: 0 6px 24px rgba(138, 75, 0, 0.25);
 }
 
 .riskBadge[data-tier="R5"] {
   background: var(--bad);
-  box-shadow: 0 6px 24px rgba(179, 38, 30, 0.35);
-  animation: pulse 1.8s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.04); }
 }
 
 .riskInfo h2 {
@@ -269,4 +260,11 @@
 
 .mitigationIcon {
   font-size: 1.1rem;
+}
+
+.signalEmpty {
+  padding: var(--sp-4) 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.5;
 }

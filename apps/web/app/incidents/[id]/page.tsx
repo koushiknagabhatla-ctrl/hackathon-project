@@ -211,10 +211,6 @@ export default function IncidentRoom() {
           correlationId={correlationId}
           what={`incident ${id}`}
         />
-        <p className={r.honesty}>
-          Nothing is shown in place of this record. An incident room with invented
-          evidence would be worse than no incident room.
-        </p>
       </section>
     );
   }

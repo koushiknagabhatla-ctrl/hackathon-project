@@ -196,7 +196,7 @@ export default function SimulationPage() {
             </div>
 
             {/* Counterfactual Column */}
-            <div style={{ padding: 18, border: "2px solid var(--accent)", borderRadius: "var(--r-control)", background: "rgba(250, 129, 40, 0.02)" }}>
+            <div style={{ padding: 18, border: "2px solid var(--accent)", borderRadius: "var(--r-control)", background: "rgba(255, 89, 0, 0.02)" }}>
               <span className="label" style={{ color: "var(--accent)" }}>Synthetic Counterfactual</span>
               <h3 style={{ fontSize: "1.25rem", margin: "8px 0 16px" }}>Overridden Scenario ({rainOverride}mm rain)</h3>
               <div className={s.kpiStrip}>

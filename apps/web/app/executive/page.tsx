@@ -7,16 +7,17 @@
  */
 
 import { useApi } from "@/lib/api";
+import { useShell } from "@/components/shell/ShellState";
 import { useGsap, sectionReveal } from "@/lib/motion";
 import { MetricTile } from "@/components/ui/MetricTile";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { OpsMetrics } from "@/lib/types";
-import { CITY } from "@/lib/fixtures";
 import { ErrorState } from "@/components/ui/ErrorState";
 import s from "../pages.module.css";
 
 export default function ExecutiveDashboard() {
+  const { location } = useShell();
   const { data: opsData, loading } = useApi<OpsMetrics>("/v1/metrics/ops");
   // NO SILENT SUBSTITUTION. Executive KPIs drive real decisions and get quoted
   // upward. Showing demo numbers when the API is down would put fabricated
@@ -55,11 +56,10 @@ export default function ExecutiveDashboard() {
       <div className={`${s.pageHeader} js-reveal`}>
         <div>
           <span className="eyebrow">Communicate · Leadership Overview</span>
-          <h1>Executive Operations & Governance Summary</h1>
+          <h1>Executive summary</h1>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span className="label">{CITY.name} Municipal Corporation</span>
-          <span className={`${s.tag} ${s.tagVerified}`}>Operational Tier 1</span>
+          <span className="label">{location.name}</span>
         </div>
       </div>
 
@@ -95,8 +95,7 @@ export default function ExecutiveDashboard() {
       <div className={`${s.grid2} js-reveal`} style={{ marginBottom: 24 }}>
         <div className={s.card}>
           <div className={s.cardHeader}>
-            <h2>AI Cost & Token Consumption</h2>
-            <span className="label">Least Privilege Computing</span>
+            <h2>Model cost and token use</h2>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -136,8 +135,7 @@ export default function ExecutiveDashboard() {
 
         <div className={s.card}>
           <div className={s.cardHeader}>
-            <h2>Safety & Governance Posture</h2>
-            <span className="label">Zero Unauthorized Effects</span>
+            <h2>Safety and governance</h2>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -154,7 +152,8 @@ export default function ExecutiveDashboard() {
           </div>
 
           <p style={{ fontSize: "0.8125rem", color: "var(--muted)", lineHeight: 1.6 }}>
-            The system adheres strictly to the <strong>bounded-autonomy model</strong>. High-risk operations (R4 & R5), public siren triggers, and structural floodgate closures were halted deterministically by policy rules and required explicit named authorization from the District Collector.
+            R4 and R5 actions cannot reach a tool without a named human
+            approval. The counts above are what the policy engine recorded.
           </p>
         </div>
       </div>
@@ -162,8 +161,7 @@ export default function ExecutiveDashboard() {
       {/* Strategic Value Narrative */}
       <div className={`${s.card} js-reveal`}>
         <div className={s.cardHeader}>
-          <h2>Key Operational Accomplishments (Last 24 Hours)</h2>
-          <span className="label">Budameru Rivulet Event Response</span>
+          <h2>Last 24 hours</h2>
         </div>
         {/* Only statements derived from the metrics actually returned. The
             previous version hardcoded specific figures — a 4.82m river stage,

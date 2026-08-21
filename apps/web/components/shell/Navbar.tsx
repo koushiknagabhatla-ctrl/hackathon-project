@@ -55,7 +55,7 @@ function useScrollState(locked: boolean) {
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { criticalIncidents, streamStatus, dataMode } = useShell();
+  const { criticalIncidents, streamStatus } = useShell();
   const critical = criticalIncidents.length > 0;
   const { scrolled, compact } = useScrollState(critical);
 
@@ -230,10 +230,10 @@ export function Navbar() {
                               aria-current={active ? "page" : undefined}
                             >
                               <Icon name={item.icon} size={17} />
-                              <span>
+                              <div className={s.panelItemText}>
                                 <span className={s.panelItemLabel}>{item.label}</span>
                                 <span className={s.panelItemBlurb}>{item.blurb}</span>
-                              </span>
+                              </div>
                             </Link>
                           );
                         })}
@@ -261,16 +261,11 @@ export function Navbar() {
               className={s.status}
               role="status"
               aria-live="polite"
-              title={`Realtime stream ${statusLabel}${dataMode === "fixture" ? " — showing bundled demo data" : ""}`}
+              title={`Realtime stream ${statusLabel}`}
             >
               <span className={s.dot} data-state={streamStatus} aria-hidden="true" />
               <span className={s.statusText}>{statusLabel}</span>
-              <span className="sr-only">
-                Realtime stream {statusLabel}.
-                {dataMode === "fixture"
-                  ? " The API is not connected; bundled demo data is being shown."
-                  : ""}
-              </span>
+              <span className="sr-only">Realtime stream {statusLabel}.</span>
             </span>
 
             <div className={s.panelWrap} ref={roleRef} onKeyDown={onMenuKey}>

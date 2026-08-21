@@ -32,7 +32,6 @@ import type {
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Icon } from "@/components/ui/Icon";
 import { revealMap } from "@/lib/motion";
-import { CITY } from "@/lib/fixtures";
 import { useShell } from "@/components/shell/ShellState";
 import s from "./map.module.css";
 
@@ -40,10 +39,10 @@ import s from "./map.module.css";
  * Primary basemap: OpenFreeMap "liberty". Keyless, free, no account, nothing
  * to configure and nothing that can rate-limit us mid-demonstration.
  */
-export const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPENFREEMAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
 /** First fallback: raw OSM raster tiles. Different host, different failure mode. */
-export const OSM_STYLE: StyleSpecification = {
+const OSM_STYLE: StyleSpecification = {
   version: 8,
   sources: {
     "osm-tiles": {
@@ -86,7 +85,7 @@ const BLANK_STYLE: StyleSpecification = {
   ],
 };
 
-export const MAP_STYLE: string | StyleSpecification =
+const MAP_STYLE: string | StyleSpecification =
   process.env.NEXT_PUBLIC_MAP_STYLE ?? OPENFREEMAP_STYLE;
 
 export interface CityMapMarker {
@@ -264,7 +263,7 @@ export function CityMap({
       {/* The map's content, in text. A canvas is invisible to a screen reader. */}
       <div className="sr-only">
         <p>
-          Map of {CITY.name}, {CITY.region}.{summary ? ` ${summary}.` : ""}
+          Map of {location.name}, {location.state}.{summary ? ` ${summary}.` : ""}
           {basemap === "unavailable"
             ? " The basemap could not load; data layers are drawn on a plain background."
             : ""}

@@ -14,7 +14,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { formatAge } from "@/lib/format";
-import { WORK_ORDERS as FIXTURE_WORK_ORDERS } from "@/lib/fixtures";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import s from "../pages.module.css";
 
 interface WorkOrder {
@@ -29,12 +30,12 @@ interface WorkOrder {
 }
 
 export default function FieldPwaPage() {
-  const { data: ordersData, loading, reload } = useApi<WorkOrder[]>("/v1/field/work-orders");
+  const { data: ordersData, loading, error, correlationId, reload } = useApi<WorkOrder[]>("/v1/field/work-orders");
   const toast = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [confirmationNotes, setConfirmationNotes] = useState<Record<string, string>>({});
 
-  const orders = (ordersData as WorkOrder[]) ?? (FIXTURE_WORK_ORDERS as WorkOrder[]);
+  const orders = ordersData ?? [];
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.04 }),
@@ -76,10 +77,6 @@ export default function FieldPwaPage() {
           <span className="eyebrow">Operate · Ground Crew Dispatch</span>
           <h1>Field Operations & Work Orders</h1>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span className={`${s.tag} ${s.tagAllow}`}>Offline Sync Active</span>
-          <span className="label">Team: field_team_1</span>
-        </div>
       </div>
 
       <div className={`${s.kpiStrip} js-reveal`}>
@@ -93,8 +90,21 @@ export default function FieldPwaPage() {
       <div className="js-reveal">
         <h2 className={s.sectionTitle}>Assigned Work Orders ({orders.length})</h2>
 
-        {loading && !orders.length ? (
+        {error ? (
+          <ErrorState
+            error={error}
+            onRetry={reload}
+            correlationId={correlationId}
+            what="the work order list"
+          />
+        ) : loading && !orders.length ? (
           <Skeleton lines={6} />
+        ) : orders.length === 0 ? (
+          <EmptyState
+            icon="check"
+            title="No work orders assigned"
+            body="Orders appear here when dispatch assigns one to this crew."
+          />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {orders.map((wo) => (

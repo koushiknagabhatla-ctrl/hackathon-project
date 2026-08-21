@@ -12,12 +12,15 @@
  * Nothing here throws on a dead API: callers get `error` and the UI stays usable.
  */
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiErrorBody, Role, StreamEvent, StreamEventType } from "./types";
-import { fixtureFor } from "./fixtures";
 
-export const API_BASE =
+const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
+
+/** Where the API lives. Needed for <img src> on binary endpoints such as
+ *  camera snapshots, which cannot go through the JSON fetch helper. */
+export const API_ORIGIN = API_BASE;
 
 const PRINCIPAL_KEY = "auralis.principal";
 const DEFAULT_PRINCIPAL =
@@ -78,51 +81,10 @@ export class ApiError extends Error {
   }
 }
 
-// -------------------------------------------------------------- data mode
-/**
- * Where the bytes on screen came from.
- *  "live"    — the API answered.
- *  "fixture" — the API is unreachable and a bundled demo snapshot is showing.
- *  "unknown" — nothing has been fetched yet.
- *
- * The shell renders a permanent, unmissable indicator whenever this is
- * "fixture". Demo data is never allowed to look observed.
- */
-export type DataMode = "live" | "fixture" | "unknown";
-
-let dataMode: DataMode = "unknown";
-const modeListeners = new Set<() => void>();
-
-function setDataMode(m: DataMode) {
-  if (dataMode === m) return;
-  dataMode = m;
-  modeListeners.forEach((l) => l());
-}
-
-export function getDataMode(): DataMode {
-  return dataMode;
-}
-
-/** Subscribe to data-mode changes. Returns the unsubscribe function. */
-export function subscribeDataMode(cb: () => void): () => void {
-  modeListeners.add(cb);
-  return () => modeListeners.delete(cb);
-}
-
-export function useDataMode(): DataMode {
-  return useSyncExternalStore(
-    subscribeDataMode,
-    getDataMode,
-    () => "unknown" as DataMode,
-  );
-}
-
 export interface ApiResult<T> {
   data: T;
   correlationId: string | null;
   status: number;
-  /** "fixture" means this payload came from lib/fixtures, not from the API. */
-  source: DataMode;
 }
 
 async function request<T>(
@@ -130,7 +92,6 @@ async function request<T>(
   init: RequestInit = {},
 ): Promise<ApiResult<T>> {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
-  const method = (init.method ?? "GET").toUpperCase();
   let res: Response;
   try {
     res = await fetch(url, {
@@ -144,21 +105,6 @@ async function request<T>(
       cache: "no-store",
     });
   } catch (e) {
-    // Under zero-fabrication policy, NEVER silently fall back to mock fixtures in production.
-    const mockAllowed = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
-    if (mockAllowed && method === "GET") {
-      const fixture = fixtureFor(path);
-      if (fixture !== undefined) {
-        setDataMode("fixture");
-        return {
-          data: fixture as T,
-          correlationId: null,
-          status: 0,
-          source: "fixture",
-        };
-      }
-    }
-    setDataMode("unknown");
     throw new ApiError({
       code: "source_unavailable",
       message: `Live data source unreachable at ${API_BASE}. System refuses to display fabricated placeholder data.`,
@@ -191,8 +137,7 @@ async function request<T>(
     });
   }
 
-  setDataMode("live");
-  return { data: body as T, correlationId, status: res.status, source: "live" };
+  return { data: body as T, correlationId, status: res.status };
 }
 
 export const api = {
@@ -227,8 +172,6 @@ export interface UseApiResult<T> {
   error: ApiError | null;
   loading: boolean;
   correlationId: string | null;
-  /** "fixture" -> label it as demo data in the UI, never as observed. */
-  source: DataMode;
   reload: () => void;
 }
 
@@ -242,7 +185,6 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): UseApiResu
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState<boolean>(path !== null);
   const [correlationId, setCorrelationId] = useState<string | null>(null);
-  const [source, setSource] = useState<DataMode>("unknown");
   const [nonce, setNonce] = useState(0);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
@@ -259,7 +201,6 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): UseApiResu
         if (!alive) return;
         setData(r.data);
         setCorrelationId(r.correlationId);
-        setSource(r.source);
         setError(null);
       })
       .catch((e: unknown) => {
@@ -281,7 +222,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = []): UseApiResu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, nonce, ...deps]);
 
-  return { data, error, loading, correlationId, source, reload };
+  return { data, error, loading, correlationId, reload };
 }
 
 export type StreamStatus = "connecting" | "live" | "degraded";

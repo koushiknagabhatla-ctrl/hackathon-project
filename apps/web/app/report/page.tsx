@@ -9,6 +9,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, useApi } from "@/lib/api";
+import { useShell } from "@/components/shell/ShellState";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import s from "./report.module.css";
 
 interface CivicReportItem {
@@ -40,17 +42,17 @@ interface ReportStats {
   by_severity: Record<string, number>;
 }
 
-const CATEGORIES = [
-  { id: "pothole", label: "Pothole", icon: "🕳️" },
-  { id: "garbage_overflow", label: "Garbage Dump", icon: "🗑️" },
-  { id: "waterlogging", label: "Waterlogging", icon: "🌊" },
-  { id: "broken_streetlight", label: "Streetlight Out", icon: "💡" },
-  { id: "road_blockage", label: "Road Blockage", icon: "🚧" },
-  { id: "fallen_tree", label: "Fallen Tree", icon: "🌳" },
-  { id: "traffic_congestion", label: "Traffic Hazard", icon: "🚗" },
-  { id: "fire_hazard", label: "Fire / Hazard", icon: "🔥" },
-  { id: "infrastructure_damage", label: "Damaged Asset", icon: "🏗️" },
-  { id: "other", label: "Other Issue", icon: "📋" },
+const CATEGORIES: { id: string; label: string; icon: IconName }[] = [
+  { id: "pothole", label: "Pothole", icon: "minor" },
+  { id: "garbage_overflow", label: "Garbage", icon: "trash" },
+  { id: "waterlogging", label: "Waterlogging", icon: "forecast" },
+  { id: "broken_streetlight", label: "Streetlight out", icon: "offline" },
+  { id: "road_blockage", label: "Road blockage", icon: "failed" },
+  { id: "fallen_tree", label: "Fallen tree", icon: "major" },
+  { id: "traffic_congestion", label: "Traffic hazard", icon: "activity" },
+  { id: "fire_hazard", label: "Fire hazard", icon: "critical" },
+  { id: "infrastructure_damage", label: "Damaged asset", icon: "layers" },
+  { id: "other", label: "Other", icon: "fact" },
 ];
 
 const SEVERITIES = [
@@ -61,15 +63,16 @@ const SEVERITIES = [
 ];
 
 export default function ReportPage() {
+  const { location } = useShell();
   const [activeTab, setActiveTab] = useState<"submit" | "feed">("submit");
 
-  // Form State
+  // Form State initialized to active AP city
   const [category, setCategory] = useState<string>("pothole");
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [latitude, setLatitude] = useState<number>(16.5062);
-  const [longitude, setLongitude] = useState<number>(80.6480);
-  const [address, setAddress] = useState<string>("MG Road, Benz Circle, Vijayawada");
+  const [latitude, setLatitude] = useState<number>(location.coordinates[1]);
+  const [longitude, setLongitude] = useState<number>(location.coordinates[0]);
+  const [address, setAddress] = useState<string>(`${location.region}, ${location.name}`);
   const [severity, setSeverity] = useState<"low" | "medium" | "high" | "critical">("medium");
   const [imageData, setImageData] = useState<string | null>(null);
   const [annotatedPreview, setAnnotatedPreview] = useState<string | null>(null);
@@ -80,6 +83,13 @@ export default function ReportPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync with location switcher
+  useEffect(() => {
+    setLatitude(location.coordinates[1]);
+    setLongitude(location.coordinates[0]);
+    setAddress(`${location.region}, ${location.name}`);
+  }, [location]);
 
   // Feed & Stats Data
   const { data: reportsData, loading: reportsLoading, reload: reloadReports } = useApi<{ reports: CivicReportItem[]; count: number }>("/v1/reports");
@@ -94,8 +104,8 @@ export default function ReportPage() {
           setLongitude(parseFloat(pos.coords.longitude.toFixed(4)));
         },
         () => {
-          setLatitude(16.5062);
-          setLongitude(80.6480);
+          setLatitude(location.coordinates[1]);
+          setLongitude(location.coordinates[0]);
         }
       );
     }
@@ -191,10 +201,7 @@ export default function ReportPage() {
       {/* Header */}
       <div className={s.pageHeader}>
         <h1>Civic Issue Reporting</h1>
-        <p>
-          Report urban infrastructure defects, potholes, flooding, or safety hazards.
-          Images are verified using computer vision with automated department routing and SLA assignment.
-        </p>
+        <p>Report a pothole, flooding, a broken streetlight or any street hazard.</p>
       </div>
 
       {/* Stats Cards */}
@@ -211,10 +218,6 @@ export default function ReportPage() {
           <span className={s.statNumber} style={{ color: "var(--ok)" }}>{stats.resolved_count}</span>
           <span className={s.statLabel}>Resolved</span>
         </div>
-        <div className={s.statCard}>
-          <span className={s.statNumber} style={{ color: "var(--accent)" }}>AI</span>
-          <span className={s.statLabel}>Vision Verified</span>
-        </div>
       </div>
 
       {/* Navigation Tabs */}
@@ -224,14 +227,14 @@ export default function ReportPage() {
           data-active={activeTab === "submit"}
           onClick={() => setActiveTab("submit")}
         >
-          📝 Submit New Report
+          Submit report
         </button>
         <button
           className={s.tabBtn}
           data-active={activeTab === "feed"}
           onClick={() => setActiveTab("feed")}
         >
-          📋 Live City Issue Feed ({reports.length})
+          Live feed ({reports.length})
         </button>
       </div>
 
@@ -240,7 +243,7 @@ export default function ReportPage() {
           {/* Left Column: Form */}
           <form className={s.panel} onSubmit={handleSubmit}>
             <h2 className={s.panelTitle}>
-              <span>📍</span> Report Issue
+              <Icon name="map" size={16} /> Report an issue
             </h2>
 
             {/* Category Selector */}
@@ -255,7 +258,7 @@ export default function ReportPage() {
                     data-selected={category === cat.id}
                     onClick={() => setCategory(cat.id)}
                   >
-                    <span className={s.categoryIcon}>{cat.icon}</span>
+                    <span className={s.categoryIcon}><Icon name={cat.icon} size={18} /></span>
                     <span>{cat.label}</span>
                   </button>
                 ))}
@@ -299,9 +302,9 @@ export default function ReportPage() {
                   </div>
                 ) : (
                   <div className={s.uploadPrompt}>
-                    <span className={s.uploadIcon}>📷</span>
-                    <strong>Click or drop photo here</strong>
-                    <span>Instant AI object & hazard detection</span>
+                    <span className={s.uploadIcon}><Icon name="fact" size={22} /></span>
+                    <strong>Click or drop a photo</strong>
+                    <span>Checked for hazards on upload</span>
                   </div>
                 )}
               </div>
@@ -311,7 +314,7 @@ export default function ReportPage() {
             {isAnalyzingVision && (
               <div className={s.visionBadge}>
                 <div className={s.visionBadgeHeader}>
-                  <span>🔍 Running Computer Vision Analysis...</span>
+                  <span>Analysing photo…</span>
                 </div>
               </div>
             )}
@@ -319,7 +322,7 @@ export default function ReportPage() {
             {visionAnalysis && !isAnalyzingVision && (
               <div className={s.visionBadge}>
                 <div className={s.visionBadgeHeader}>
-                  <span>✨ Vision AI: {visionAnalysis.primary_category?.replace("_", " ").toUpperCase()}</span>
+                  <span>Detected: {visionAnalysis.primary_category?.replace("_", " ")}</span>
                   <span>{(visionAnalysis.confidence * 100).toFixed(0)}% Conf</span>
                 </div>
                 <div className={s.visionBadgeBody}>
@@ -369,7 +372,7 @@ export default function ReportPage() {
                   onClick={handleGetLocation}
                   title="Use current GPS"
                 >
-                  📡 GPS
+                  Use GPS
                 </button>
               </div>
             </div>
@@ -408,13 +411,13 @@ export default function ReportPage() {
 
             {submitError && (
               <div style={{ color: "var(--bad)", fontSize: "var(--fs-sm)", background: "#ffebee", padding: "8px 12px", borderRadius: "8px" }}>
-                ⚠️ {submitError}
+                {submitError}
               </div>
             )}
 
             {submitSuccess && (
               <div style={{ color: "var(--ok)", fontSize: "var(--fs-sm)", background: "#e8f5e9", padding: "12px", borderRadius: "8px", lineHeight: 1.4 }}>
-                ✅ <strong>Report {submitSuccess.id} Submitted!</strong><br />
+                <strong>Report {submitSuccess.id} submitted.</strong><br />
                 Assigned to: <strong>{submitSuccess.assigned_department}</strong><br />
                 SLA Deadline: {submitSuccess.sla_deadline?.slice(0, 16).replace("T", " ")} UTC
               </div>
@@ -433,7 +436,7 @@ export default function ReportPage() {
           {/* Right Column: Triage Info & Map Context */}
           <div className={s.panel}>
             <h2 className={s.panelTitle}>
-              <span>⚡</span> Autonomous Triage Pipeline
+              <Icon name="action" size={16} /> Triage pipeline
             </h2>
             <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-soft)", lineHeight: 1.6, display: "flex", flexDirection: "column", gap: "14px" }}>
               <p>
@@ -506,18 +509,18 @@ export default function ReportPage() {
 
                 {rep.ai_verification?.visual_summary && (
                   <div style={{ fontSize: "var(--fs-xs)", color: "var(--accent-ink)", background: "var(--accent-wash)", padding: "6px 10px", borderRadius: "6px" }}>
-                    🔍 <strong>AI Analysis:</strong> {rep.ai_verification.visual_summary}
+                    <strong>Photo analysis:</strong> {rep.ai_verification.visual_summary}
                   </div>
                 )}
 
                 <div className={s.reportCardFooter}>
                   <div>
-                    🏢 <strong>{rep.assigned_department}</strong>
+                    <strong>{rep.assigned_department}</strong>
                     {rep.evidence_id && <span className={s.evidenceTag}> · Evidence #{rep.evidence_id.slice(-6)}</span>}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <span className={s.slaIndicator}>
-                      ⏱️ SLA: {rep.sla_deadline?.slice(11, 16)} UTC
+                      SLA {rep.sla_deadline?.slice(11, 16)} UTC
                     </span>
                     {rep.status !== "resolved" && (
                       <button

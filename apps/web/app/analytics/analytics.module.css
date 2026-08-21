@@ -149,7 +149,7 @@
 .progressBarFill {
   height: 100%;
   border-radius: var(--r-pill);
-  background: linear-gradient(90deg, var(--accent), #e06a10);
+  background: var(--accent);
   transition: width 0.4s var(--ease-out);
 }
 
