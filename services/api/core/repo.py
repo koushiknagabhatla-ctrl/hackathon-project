@@ -446,3 +446,40 @@ def list_simulations() -> list[dict[str, Any]]:
         }
         for r in rows
     ]
+
+
+def poll_stream(
+    since_ingest: str | None, tenant_id: str = "ten_vijayawada", limit: int = 50
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Events ingested after `since_ingest`, oldest first, with a new cursor.
+
+    First call (since_ingest None) returns the latest few so a fresh client has
+    context without replaying the whole table.
+    """
+    if since_ingest:
+        rows = db.q(
+            "SELECT * FROM event WHERE tenant_id=? AND ingest_time > ? "
+            "ORDER BY ingest_time ASC LIMIT ?",
+            tenant_id, since_ingest, limit,
+        )
+    else:
+        rows = list(reversed(db.q(
+            "SELECT * FROM event WHERE tenant_id=? ORDER BY ingest_time DESC LIMIT ?",
+            tenant_id, 5,
+        )))
+
+    events = [
+        {
+            "id": r["id"],
+            "kind": r["kind"],
+            "connector_id": r["connector_id"],
+            "event_time": r["event_time"],
+            "ingest_time": r["ingest_time"],
+            "quarantined": bool(r["quarantined"]),
+            "payload": db.jload(r["payload"], {}),
+            "geometry": db.jload(r["geometry"]),
+        }
+        for r in rows
+    ]
+    cursor = events[-1]["ingest_time"] if events else since_ingest
+    return events, cursor

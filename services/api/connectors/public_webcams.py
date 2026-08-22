@@ -1,27 +1,7 @@
-"""Public webcam discovery — the second path when no camera is registered.
+"""Fallback camera path: webcams their operators published, via Windy's index.
 
-Andhra Pradesh traffic cameras are operated by the state police and the Real
-Time Governance Society. They are not published as an open stream, so the
-first path (a feed an operator registers, with the authority that granted
-access recorded against it) is the one that shows a city's own junctions.
-
-This module is the fallback: directories of webcams whose operators chose to
-publish them — tourism boards, ports, universities, weather stations, highway
-authorities. Windy's webcam API is the index used because it is licensed,
-documented, and carries the operator and the publication URL for every entry,
-so anything shown here can be traced back to whoever put it online.
-
-A line worth stating plainly, because it is the whole reason this module looks
-the way it does:
-
-    Reachable is not the same as public.
-
-Search engines that index unsecured cameras — devices left on default
-credentials by people who did not intend to broadcast — are not used here and
-should not be. A private camera does not become a public feed because it
-answers on port 554. Every source in this module is one an operator
-deliberately published, and each result carries that provenance so the
-distinction survives into the UI.
+Reachable is not public - unsecured cameras are deliberately not indexed here.
+Note: Windy carries no webcam inside Andhra Pradesh.
 """
 
 from __future__ import annotations

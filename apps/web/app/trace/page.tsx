@@ -15,14 +15,30 @@ import { ClaimBlock } from "@/components/ui/ClaimBlock";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
-import type { TwinQueryResult, IncidentDetail, AuditEvent } from "@/lib/types";
+import type { TwinQueryResult, IncidentDetail, AuditEvent, Incident } from "@/lib/types";
 import { ErrorState } from "@/components/ui/ErrorState";
 import s from "../pages.module.css";
 
 export default function TracePage() {
-  const { data: twinData } = useApi<TwinQueryResult>("/v1/twin/query?asset_id=ast_gate_bd04&depth=2");
-  const { data: incidentDetail } = useApi<IncidentDetail>("/v1/incidents/inc_budameru_01");
-  const { data: auditEvents } = useApi<AuditEvent[]>("/v1/audit/wf_budameru_01");
+  // Trace whatever incident is actually on the record. The ids were hardcoded
+  // to a demo workflow that does not exist, so every request 404'd.
+  const { data: incidents } = useApi<Incident[]>("/v1/incidents");
+  const traced = incidents?.[0] ?? null;
+
+  const { data: incidentDetail } = useApi<IncidentDetail>(
+    traced ? `/v1/incidents/${traced.id}` : null,
+    [traced?.id]
+  );
+  const assetId = incidentDetail?.assets?.[0]?.id ?? null;
+  const { data: twinData } = useApi<TwinQueryResult>(
+    assetId ? `/v1/twin/query?asset_id=${assetId}&depth=2` : null,
+    [assetId]
+  );
+  const workflowId = incidentDetail?.incident?.id ?? traced?.id ?? null;
+  const { data: auditEvents } = useApi<AuditEvent[]>(
+    workflowId ? `/v1/audit/${workflowId}` : null,
+    [workflowId]
+  );
 
   const [activeStep, setActiveStep] = useState<number>(0);
 
@@ -33,7 +49,7 @@ export default function TracePage() {
   const twin = twinData;
   const detail = incidentDetail;
   const audit = auditEvents ?? [];
-  const unavailable = !twinData || !incidentDetail;
+  const unavailable = !incidentDetail;
 
   const ref = useGsap<HTMLElement>(
     (_, el) => sectionReveal(el, ".js-reveal", { stagger: 0.05 }),
@@ -107,7 +123,7 @@ export default function TracePage() {
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <span className="mono" style={{ fontSize: "0.8125rem", color: "var(--muted)" }}>
-            Workflow: wf_budameru_01
+            Workflow: {workflowId ?? "—"}
           </span>
           <span className={s.badge} data-severity="critical">
             Closed Loop Verified

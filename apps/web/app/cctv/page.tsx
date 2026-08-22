@@ -3,14 +3,9 @@
 /**
  * Camera wall — /cctv
  *
- * Shows the camera feeds registered for the selected place. A browser cannot
- * play RTSP, so each tile pulls a JPEG frame from the server-side snapshot
- * proxy and refreshes it; that works for RTSP, MJPEG and HTTP feeds without a
- * transcoder per camera.
- *
- * When the selected town has no camera, this page says exactly that. It does
- * not fall back to a feed from somewhere else, and it does not present a
- * neighbouring city's junction as though it were this one.
+ * Browsers cannot play RTSP, so tiles pull JPEG frames from the server-side
+ * snapshot proxy. A town with no camera says so rather than showing another
+ * city's junction.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -124,8 +119,8 @@ function CameraTile({
 }
 
 export default function CctvPage() {
-  const { location } = useShell();
-  const [lon, lat] = location.coordinates;
+  const { location, queryCoords } = useShell();
+  const { lat, lon } = queryCoords;
 
   const [cams, setCams] = useState<CameraRow[] | null>(null);
   const [error, setError] = useState<unknown>(null);

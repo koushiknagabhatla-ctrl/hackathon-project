@@ -307,6 +307,14 @@ def init_db(path: str | Path | None = None) -> Any:
     with _lock:
         if _conn is not None:
             _conn.close()
+        # Any per-thread handle points at the old file.
+        if hasattr(_thread_local, "conn"):
+            try:
+                _thread_local.conn.close()
+            except Exception:
+                pass
+            _thread_local.conn = None
+            _thread_local.path = None
         _depth = 0
         url = database_url()
         if url:
@@ -319,9 +327,53 @@ def init_db(path: str | Path | None = None) -> Any:
         return _conn
 
 
+# One SQLite connection per thread. Sharing a single handle across FastAPI's
+# threadpool interleaved cursors between requests, which surfaced as auth
+# lookups intermittently returning the wrong row or none at all.
+_thread_local = threading.local()
+
+
 def conn() -> Any:
+    # Postgres pools internally; only SQLite needs per-thread handles.
+    if _conn is not None and is_postgres():
+        return _conn
+
+    existing = getattr(_thread_local, "conn", None)
+    if existing is not None:
+        return existing
+
     with _lock:
-        return _conn if _conn is not None else init_db(None)
+        if _conn is None:
+            init_db(None)
+        if is_postgres():
+            return _conn
+        path = getattr(_thread_local, "path", None) or _current_sqlite_path()
+
+    c = _open(path)
+    _thread_local.conn = c
+    _thread_local.path = path
+    return c
+
+
+def _current_sqlite_path() -> str:
+    """The file the primary connection is attached to."""
+    try:
+        row = _conn.execute("PRAGMA database_list").fetchone()
+        if row and row["file"]:
+            return row["file"]
+    except Exception:
+        pass
+    return str(DEFAULT_PATH)
+
+
+def close_thread_conn() -> None:
+    """Release this thread's handle. Called when a worker retires."""
+    c = getattr(_thread_local, "conn", None)
+    if c is not None:
+        try:
+            c.close()
+        finally:
+            _thread_local.conn = None
 
 
 get_conn = conn  # lane B (policy.py, gateway.py) calls it under this name

@@ -27,7 +27,6 @@ router = APIRouter(prefix="/v1")
 
 
 @router.get("/weather/live")
-@router.post("/connectors/weather/sync")
 def sync_live_weather(
     lat: float | None = None,
     lon: float | None = None,
@@ -184,7 +183,7 @@ def twin_query(
 ) -> Any:
     from services.api.core import twin
 
-    return twin.query(asset_id, depth, principal["tenant_id"])
+    return twin.query(asset_id, depth).model_dump()
 
 
 @router.get("/twin/snapshot")
@@ -210,11 +209,20 @@ def audit_verify(principal: dict = Depends(get_principal)) -> Any:
     return audit.verify_chain(principal["tenant_id"]).model_dump()
 
 
+@router.get("/audit/events")
+def audit_events(limit: int = 200, principal: dict = Depends(get_principal)) -> Any:
+    """Tenant ledger, newest first. Declared before /audit/{workflow_id} so
+    'events' is not captured as a workflow id."""
+    from services.api.core import repo
+
+    return [e.model_dump() for e in repo.list_audit_for_tenant(principal["tenant_id"], limit)]
+
+
 @router.get("/audit/{workflow_id}")
 def audit_workflow(workflow_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
-    return repo.audit_slice(principal["tenant_id"], workflow_id)
+    return [e.model_dump() for e in repo.list_audit(workflow_id)]
 
 
 @router.get("/audit/{workflow_id}/export")
@@ -346,18 +354,26 @@ async def stream(request: Request) -> StreamingResponse:
     from services.api.core import repo
 
     async def gen():
-        last_seq = 0
+        cursor: str | None = None
         yield f"event: ping\ndata: {json.dumps({'seq': 0, 'status': 'connected'})}\n\n"
         ping_ticks = 0
+        consecutive_errors = 0
         while True:
             if await request.is_disconnected():
                 break
             try:
-                events, last_seq = repo.poll_stream(last_seq)
+                events, cursor = repo.poll_stream(cursor)
+                consecutive_errors = 0
                 for ev in events:
-                    yield f"event: {ev.get('kind', 'health')}\ndata: {json.dumps(ev)}\n\n"
-            except Exception as exc:  # keep the stream alive on a transient error
-                yield f"event: error\ndata: {json.dumps({'detail': str(exc)})}\n\n"
+                    yield f"event: {ev.get('kind', 'health')}\ndata: {json.dumps(ev, default=str)}\n\n"
+            except Exception as exc:
+                # Report once, then stay quiet: an error per second turns the
+                # stream into a firehose and pins the client to "degraded".
+                consecutive_errors += 1
+                if consecutive_errors <= 1:
+                    yield f"event: error\ndata: {json.dumps({'detail': str(exc)})}\n\n"
+                elif consecutive_errors > 30:
+                    break
             
             ping_ticks += 1
             if ping_ticks % 5 == 0:

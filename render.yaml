@@ -1,0 +1,79 @@
+# Render blueprint for the Auralis API.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+#
+# Secrets are NOT in this file. Every `sync: false` value must be pasted into
+# the service's Environment tab; committing a key to git publishes it to
+# anyone who ever clones the repo.
+
+services:
+  - type: web
+    name: auralis-api
+    runtime: python
+    plan: free
+    region: singapore # closest Render region to Andhra Pradesh
+    branch: main
+
+    buildCommand: pip install --upgrade pip && pip install -r services/api/requirements.txt
+    startCommand: uvicorn services.api.main:app --host 0.0.0.0 --port $PORT
+
+    healthCheckPath: /v1/health
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.1"
+
+      # SQLite lives on the instance disk. On the free plan that disk is
+      # ephemeral, so the database is re-seeded on every deploy. Attach a
+      # persistent disk (paid) and point this at it to keep runtime data.
+      - key: AURALIS_DB
+        value: /tmp/auralis.db
+
+      # The 1.5B model needs ~3 GB RAM and is not installed on this plan.
+      # Chat answers from the tool-grounded path, which is the path that
+      # carries live readings anyway.
+      - key: ENABLE_LOCAL_LLM
+        value: "false"
+
+      - key: ENABLE_REAL_WEATHER_FEED
+        value: "true"
+      - key: ENABLE_REAL_OSM_GIS
+        value: "true"
+
+      - key: AURALIS_JURISDICTION_NAME
+        value: Vijayawada
+      - key: AURALIS_JURISDICTION_LAT
+        value: "16.5062"
+      - key: AURALIS_JURISDICTION_LON
+        value: "80.6480"
+
+      # Render sits behind a proxy, so the rate limiter must read the
+      # forwarded address or it would throttle every client as one.
+      - key: AURALIS_TRUST_PROXY
+        value: "true"
+      - key: AURALIS_RATE_READ
+        value: "600"
+      - key: AURALIS_RATE_WRITE
+        value: "60"
+
+      # ---- secrets: set these in the Render dashboard -------------------
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: OPENAQ_API_KEY
+        sync: false
+      - key: TOMTOM_API_KEY
+        sync: false
+      - key: DATA_GOV_IN_API_KEY
+        sync: false
+      - key: WINDY_WEBCAMS_API_KEY
+        sync: false
+      - key: FAST2SMS_API_KEY
+        sync: false
+      - key: MAPTILER_API_KEY
+        sync: false
+
+      # Optional. Setting this closes the API: every request must then carry
+      # X-Auralis-Token. Strongly recommended once the URL is public, because
+      # the principal header alone only selects a role.
+      - key: AURALIS_API_TOKEN
+        sync: false

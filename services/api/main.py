@@ -64,20 +64,39 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Origins are configured, not wildcarded. `https?://.*` accepted every site on
+# the internet, which with allow_credentials is exactly what CORS exists to stop.
+# Set AURALIS_ALLOWED_ORIGINS to a comma-separated list in production.
+_DEV_ORIGINS = [
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
+_configured = [
+    o.strip() for o in os.environ.get("AURALIS_ALLOWED_ORIGINS", "").split(",") if o.strip()
+]
+_allow_origins = _configured or _DEV_ORIGINS
+# Vercel preview deployments get a new subdomain per build, so they are matched
+# by pattern rather than listed. Only enabled when a production origin is set.
+_allow_regex = r"https://.*\.vercel\.app" if _configured else None
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://.*",
-    allow_origins=[
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-    ],
+    allow_origin_regex=_allow_regex,
+    allow_origins=_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Correlation-Id"],
 )
+
+
+from services.api.security import security_middleware
+
+# Registered before correlation_id, so it ends up OUTERMOST: a throttled or
+# unauthenticated request is rejected before any handler work happens.
+app.middleware("http")(security_middleware)
 
 
 @app.middleware("http")

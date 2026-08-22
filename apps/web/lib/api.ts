@@ -38,7 +38,10 @@ export const PRINCIPALS: Record<Role, string> = {
 
 export function getPrincipal(): string {
   if (typeof window === "undefined") return DEFAULT_PRINCIPAL;
-  return window.localStorage.getItem(PRINCIPAL_KEY) ?? DEFAULT_PRINCIPAL;
+  // Truthiness, not ??: a stored empty string is not a principal, and sending
+  // one as the header is an immediate 401.
+  const stored = window.localStorage.getItem(PRINCIPAL_KEY);
+  return stored && stored.trim() ? stored : DEFAULT_PRINCIPAL;
 }
 
 export function setPrincipal(id: string) {

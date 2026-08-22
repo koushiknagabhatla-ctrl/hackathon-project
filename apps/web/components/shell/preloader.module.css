@@ -1,126 +1,157 @@
+/* Boot overlay.
+   Composition follows bgrem.site: an oversized counter locked to the
+   top-left corner on a plain ground, everything else left empty, with the
+   wordmark and a hairline rule anchored to the bottom edge. */
+
 .root {
   position: fixed;
   inset: 0;
-  z-index: 300;
-  background: var(--bg);
-  display: grid;
-  grid-template-rows: 1fr auto;
-  padding: clamp(20px, 5vw, 56px);
-  will-change: clip-path, opacity;
+  z-index: 10000; /* above the navbar (9999) */
+  /* Reference ground is plain white, not the app's warm grey. */
+  background: #ffffff;
+  will-change: clip-path;
 }
 
-.centre {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: clamp(16px, 3vw, 28px);
-  max-width: var(--max-w);
-  width: 100%;
-  margin-inline: auto;
-}
-
-.wordmark {
-  font-family: var(--font-brand);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.34em;
-  font-size: clamp(1.5rem, 5vw, 3rem);
-  line-height: 1;
-}
+/* ------------------------------------------------------------- counter */
 
 .counter {
+  position: absolute;
+  /* Measured off bgrem.site: 32px from the top and left edges. */
+  top: 32px;
+  left: 32px;
   display: flex;
   align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 0.06em;
+  line-height: 0.8;
+  color: var(--text);
 }
 
 .count {
-  font-family: var(--font-num);
-  font-size: clamp(3.5rem, 14vw, 9rem);
-  line-height: 0.85;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
+  /* Silkscreen, the pixel face the reference uses. */
+  font-family: var(--font-pixel);
+  font-size: 60.8px; /* measured value */
+  font-weight: 400;
+  letter-spacing: normal;
+  color: #020108; /* measured value */
+  display: block;
+  line-height: 1;
 }
 
-.of {
-  font-family: var(--font-num);
-  font-size: clamp(1rem, 2.4vw, 1.5rem);
-  color: var(--muted);
+/* Small mark riding the counter's shoulder, as on the reference. */
+.mark {
+  font-family: var(--font-ui);
+  font-size: 8.8px; /* measured value */
+  font-weight: 500;
+  letter-spacing: normal;
+  color: #020108;
+  align-self: flex-start;
+  margin-top: 0.3em;
 }
 
-.stage {
-  font-size: var(--fs-micro);
-  letter-spacing: 0.18em;
+/* ------------------------------------------------------------ baseline */
+
+.baseline {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.wordmark {
+  display: flex;
+  gap: 0.2em;
+  font-family: var(--font-brand);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  color: #020108;
+  line-height: 1;
+}
+
+/* Each glyph rises through its own mask. */
+.letter {
+  display: inline-block;
+  transform: translateY(110%);
+  animation: rise 820ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes rise {
+  to {
+    transform: translateY(0);
+  }
+}
+
+.status {
+  font-family: var(--font-ui);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-weight: 600;
-  color: var(--muted);
-  min-height: 1.2em;
+  color: rgba(2, 1, 8, 0.45);
+  white-space: nowrap;
+  opacity: 0;
+  animation: fade 600ms ease 260ms forwards;
 }
 
-.bottom {
-  max-width: var(--max-w);
-  width: 100%;
-  margin-inline: auto;
-  display: grid;
-  gap: 18px;
+@keyframes fade {
+  to {
+    opacity: 1;
+  }
 }
 
-.track {
-  height: 2px;
-  background: var(--line);
-  position: relative;
+/* ---------------------------------------------------------------- rule */
+
+.rule {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 24px;
+  height: 1px;
+  background: rgba(2, 1, 8, 0.12);
   overflow: hidden;
 }
-.fill {
+
+.ruleFill {
   position: absolute;
-  inset-block: 0;
-  left: 0;
-  width: 0%;
+  inset: 0;
   background: var(--accent);
-  transition: width 240ms var(--ease-out);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 160ms linear;
+  will-change: transform;
 }
 
-.lines {
-  display: grid;
-  gap: 6px;
-}
-.line {
-  display: grid;
-  grid-template-columns: 18px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--fs-micro);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--line-strong);
-  transition: color 200ms var(--ease-out);
-}
-.line[data-state="ready"] {
-  color: var(--text);
-}
-.line[data-state="degraded"] {
-  color: var(--warn);
-}
-.line[data-state="pending"] {
-  color: var(--line-strong);
-}
-.lineMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.lineNote {
-  font-family: var(--font-num);
-  letter-spacing: 0;
-  color: var(--muted);
-  text-transform: none;
+/* Marker class the exit timeline targets. */
+.fade {
 }
 
-@media (max-width: 639px) {
-  .line {
-    font-size: 10px;
-    letter-spacing: 0.1em;
+@media (max-width: 640px) {
+  .counter {
+    top: 22px;
+    left: 22px;
+  }
+  .baseline,
+  .rule {
+    left: 22px;
+    right: 22px;
+  }
+  .status {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letter,
+  .status {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+  .ruleFill {
+    transition: none;
   }
 }

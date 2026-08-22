@@ -7,6 +7,7 @@ import { MobileNav } from "@/components/shell/MobileNav";
 import { Preloader } from "@/components/shell/Preloader";
 import { RouteTransition } from "@/components/shell/RouteTransition";
 import { ServiceWorkerRegister } from "@/components/shell/ServiceWorkerRegister";
+import { LocationPrompt } from "@/components/shell/LocationPrompt";
 import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
@@ -42,6 +43,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preloaded: the boot counter and the 404 numerals are the first
+            things painted, so their faces must not arrive late. */}
+        <link
+          rel="preload"
+          href="/fonts/Silkscreen.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/BodoniModa.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script dangerouslySetInnerHTML={{ __html: MOTION_BOOT }} />
       </head>
       <body>
@@ -57,6 +74,7 @@ export default function RootLayout({
               <RouteTransition>{children}</RouteTransition>
             </main>
             <MobileNav />
+            <LocationPrompt />
             <ServiceWorkerRegister />
           </ToastProvider>
         </ShellStateProvider>

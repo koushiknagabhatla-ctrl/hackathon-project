@@ -1,0 +1,48 @@
+{
+  "name": "Auralis — city operations with evidence",
+  "short_name": "Auralis",
+  "description": "Evidence-grounded operations for city infrastructure across Andhra Pradesh.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f4f4",
+  "theme_color": "#ff5900",
+  "categories": ["government", "utilities", "productivity"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ask Auralis",
+      "short_name": "Chat",
+      "url": "/chat",
+      "description": "Ask about the selected city using live data"
+    },
+    {
+      "name": "Command centre",
+      "short_name": "Command",
+      "url": "/command",
+      "description": "Open incidents and the city map"
+    },
+    {
+      "name": "Report an issue",
+      "short_name": "Report",
+      "url": "/report",
+      "description": "File a civic report"
+    }
+  ]
+}

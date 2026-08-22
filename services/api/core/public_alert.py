@@ -1,29 +1,8 @@
-"""Public alerting — warn people near a hazard, and be honest about who was reached.
+"""Public alerting: author a CAP 1.2 alert, deliver to consenting people in radius.
 
-Two things happen here, deliberately kept apart:
-
-  1. **Authoring.** A hazard becomes a CAP 1.2 alert. CAP is the OASIS standard
-     the ITU recommends and the one India's SACHET / NDMA platform consumes, so
-     the artifact this produces is the interoperable one — it can be handed to a
-     state authority, an aggregator, or a siren network without translation.
-
-  2. **Delivery.** The alert is fanned out to people who (a) opted in and
-     (b) are inside the threat radius. Every attempt is written to
-     `emergency_notification` with its provider reference and outcome.
-
-The honesty rules that matter here:
-
-  * Consent is required. A phone number in the database is not permission;
-    `consent_verified` is. Opted-out and unconsented rows are never contacted,
-    and the count of who was skipped is reported.
-  * "Sent" is not "delivered". The provider accepting a message is recorded as
-    `sent`; only a provider callback may mark `delivered`. Nothing here claims
-    a person read anything.
-  * Reaching the general public is not something this platform can do. Cell
-    broadcast in India is operated by DoT/NDMA. This module produces the CAP
-    artifact for that handoff and says plainly that it reached subscribers,
-    not "the public".
-  * An alert with no verified evidence behind it does not go out at all.
+CAP is the OASIS/ITU standard India's SACHET consumes, so the artifact is portable.
+Rules: consent required, "sent" is never reported as "delivered", identical alerts
+are deduped, and reaching the wider public needs DoT/NDMA cell broadcast.
 """
 
 from __future__ import annotations

@@ -914,3 +914,39 @@
     max-width: 88%;
   }
 }
+
+.useLocationBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.useLocationBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.useLocationBtn:disabled {
+  color: var(--muted);
+  cursor: progress;
+}
+
+.locateMsg {
+  margin-bottom: var(--sp-2);
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}

@@ -11,7 +11,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useShell } from "@/components/shell/ShellState";
 import { Icon, type IconName } from "@/components/ui/Icon";
-import { INDIA_LOCATIONS, getSuggestedCity } from "@/lib/locations";
+import { getSuggestedCity, rankedSearch, recommendedLocations } from "@/lib/locations";
+import { locateUser, sourceLabel } from "@/lib/geolocate";
 import s from "./chat.module.css";
 
 interface ToolCall {
@@ -146,7 +147,7 @@ function renderInline(text: string, lineIdx: number): React.ReactNode[] {
 }
 
 export default function ChatPage() {
-  const { location, setLocation } = useShell();
+  const { location, setLocation, queryCoords, setPreciseCoords } = useShell();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -160,6 +161,8 @@ export default function ChatPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [greeting, setGreeting] = useState("Hello");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateMsg, setLocateMsg] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -167,8 +170,11 @@ export default function ChatPage() {
 
   const activeCityName =
     location.id === "all_india" ? "National" : location.name.split("/")[0].trim();
-  const activeLat = location.coordinates[1];
-  const activeLon = location.coordinates[0];
+  // The device fix when geolocation gave us one, else the city centroid. A
+  // centroid can be kilometres from the user, which changes which hospital is
+  // nearest and which corridor is theirs.
+  const activeLat = queryCoords.lat;
+  const activeLon = queryCoords.lon;
 
   const quickActions: { icon: IconName; label: string; prompt: string }[] = [
     {
@@ -266,6 +272,28 @@ export default function ChatPage() {
     stopSpeech();
     setSessionId(sess.id);
     setMessages(sess.messages ?? []);
+  };
+
+  const useMyLocation = async () => {
+    setLocating(true);
+    setLocateMsg(null);
+    const r = await locateUser();
+    setLocating(false);
+
+    if (r.status !== "ok" || !r.coords || !r.match) {
+      setLocateMsg("No location source answered. Search for the city instead.");
+      return;
+    }
+    if (!r.match.insideCoverage) {
+      setLocateMsg(
+        `You are ~${r.match.distanceKm.toFixed(0)} km from ${r.match.location.name}, outside coverage.`
+      );
+      return;
+    }
+    setLocation(r.match.location);
+    setPreciseCoords({ lat: r.coords.lat, lon: r.coords.lon, accuracyM: r.accuracyM ?? 0 });
+    setCityModalOpen(false);
+    setCitySearch("");
   };
 
   const deleteSession = (id: string) => {
@@ -420,16 +448,11 @@ export default function ChatPage() {
     recognition.start();
   };
 
-  const filteredCities = INDIA_LOCATIONS.filter((loc) => {
-    if (loc.id === "all_india") return false;
-    if (!citySearch) return true;
-    const q = citySearch.toLowerCase();
-    return (
-      loc.name.toLowerCase().includes(q) ||
-      loc.district.toLowerCase().includes(q) ||
-      loc.region.toLowerCase().includes(q)
-    );
-  }).sort((a, b) => a.name.localeCompare(b.name));
+  // Ranked, not filtered: typing "guntur" should put Guntur first, and an
+  // empty box should suggest somewhere useful rather than the alphabet.
+  const filteredCities = citySearch.trim()
+    ? rankedSearch(citySearch, 40).map((r) => r.location)
+    : recommendedLocations(location, 40);
 
   const suggestion = getSuggestedCity(citySearch);
 
@@ -677,6 +700,16 @@ export default function ChatPage() {
             </div>
 
             <div className={s.modalSearchBox}>
+              <button
+                type="button"
+                className={s.useLocationBtn}
+                onClick={() => void useMyLocation()}
+                disabled={locating}
+              >
+                <Icon name="map" size={15} />
+                {locating ? "Locating…" : "Use my location"}
+              </button>
+              {locateMsg && <p className={s.locateMsg}>{locateMsg}</p>}
               <input
                 type="text"
                 className={s.modalInput}

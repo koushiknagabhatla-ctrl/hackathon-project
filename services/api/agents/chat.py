@@ -184,12 +184,108 @@ About Auralis, so you can answer questions about it:
 - Live sources include Open-Meteo, OpenWeatherMap, GloFAS river discharge, OpenAQ air quality, USGS seismic, OpenStreetMap, TomTom traffic, GDELT news and data.gov.in.
 
 How to answer:
-- Be warm, direct and brief. Two or three sentences is usually right.
-- Answer general questions and chat normally.
-- You may explain what the platform does and how to use it.
-- Never state a temperature, air quality number, river level, traffic speed, incident count or any other city reading. You do not have those here. If the user wants one, tell them to ask directly, e.g. "ask me the weather in {city}" and the platform will fetch it live.
+- Work out what was actually asked, then answer exactly that. Nothing else.
+- Do not volunteer adjacent facts, tours of the platform, or lists of what you can do unless that is the question.
+- If the question is one line, the answer is one or two. Stop when it is answered.
+- Never state a temperature, air quality number, river level, traffic speed, incident count or any other city reading. You do not have those here; the platform fetches them live when asked directly.
 - Never invent an incident, a report, a statistic or a source.
+- If the question is ambiguous, ask one short clarifying question instead of guessing.
 - If you do not know, say so plainly."""
+
+
+
+# ───────────────────────────────────────────────── Question analysis
+
+# Time windows a question can carry, longest phrase first so "last 24 hours"
+# is not matched as "hour".
+_WINDOW_PATTERNS: list[tuple[str, int]] = [
+    ("last 7 days", 168), ("past week", 168), ("this week", 168),
+    ("last 48 hours", 48), ("last 48 hrs", 48), ("past 2 days", 48),
+    ("last 24 hours", 24), ("last 24 hrs", 24), ("last 24hrs", 24),
+    ("past 24 hours", 24), ("past day", 24), ("last day", 24),
+    ("yesterday", 48), ("overnight", 16), ("today", 24),
+    ("last 12 hours", 12), ("last 6 hours", 6), ("last hour", 1),
+    ("right now", 1), ("currently", 1), ("at the moment", 1),
+]
+
+
+@dataclass
+class QuestionAnalysis:
+    """What the turn is actually asking for."""
+    raw: str
+    intents: list[str]
+    window_hours: int | None
+    city: str
+    is_question: bool
+    is_conversational: bool
+    needs_live_data: bool
+    notes: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "intents": self.intents,
+            "window_hours": self.window_hours,
+            "city": self.city,
+            "needs_live_data": self.needs_live_data,
+            "notes": self.notes,
+        }
+
+
+def analyze_question(message: str, context: dict[str, Any]) -> QuestionAnalysis:
+    """Resolve the turn before answering it.
+
+    Cheap and deterministic on purpose: the resolution decides which tools run,
+    so it must not itself be a guess from a language model.
+    """
+    msg = (message or "").strip()
+    low = msg.lower()
+    notes: list[str] = []
+
+    intents = detect_intent(msg)
+
+    window = None
+    for phrase, hours in _WINDOW_PATTERNS:
+        if phrase in low:
+            window = hours
+            notes.append(f"time window: {phrase} -> {hours}h")
+            break
+
+    # A city named in the message overrides the selected one.
+    city = context.get("city_name") or "the selected city"
+    try:
+        from services.api.core import geo_cities
+
+        for token in re.findall(r"\b[A-Z][a-z]{3,}\b", msg):
+            found = geo_cities.find_city_by_name(token)
+            if found:
+                city = found.name
+                notes.append(f"city named in the message: {found.name}")
+                break
+    except Exception:
+        pass
+
+    is_question = bool(
+        "?" in msg
+        or re.match(r"^\s*(what|when|where|which|who|why|how|is|are|can|do|does|did|show|find|list|tell|give)\b", low)
+    )
+    conversational = not intents and not is_question
+    needs_live = bool(intents)
+
+    if not intents and is_question:
+        notes.append("no tool matches this question; answering from the platform record")
+    if len(msg) < 2:
+        notes.append("message too short to resolve")
+
+    return QuestionAnalysis(
+        raw=msg,
+        intents=intents,
+        window_hours=window,
+        city=city,
+        is_question=is_question,
+        is_conversational=conversational,
+        needs_live_data=needs_live,
+        notes=notes,
+    )
 
 
 # ─────────────────────────────────────────── Platform knowledge (curated)
@@ -324,8 +420,19 @@ def detect_intent(message: str) -> list[str]:
     tools = []
 
     def has(words: set[str]) -> bool:
-        """True when any phrase appears as a whole word/phrase, not a substring."""
-        return any(re.search(rf"(?<!\w){re.escape(w)}(?!\w)", msg) for w in words)
+        """True when any phrase appears as a whole word, plural included.
+
+        A strict boundary missed every plural: "hospitals" did not match
+        "hospital", so "near hospitals" resolved to no tool at all.
+        """
+        for w in words:
+            # Only long words take a plural suffix. Short ones are usually
+            # verbs where the -s changes the meaning: "helps" in "thanks,
+            # that helps" is not a request for emergency guidance.
+            suffix = "(?:e?s)?" if len(w) >= 5 and " " not in w else ""
+            if re.search(rf"(?<!\w){re.escape(w)}{suffix}(?!\w)", msg):
+                return True
+        return False
 
     weather_words = {"weather", "rain", "temperature", "wind", "humidity", "forecast",
                      "storm", "hot", "cold", "sunny", "cloudy", "monsoon", "cyclone"}
@@ -398,6 +505,24 @@ def detect_intent(message: str) -> list[str]:
     if has(knowledge_words):
         tools.append("search_city_knowledge")
 
+    # Rank by how directly each tool answers the question. Without this the
+    # answer leads with whatever keyword happened to match first.
+    lead = None
+    msg_head = msg[:80]
+    for name, words in (
+        ("get_weather", weather_words),
+        ("get_air_quality", air_words),
+        ("get_local_news", news_words),
+        ("search_nearby_services", service_words),
+        ("get_traffic_status", traffic_words),
+        ("search_incidents", incident_words),
+        ("search_city_knowledge", knowledge_words),
+    ):
+        if name in tools and any(w in msg_head for w in words):
+            lead = name
+            break
+    if lead:
+        tools = [lead] + [t for t in tools if t != lead]
     return tools
 
 
@@ -522,6 +647,8 @@ def _deterministic_response(
         )
 
     # Execute the detected tools
+    # Answer the question asked: run the tools the question implies, most
+    # relevant first, and stop. A weather question returns weather.
     for tool_name in intents[:MAX_TOOL_CALLS_PER_TURN]:
         args = _infer_tool_args(tool_name, user_message, context)
         result = chat_tools.execute_tool(tool_name, args, context)
@@ -675,17 +802,27 @@ def _deterministic_response(
 
         elif name == "get_traffic_status":
             overall = result.get("overall_traffic", "unknown")
-            affected = result.get("affected_areas", 0)
-            response_parts.append(
-                f"**Traffic Status:** {overall}\n"
-                f"**Affected Areas:** {affected}"
-            )
-            details = result.get("congestion_details", [])
-            if details:
-                for d in details[:3]:
-                    response_parts.append(
-                        f"  • {d.get('title', 'Unknown')} — {d.get('severity', '?').upper()}"
-                    )
+            areas = result.get("congestion_details") or []
+            flow = result.get("flow") or {}
+            lines = [f"**Traffic in {city_name}:** {overall}"]
+
+            cur, free = flow.get("current_speed_kph"), flow.get("free_flow_kph")
+            if cur is not None and free:
+                pct = round((cur / free) * 100) if free else None
+                lines.append(
+                    f"**Current flow:** {cur} km/h against a free-flow {free} km/h"
+                    + (f" ({pct}% of normal)" if pct is not None else "")
+                )
+
+            if areas:
+                lines.append(f"\n**{len(areas)} affected area(s):**")
+                for a in areas[:4]:
+                    sev = str(a.get("severity", "")).upper()
+                    lines.append(f"- {a.get('title', 'Untitled')}" + (f" — {sev}" if sev else ""))
+            else:
+                lines.append("No congestion reported on the record.")
+
+            response_parts.append("\n".join(lines))
 
         elif name == "get_emergency_info":
             guide = result.get("guide", {})
@@ -750,6 +887,12 @@ def _deterministic_response(
 def _infer_tool_args(tool_name: str, message: str, context: dict[str, Any]) -> dict[str, Any]:
     """Infer tool arguments from the user message for deterministic mode."""
     args: dict[str, Any] = {}
+
+    # A time window resolved by analyze_question applies to anything that can
+    # be scoped by one, so "what happened yesterday" does not return today.
+    window = context.get("window_hours")
+    if window and tool_name in ("get_local_news", "search_incidents"):
+        args["within_hours"] = int(window)
 
     from services.api.core import geo_cities
     target_city = None
@@ -863,7 +1006,11 @@ def _local_custom_llm_chat(
 ) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]], str] | None:
     """Execute response synthesis through the user's fine-tuned Auralis AP Urban LLM."""
     try:
-        intents = detect_intent(user_message)
+        # Resolve the question first, then answer that resolution.
+        analysis = analyze_question(user_message, context)
+        if analysis.window_hours:
+            context = {**context, "window_hours": analysis.window_hours}
+        intents = analysis.intents
         det_text, tool_calls, tool_results = _deterministic_response(user_message, intents, context)
 
         # A tool-backed answer IS the answer: it carries real readings, and

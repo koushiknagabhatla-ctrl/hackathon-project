@@ -1,32 +1,8 @@
-"""CCTV incident analysis — detect collisions from a camera feed.
+"""Collision detection from a camera feed: YOLO -> IoU tracking -> kinematics.
 
-The detection chain is object detection -> tracking -> kinematics, which is the
-approach the traffic-incident literature settled on and the one that survives
-contact with a real street. The previous implementation scored frames on colour
-histograms ("orange pixels means fire"), which fires on a sunset, a red bus and
-a saree, and is not something anyone should page a crew on.
-
-What this module does:
-
-  1. Runs a YOLO detector on sampled frames and keeps only road users
-     (car, truck, bus, motorcycle, bicycle, person).
-  2. Tracks each one across frames with IoU association, so a box has a
-     history and therefore a velocity.
-  3. Looks for the kinematic signatures of a collision:
-       * two road users overlap and both stop moving
-       * a moving vehicle decelerates abruptly to a halt
-       * a vehicle that was moving stays stopped in the scene
-       * a person appears next to stopped vehicles after such an event
-  4. Emits a signal with a calibrated confidence and the evidence that led to it.
-
-What it deliberately does NOT do:
-
-  * It does not decide an accident happened. One camera is one witness. The
-    signal it emits enters `accident_detector` and needs corroboration from an
-    independent source before anything is dispatched to the public.
-  * It does not identify people or read number plates. Nothing here performs
-    biometric identification, and the frames it keeps are evidence snapshots
-    of an event, not a surveillance record of who was present.
+Emits signals with calibrated confidence. Never decides an accident happened:
+one camera is one witness, so signals go to accident_detector for corroboration.
+Does no biometric identification.
 """
 
 from __future__ import annotations

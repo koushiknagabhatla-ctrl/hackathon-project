@@ -1,157 +1,143 @@
+/* 404.
+   Composition follows nrkportfolio.in: warm paper ground with fine grain,
+   oversized high-contrast serif numerals in the single accent colour, content
+   sitting above centre, and an outlined uppercase link. */
+
 .wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(28px, 5vw, 64px);
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding-block: clamp(40px, 8vw, 104px);
-}
-@media (max-width: 899px) {
-  .wrap {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.code {
-  font-family: var(--font-num);
-  font-size: var(--fs-sm);
-  letter-spacing: 0.18em;
-  color: var(--muted);
+  /* Above centre, as on the reference — a vertically centred block reads
+     heavier and less composed. */
+  justify-content: flex-start;
+  padding: clamp(96px, 18vh, 200px) 24px 80px;
+  background: #fffdf1;
+  text-align: center;
+  overflow: hidden;
 }
 
-.title {
-  font-size: clamp(2.25rem, 5.6vw, 3.75rem);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
-  font-weight: 600;
-  margin-top: 18px;
-  max-width: 14ch;
+/* Fine paper grain. Fixed and non-interactive so it never repaints on scroll. */
+.wrap::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'>\
+<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/></filter>\
+<rect width='140' height='140' filter='url(%23n)' opacity='0.5'/></svg>");
+  mix-blend-mode: multiply;
 }
 
-.sub {
-  margin-top: 18px;
-  font-size: clamp(1rem, 1.4vw, 1.125rem);
-  color: var(--muted);
-  line-height: 1.6;
-  max-width: 44ch;
-}
+/* --------------------------------------------------------------- digits */
 
-.actions {
+.digits {
   display: flex;
-  gap: 12px;
-  margin-top: 32px;
-  flex-wrap: wrap;
-}
-@media (max-width: 639px) {
-  .actions > * {
-    flex: 1 1 100%;
-  }
+  gap: 0.01em;
+  line-height: 0.78;
 }
 
-.search {
-  display: flex;
-  gap: 10px;
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
-  max-width: 460px;
-  flex-wrap: wrap;
-}
-.searchInput {
-  flex: 1 1 220px;
-  min-height: 48px;
-  padding: 0 14px;
-  border-radius: var(--r-control);
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  font-size: var(--fs-body);
+/* One mask per digit so each rises on its own. */
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
 }
 
-/* ------------------------------------------------------------ the visual */
-.art {
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-.grid {
-  stroke: var(--line);
-  stroke-width: 1;
-  fill: none;
-}
-.block {
-  fill: none;
-  stroke: var(--line);
-  stroke-width: 1;
-}
-.blockFill {
-  fill: #ececec;
-  stroke: none;
+.digit {
+  display: block;
+  /* High-contrast serif: the reference's defining choice. */
+  font-family: var(--font-didone);
+  /* Reference renders 216px at 1440 wide; clamped for smaller viewports. */
+  font-size: clamp(6rem, 15vw, 216px);
+  font-weight: 400;
+  letter-spacing: -0.02em; /* measured -4.32px at 216px */
+  color: #e56a44; /* measured value */
+  transform: translateY(103%);
+  animation: rise 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
 }
 
-/* the one orange fragment, drawn once in 500ms, never looping */
-.route {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 620;
-  stroke-dashoffset: 620;
-  animation: draw 500ms var(--ease-out) 180ms forwards;
-}
-@keyframes draw {
+@keyframes rise {
   to {
-    stroke-dashoffset: 0;
+    transform: translateY(0);
   }
 }
 
-.routeEnd {
-  fill: var(--accent);
+/* ----------------------------------------------------------------- copy */
+
+.copy {
+  margin-top: 34px;
+  max-width: 30ch;
+  font-size: clamp(0.95rem, 1.4vw, 1.075rem);
+  line-height: 1.65;
+  color: #e56a44;
   opacity: 0;
-  animation: appear 220ms var(--ease-out) 680ms forwards;
+  animation: fade 800ms cubic-bezier(0.16, 1, 0.3, 1) 520ms forwards;
 }
 
-/* the node that is not there */
-.missing {
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 5;
+/* ----------------------------------------------------------------- link */
+
+.back {
+  position: relative;
+  margin-top: 40px;
+  padding: 15px 30px;
+  border: 1px solid rgba(229, 106, 68, 0.5);
+  font-size: 0.8125rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #e56a44;
+  overflow: hidden;
   opacity: 0;
-  animation: appear 260ms var(--ease-out) 760ms forwards;
-}
-.missingMark {
-  stroke: var(--muted);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  opacity: 0;
-  animation: appear 260ms var(--ease-out) 820ms forwards;
-}
-.missingLabel {
-  font-family: var(--font-num);
-  font-size: 11px;
-  fill: var(--muted);
-  letter-spacing: 0.12em;
-  opacity: 0;
-  animation: appear 260ms var(--ease-out) 880ms forwards;
+  animation: fade 800ms cubic-bezier(0.16, 1, 0.3, 1) 700ms forwards;
 }
 
-@keyframes appear {
+/* Ink fills from the bottom on hover, drains downward on leave. */
+.back::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #e56a44;
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0;
+}
+
+.back span {
+  position: relative;
+  z-index: 1;
+  transition: color 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.back:hover::before {
+  transform: scaleY(1);
+}
+
+.back:hover span {
+  color: #fffdf1;
+}
+
+@keyframes fade {
   to {
     opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .route,
-  .routeEnd,
-  .missing,
-  .missingMark,
-  .missingLabel {
+  .digit,
+  .copy,
+  .back {
     animation: none;
+    transform: none;
     opacity: 1;
-    stroke-dashoffset: 0;
   }
-  .missing {
-    opacity: 1;
+  .back::before,
+  .back span {
+    transition: none;
   }
 }

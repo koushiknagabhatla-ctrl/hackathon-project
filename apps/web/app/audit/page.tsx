@@ -19,9 +19,10 @@ import s from "../pages.module.css";
 
 export default function AuditLedger() {
   const { data: chainReport, reload: reloadChain } = useApi<AuditChainReport>("/v1/audit/verify");
-  const { data: auditEvents, loading } = useApi<AuditEvent[]>("/v1/audit/wf_budameru_01");
+  // The ledger for the tenant, not a hardcoded demo workflow that 404s.
+  const { data: auditEvents, loading } = useApi<AuditEvent[]>("/v1/audit/events?limit=200");
   const toast = useToast();
-  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("wf_budameru_01");
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("");
   const [verifying, setVerifying] = useState(false);
 
   // NO FALLBACK. `chain` is a tamper-evidence result: rendering a substituted

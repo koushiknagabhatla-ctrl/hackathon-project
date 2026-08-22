@@ -1,0 +1,25 @@
+# Optional heavy extras. Install on top of requirements.txt.
+#
+#   pip install -r requirements.txt -r requirements-ml.txt
+#
+# Needs >= 4 GB RAM. Without these the service still runs: the local LLM and
+# CCTV detection report themselves unavailable and the tool-grounded path
+# answers instead.
+
+# Local fine-tuned model — nadvkjdv/auralis-ap-urban-intelligence
+# Install the torch build that matches your hardware; CPU wheels:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2
+transformers>=4.45
+peft>=0.20
+accelerate>=1.0
+
+# CCTV collision detection (core/cctv_worker.py)
+ultralytics>=8.3
+opencv-python-headless>=4.9
+
+# FCM HTTP v1 push (adapters/fcm_push.py)
+google-auth>=2.30
+
+# Tests
+pytest>=8.3

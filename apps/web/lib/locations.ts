@@ -6365,3 +6365,106 @@ export async function searchIndiaLocation(query: string): Promise<IndiaLocation[
 
   return localMatches.sort((a, b) => a.name.localeCompare(b.name));
 }
+
+
+/** District/city seats, used only to break scoring ties. */
+const MAJOR_IDS = new Set([
+  "visakhapatnam", "vijayawada", "guntur", "nellore", "kurnool", "rajahmundry",
+  "tirupati", "kakinada", "kadapa", "anantapur", "vizianagaram", "eluru",
+  "ongole", "nandyal", "machilipatnam", "adoni", "tenali", "proddatur",
+  "chittoor", "hindupur", "bhimavaram", "madanapalle", "srikakulam",
+  "amaravati", "tadepalligudem", "chirala", "guntakal", "dharmavaram",
+]);
+
+export interface RankedLocation {
+  location: IndiaLocation;
+  score: number;
+  reason: "exact" | "alias" | "prefix" | "word" | "contains" | "district" | "fuzzy";
+}
+
+/**
+ * Score one location against a normalised query. Higher is better, 0 = no match.
+ */
+function scoreLocation(loc: IndiaLocation, q: string): { score: number; reason: RankedLocation["reason"] } | null {
+  const name = loc.name.toLowerCase();
+  const district = loc.district.toLowerCase();
+  const region = loc.region.toLowerCase();
+  const bonus = MAJOR_IDS.has(loc.id) ? 12 : 0;
+
+  if (name === q) return { score: 1000 + bonus, reason: "exact" };
+  if (CITY_ALIASES[q] === loc.id) return { score: 950 + bonus, reason: "alias" };
+  if (name.startsWith(q)) return { score: 800 + bonus - name.length, reason: "prefix" };
+
+  // "gudem" should find Tadepalligudem, but rank it under a prefix hit.
+  const words = name.split(/[\s\-()]+/);
+  if (words.some((w) => w.startsWith(q))) {
+    return { score: 600 + bonus - name.length, reason: "word" };
+  }
+  if (name.includes(q)) return { score: 400 + bonus - name.length, reason: "contains" };
+  if (district === q) return { score: 350, reason: "district" };
+  if (district.includes(q) || region.includes(q)) return { score: 200, reason: "district" };
+
+  // Fuzzy last, and only for queries long enough for a typo to be meaningful.
+  if (q.length >= 4) {
+    const d = levenshteinDistance(q, name);
+    const tolerance = q.length <= 5 ? 1 : q.length <= 8 ? 2 : 3;
+    if (d <= tolerance) return { score: 150 - d * 10 + bonus, reason: "fuzzy" };
+  }
+  return null;
+}
+
+/**
+ * Ranked, typo-tolerant search over every registered location.
+ * Synchronous and offline: the coordinates are already on disk.
+ */
+export function rankedSearch(query: string, limit = 12): RankedLocation[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const out: RankedLocation[] = [];
+  for (const loc of AP_LOCATIONS) {
+    const s = scoreLocation(loc, q);
+    if (s) out.push({ location: loc, score: s.score, reason: s.reason });
+  }
+  out.sort((a, b) => b.score - a.score || a.location.name.localeCompare(b.location.name));
+  return out.slice(0, limit);
+}
+
+/**
+ * What to show before anything is typed: the nearest places to where the
+ * operator already is, then major seats to fill the list.
+ */
+export function recommendedLocations(
+  near?: IndiaLocation,
+  limit = 8
+): IndiaLocation[] {
+  const out: IndiaLocation[] = [];
+
+  if (near) {
+    const [lon, lat] = near.coordinates;
+    const byDistance = AP_LOCATIONS
+      .filter((l) => l.id !== near.id)
+      .map((l) => {
+        const dLat = ((l.coordinates[1] - lat) * Math.PI) / 180;
+        const dLon = ((l.coordinates[0] - lon) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((lat * Math.PI) / 180) *
+            Math.cos((l.coordinates[1] * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+        return { l, km: 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) };
+      })
+      .sort((x, y) => x.km - y.km)
+      .slice(0, Math.ceil(limit / 2))
+      .map((x) => x.l);
+    out.push(...byDistance);
+  }
+
+  for (const id of MAJOR_IDS) {
+    if (out.length >= limit) break;
+    if (near?.id === id || out.some((l) => l.id === id)) continue;
+    const found = AP_LOCATIONS.find((l) => l.id === id);
+    if (found) out.push(found);
+  }
+  return out.slice(0, limit);
+}

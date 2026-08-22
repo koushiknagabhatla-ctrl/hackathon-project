@@ -21,6 +21,12 @@ interface ShellValue {
   location: IndiaLocation;
   weather: Record<string, any> | null;
   setLocation: (loc: IndiaLocation) => void;
+  /** Device fix when geolocation succeeded, else null. */
+  preciseCoords: { lat: number; lon: number; accuracyM: number } | null;
+  setPreciseCoords: (c: { lat: number; lon: number; accuracyM: number } | null) => void;
+  /** Coordinates to query with: the device fix when we have one, else the
+   *  city centroid. Every lat/lon call site should read this. */
+  queryCoords: { lat: number; lon: number; precise: boolean };
   refresh: () => void;
 }
 
@@ -45,13 +51,53 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [location, setLocationState] = useState<IndiaLocation>(DEFAULT_LOCATION);
   const [weather, setWeather] = useState<Record<string, any> | null>(null);
+  const [preciseCoords, setPreciseCoordsState] = useState<
+    { lat: number; lon: number; accuracyM: number } | null
+  >(null);
   const [nonce, setNonce] = useState(0);
   const { events, status } = useStream();
 
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
+  // One place decides which coordinates a query uses.
+  const queryCoords = useMemo(
+    () =>
+      preciseCoords
+        ? { lat: preciseCoords.lat, lon: preciseCoords.lon, precise: true }
+        : {
+            lat: location.coordinates[1],
+            lon: location.coordinates[0],
+            precise: false,
+          },
+    [preciseCoords, location]
+  );
+
+  const setPreciseCoords = useCallback(
+    (c: { lat: number; lon: number; accuracyM: number } | null) => {
+      setPreciseCoordsState(c);
+      if (typeof window === "undefined") return;
+      try {
+        if (c) localStorage.setItem("auralis_precise", JSON.stringify(c));
+        else localStorage.removeItem("auralis_precise");
+      } catch {
+        /* private mode: the fix simply does not persist */
+      }
+    },
+    []
+  );
+
   const setLocation = useCallback((newLoc: IndiaLocation) => {
     setLocationState(newLoc);
+    // Choosing a city by hand discards a stale device fix: the two would
+    // otherwise disagree and queries would answer for the wrong place.
+    setPreciseCoordsState(null);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("auralis_precise");
+      } catch {
+        /* ignore */
+      }
+    }
     // Persist preferred location
     if (typeof window !== "undefined") {
       localStorage.setItem("auralis_location", JSON.stringify(newLoc));
@@ -61,6 +107,13 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
   // Hydrate stored location if present
   useEffect(() => {
     try {
+      const storedPrecise = localStorage.getItem("auralis_precise");
+      if (storedPrecise) {
+        const pc = JSON.parse(storedPrecise);
+        if (typeof pc?.lat === "number" && typeof pc?.lon === "number") {
+          setPreciseCoordsState(pc);
+        }
+      }
       const stored = localStorage.getItem("auralis_location");
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -74,7 +127,7 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
   // Fetch real-world live weather whenever location changes
   useEffect(() => {
     let alive = true;
-    const [lon, lat] = location.coordinates;
+    const { lat, lon } = queryCoords;
     api
       .get<Record<string, any>>(`/v1/weather/live?lat=${lat}&lon=${lon}`)
       .then((res) => {
@@ -86,7 +139,7 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [location]);
+  }, [queryCoords]);
 
   useEffect(() => {
     let alive = true;
@@ -124,9 +177,13 @@ export function ShellStateProvider({ children }: { children: ReactNode }) {
       location,
       weather,
       setLocation,
+      preciseCoords,
+      setPreciseCoords,
+      queryCoords,
       refresh,
     }),
-    [incidents, criticalIncidents, status, events, location, weather, setLocation, refresh],
+    [incidents, criticalIncidents, status, events, location, weather, setLocation,
+     preciseCoords, setPreciseCoords, queryCoords, refresh],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

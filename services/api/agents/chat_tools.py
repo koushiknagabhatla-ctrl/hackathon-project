@@ -747,6 +747,28 @@ def handle_get_traffic_status(args: dict[str, Any], context: dict[str, Any]) -> 
                 area["location"] = inc.geometry.get("coordinates")
             congestion_areas.append(area)
 
+        # Live flow for this point, when the provider answers. Incidents say
+        # what is reported; this says how the road is actually moving.
+        flow = None
+        try:
+            from services.api.adapters.traffic import fetch_traffic_flow
+
+            lat = context.get("latitude")
+            lon = context.get("longitude")
+            if lat is not None and lon is not None:
+                res = fetch_traffic_flow(
+                    road_segment_id=f"pt:{lat},{lon}", lat=float(lat), lon=float(lon)
+                )
+                if isinstance(res, dict) and res.get("status") in ("ok", "verified"):
+                    flow = {
+                        "current_speed_kph": res.get("current_speed_kph"),
+                        "free_flow_kph": res.get("free_flow_speed_kph"),
+                        "congestion_ratio": res.get("congestion_ratio"),
+                        "provider": res.get("provider"),
+                    }
+        except Exception as exc:
+            log.debug("traffic flow lookup skipped: %s", exc)
+
         overall = "clear"
         if len(traffic_incidents) > 5:
             overall = "heavy"
@@ -759,6 +781,7 @@ def handle_get_traffic_status(args: dict[str, Any], context: dict[str, Any]) -> 
             "status": "ok",
             "overall_traffic": overall,
             "affected_areas": len(congestion_areas),
+            "flow": flow,
             "congestion_details": congestion_areas[:10],
         }
     except Exception as exc:

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Offline · Auralis</title>
+    <style>
+      :root {
+        --bg: #f4f4f4;
+        --surface: #fff;
+        --text: #000;
+        --muted: #5b5b5b;
+        --line: #d8d8d8;
+        --accent: #ff5900;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--text);
+        font: 400 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .card {
+        max-width: 460px;
+        padding: 32px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+      }
+      .mark {
+        width: 40px; height: 40px;
+        display: grid; place-items: center;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+      h1 { font-size: 1.25rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+      p { margin: 0 0 16px; color: var(--muted); }
+      button {
+        font: inherit;
+        padding: 9px 16px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        cursor: pointer;
+      }
+      button:hover { border-color: #bdbdbd; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="mark" aria-hidden="true">A</div>
+      <h1>No connection</h1>
+      <!-- Deliberately shows nothing about the city. A cached reading presented
+           during an outage is exactly the failure this platform refuses. -->
+      <p>
+        This device is offline, so no current city data can be read. Nothing is
+        shown in place of it — a cached reading during an outage would look
+        exactly like a live one.
+      </p>
+      <button onclick="location.reload()">Try again</button>
+    </div>
+  </body>
+</html>

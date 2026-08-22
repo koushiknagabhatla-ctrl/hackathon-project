@@ -1,25 +1,7 @@
-"""Andhra Pradesh news connector — what published outlets actually reported.
+"""Andhra Pradesh news retrieval. Google News RSS (no key) + GDELT as backup.
 
-This connector exists so the assistant can answer "what happened in this city"
-with reporting rather than recollection. It is deliberately a *retrieval*
-surface, not a summarisation one:
-
-  * Every item carries the outlet that published it, the publication time and
-    a link to the original.
-  * Headlines are returned verbatim. Nothing here rewrites, merges or infers.
-  * Casualty figures, causes and names are only ever the words of the cited
-    outlet. This module never derives them and never fills a gap.
-
-That last rule matters more here than anywhere else in the platform. A wrong
-temperature is a bad reading; a wrong death toll, or a name attached to the
-wrong incident, is a different kind of harm. When sources disagree, both are
-returned with their attribution and the disagreement is left visible rather
-than resolved.
-
-Primary source is the Google News RSS index, which needs no key and carries
-Indian outlets (The Hindu, Times of India, Deccan Chronicle, NDTV, ANI,
-The New Indian Express, Eenadu, Sakshi). GDELT is consulted as a secondary
-index when it is not rate-limiting.
+Retrieval only: headlines are returned verbatim with outlet and timestamp.
+Casualty figures, causes and names are the outlet's words, never derived here.
 """
 
 from __future__ import annotations

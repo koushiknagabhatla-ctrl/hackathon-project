@@ -37,8 +37,8 @@ interface HazardAssessment {
 }
 
 export default function AlertsPage() {
-  const { location } = useShell();
-  const [lon, lat] = location.coordinates;
+  const { location, queryCoords } = useShell();
+  const { lat, lon } = queryCoords;
   const { data: assessment, loading, error, correlationId, reload } = useApi<HazardAssessment>(
     `/v1/hazards/scan?lat=${lat}&lon=${lon}&city_name=${encodeURIComponent(location.name)}`
   );

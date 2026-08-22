@@ -88,6 +88,24 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Silkscreen";
+  src: url("/fonts/Silkscreen.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  /* swap, never block: a boot counter that waits for its own font is a blank
+     screen. It renders in the fallback immediately and swaps when ready. */
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bodoni Moda";
+  src: url("/fonts/BodoniModa.woff2") format("woff2");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ----------------------------------------------------------------- tokens */
 :root {
   color-scheme: light;
@@ -150,6 +168,10 @@
   --font-brand: "Morhefa", "Givonic", ui-sans-serif, system-ui, sans-serif;
   --font-num: "Auralis Numeral", "Givonic", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Quffer", "Morhefa", "Givonic", sans-serif;
+  /* boot counter, matching the bgrem reference */
+  --font-pixel: "Silkscreen", ui-monospace, monospace;
+  /* high-contrast Didone for display numerals */
+  --font-didone: "Bodoni Moda", "Didot", "Bodoni MT", Georgia, serif;
 
   --fs-hero: clamp(2.5rem, 6.4vw, 5rem);
   --fs-display: clamp(1.75rem, 3.4vw, 2.75rem);

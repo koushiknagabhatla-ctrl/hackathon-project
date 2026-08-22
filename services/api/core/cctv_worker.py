@@ -1,31 +1,8 @@
-"""CCTV stream worker — watch registered cameras and raise incident signals.
+"""Polls registered cameras and raises incident signals.
 
-Pipeline per camera:
-
-    RTSP/HTTP frame  ->  YOLO detection  ->  CollisionAnalyzer  ->  signal
-                                                    |
-                                         accident_detector (corroboration)
-                                                    |
-                                    public_alert (only once corroborated)
-
-Two properties this module is built around:
-
-**A camera is one witness.** A signal raised here is never enough to warn the
-public. It is handed to `accident_detector`, which requires an independent
-second source (traffic collapse, a citizen report, another camera) before the
-status reaches CORROBORATED and anything is dispatched. A single detector
-firing produces a SUSPECTED incident for an operator to look at, and nothing
-else. That is the difference between a system that helps and one that cries
-wolf until it is switched off.
-
-**A camera must be authorised.** `camera.authorized_by` is NOT NULL and the
-worker skips any row without it. Pointing an analyser at a video feed is a
-decision someone has to own, and this makes that person a matter of record
-rather than a matter of configuration.
-
-The worker samples frames rather than decoding every one: on CPU, YOLO11n runs
-at roughly 3-5 fps, and a collision is a multi-second event, so sampling at
-2-4 fps loses nothing that matters and leaves the box responsive.
+RTSP frame -> YOLO -> CollisionAnalyzer -> accident_detector -> (if corroborated) alert.
+Cameras need `authorized_by` set; the worker skips rows without it.
+Samples by frame stride, not wall clock, so files and live feeds behave the same.
 """
 
 from __future__ import annotations
