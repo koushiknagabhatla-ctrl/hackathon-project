@@ -1,0 +1,111 @@
+{
+  "/": [],
+  "/chat": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/chat",
+      "n": 1
+    }
+  ],
+  "/cctv": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/cctv",
+      "n": 1
+    }
+  ],
+  "/command": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/command",
+      "n": 1
+    }
+  ],
+  "/actions": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/actions",
+      "n": 1
+    }
+  ],
+  "/trace": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/trace",
+      "n": 1
+    }
+  ],
+  "/alerts": [],
+  "/routes": [],
+  "/report": [],
+  "/analytics": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/analytics",
+      "n": 1
+    }
+  ],
+  "/executive": [],
+  "/emergency": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/emergency",
+      "n": 1
+    }
+  ],
+  "/data-health": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/data-health",
+      "n": 1
+    }
+  ],
+  "/audit": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/audit",
+      "n": 1
+    }
+  ],
+  "/governance": [],
+  "/field": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/field",
+      "n": 1
+    }
+  ],
+  "/simulation": [],
+  "/public": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/public",
+      "n": 1
+    }
+  ],
+  "/this-route-does-not-exist": [
+    {
+      "kind": "http.404",
+      "text": "",
+      "url": "http://localhost:3000/this-route-does-not-exist",
+      "n": 1
+    },
+    {
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "url": "http://localhost:3000/this-route-does-not-exist",
+      "n": 1
+    }
+  ]
+}

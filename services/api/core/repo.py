@@ -177,11 +177,6 @@ def raw_payload(content_hash: str) -> Any:
 
 
 # ------------------------------------------------------------------ assets
-def list_assets(tenant_id: str) -> list[dict[str, Any]]:
-    return [dict(r, geometry=db.jload(r["geometry"])) for r in
-            db.q("SELECT * FROM asset WHERE tenant_id=? ORDER BY name", tenant_id)]
-
-
 def get_asset(asset_id: str) -> Any:
     return db.q1("SELECT * FROM asset WHERE id=?", asset_id)
 
@@ -221,6 +216,16 @@ def list_actions(plan_id: str) -> list[Action]:
             db.q("SELECT * FROM action WHERE plan_id=? ORDER BY sequence", plan_id)]
 
 
+def list_actions_for_tenant(tenant_id: str) -> list[Action]:
+    """Every action in a tenant. `action` has no tenant column, so it comes
+    through the owning plan."""
+    return [action_from_row(r) for r in db.q(
+        "SELECT a.* FROM action a JOIN plan p ON p.id = a.plan_id "
+        "WHERE p.tenant_id=? ORDER BY a.executed_at DESC, a.sequence",
+        tenant_id,
+    )]
+
+
 def get_action(action_id: str) -> Action | None:
     row = db.q1("SELECT * FROM action WHERE id=?", action_id)
     return action_from_row(row) if row else None
@@ -233,6 +238,13 @@ def list_plans(tenant_id: str, incident_id: str | None = None) -> list[Plan]:
         sql += " AND incident_id=?"
         args.append(incident_id)
     return [plan_from_row(r) for r in db.q(sql + " ORDER BY created_at DESC", *args)]
+
+
+def plan_detail(tenant_id: str, plan_id: str) -> Plan | None:
+    """A plan with its actions, scoped to the tenant. `plan_from_row` already
+    attaches the actions, so the only extra job here is the tenant check."""
+    row = db.q1("SELECT * FROM plan WHERE id=? AND tenant_id=?", plan_id, tenant_id)
+    return plan_from_row(row) if row else None
 
 
 def get_plan(plan_id: str) -> Plan | None:

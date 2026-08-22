@@ -88,6 +88,23 @@ const BLANK_STYLE: StyleSpecification = {
 const MAP_STYLE: string | StyleSpecification =
   process.env.NEXT_PUBLIC_MAP_STYLE ?? OPENFREEMAP_STYLE;
 
+/**
+ * MapLibre and deck.gl both require WebGL2. Old hardware, a driver on Chrome's
+ * blocklist, a VM or a hardened browser will not have it.
+ *
+ * This is checked BEFORE constructing the map because the constructor throws
+ * part-way through setup: the object exists but its painter does not, so the
+ * failure arrives as an unhandled rejection and the half-built map throws again
+ * from its own `remove()` during cleanup.
+ */
+function hasWebGL2(): boolean {
+  try {
+    return !!document.createElement("canvas").getContext("webgl2");
+  } catch {
+    return false;
+  }
+}
+
 export interface CityMapMarker {
   id: string;
   label: string;
@@ -128,12 +145,21 @@ export function CityMap({
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const overlayRef = useRef<{ setProps: (p: { layers: Layer[] }) => void } | null>(null);
-  const [basemap, setBasemap] = useState<"loading" | "ok" | "unavailable">("loading");
+  // "unsupported" is distinct from "unavailable": no WebGL2 means the deck.gl
+  // data layers cannot draw either, so the reassuring "data layers are still
+  // live" note would be untrue.
+  const [basemap, setBasemap] =
+    useState<"loading" | "ok" | "unavailable" | "unsupported">("loading");
 
   useEffect(() => {
     let cancelled = false;
     let map: MapLibreMap | null = null;
     let tileTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (!hasWebGL2()) {
+      setBasemap("unsupported");
+      return;
+    }
 
     (async () => {
       const [maplibreglModule, { MapboxOverlay }] = await Promise.all([
@@ -145,14 +171,21 @@ export function CityMap({
       const maplibregl = maplibreglModule;
       if (cancelled || !holder.current) return;
 
-      map = new maplibregl.Map({
-        container: holder.current,
-        style: MAP_STYLE,
-        center: activeCenter,
-        zoom: activeZoom,
-        attributionControl: false,
-        interactive,
-      });
+      try {
+        map = new maplibregl.Map({
+          container: holder.current,
+          style: MAP_STYLE,
+          center: activeCenter,
+          zoom: activeZoom,
+          attributionControl: false,
+          interactive,
+        });
+      } catch {
+        // WebGL2 present but unusable (blocklisted driver, lost context).
+        map = null;
+        setBasemap("unsupported");
+        return;
+      }
       mapRef.current = map;
 
       if (interactive && map) {
@@ -209,13 +242,20 @@ export function CityMap({
           onReady?.(map);
         });
       }
-    })();
+    })().catch(() => {
+      if (!cancelled) setBasemap("unsupported");
+    });
 
     return () => {
       cancelled = true;
       if (tileTimer) clearTimeout(tileTimer);
       overlayRef.current = null;
-      map?.remove();
+      // A map that failed mid-construction throws from its own remove().
+      try {
+        map?.remove();
+      } catch {
+        /* nothing left to tear down */
+      }
       mapRef.current = null;
     };
     // Layers are pushed through the overlay below, not by rebuilding the map.
@@ -227,13 +267,16 @@ export function CityMap({
   }, [layers]);
 
   useEffect(() => {
-    if (mapRef.current) {
+    if (!mapRef.current) return;
+    try {
       mapRef.current.flyTo({
         center: activeCenter,
         zoom: activeZoom,
         duration: 1200,
         essential: true,
       });
+    } catch {
+      /* map torn down between render and effect */
     }
   }, [activeCenter, activeZoom]);
 
@@ -246,6 +289,15 @@ export function CityMap({
         <p className={s.note} role="status">
           <Icon name="offline" size={13} />
           Basemap unavailable. Data layers are still live and correct.
+        </p>
+      )}
+      {basemap === "unsupported" && (
+        <p className={s.unsupportedNote} role="status">
+          <Icon name="offline" size={13} />
+          <span>
+            This map needs WebGL2, which this browser or device does not
+            provide. The same data is listed below.
+          </span>
         </p>
       )}
       {basemap === "ok" && (
@@ -261,7 +313,7 @@ export function CityMap({
       )}
 
       {/* The map's content, in text. A canvas is invisible to a screen reader. */}
-      <div className="sr-only">
+      <div className={basemap === "unsupported" ? s.textFallback : "sr-only"}>
         <p>
           Map of {location.name}, {location.state}.{summary ? ` ${summary}.` : ""}
           {basemap === "unavailable"

@@ -25,7 +25,8 @@ dotenv.load_dotenv(REPO_ROOT / ".env")
 DB_PATH = os.environ.get("AURALIS_DB", str(REPO_ROOT / "auralis.db"))
 
 
-from services.api.auth import PolicyDenied, get_principal
+from services.api.auth import PolicyDenied
+from services.api.core.gateway import GatewayError
 
 
 @asynccontextmanager
@@ -131,6 +132,31 @@ async def _policy_denied(request: Request, exc: PolicyDenied):
     return _error(403, "policy_denied", exc.reason, {"rule_id": exc.rule_id, "detail": exc.detail}, cid)
 
 
+# A gateway refusal is the safety chain working, not a crash. Without this the
+# generic handler turned every denial into a 500, so a client could not tell
+# "you may not do that" from "the server broke".
+_GATEWAY_STATUS: dict[str, int] = {
+    "identity_unknown": 404, "action_unknown": 404, "tool_unknown": 404,
+    "not_authorized": 403, "policy_denied": 403, "tool_not_allowed": 403,
+    "tenant_mismatch": 403, "identity_invalid": 403, "identity_revoked": 403,
+    "approval_required": 403, "dual_control_required": 403,
+    "risk_escalated": 403, "simulation_barrier": 403,
+    "action_not_executable": 409, "plan_not_executable": 409,
+    "idempotency_conflict": 409, "precondition_failed": 409,
+    "evidence_stale": 409,
+    "args_invalid": 422, "response_invalid": 422,
+    "tool_failed": 502,
+}
+
+
+@app.exception_handler(GatewayError)
+async def _gateway_error(request: Request, exc: GatewayError):
+    cid = getattr(request.state, "correlation_id", "-")
+    err = exc.as_error()
+    return _error(_GATEWAY_STATUS.get(exc.code, 400), exc.code, err["message"],
+                  err["detail"] or None, cid)
+
+
 @app.exception_handler(ValueError)
 async def _value_error(request: Request, exc: ValueError):
     cid = getattr(request.state, "correlation_id", "-")
@@ -196,12 +222,11 @@ def readiness() -> dict[str, Any]:
 
 
 def _register_routers() -> None:
-    """Attach the v1 surface, emergency incident response, chat, civic reports, routing, alerts, analytics, and cities."""
+    """Attach the v1 surface, emergency incident response, chat, civic reports, routing, alerts and analytics."""
     from services.api.routers import alerts as alerts_router
     from services.api.routers import analytics as analytics_router
     from services.api.routers import api as api_router
     from services.api.routers import chat as chat_router
-    from services.api.routers import cities as cities_router
     from services.api.routers import emergency as emergency_router
     from services.api.routers import reports as reports_router
     from services.api.routers import routing as routing_router
@@ -213,7 +238,6 @@ def _register_routers() -> None:
     app.include_router(routing_router.router)
     app.include_router(alerts_router.router)
     app.include_router(analytics_router.router)
-    app.include_router(cities_router.router)
 
 
 _register_routers()

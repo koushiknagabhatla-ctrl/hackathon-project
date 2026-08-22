@@ -11,7 +11,9 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  // API_ORIGIN is listed explicitly: CCTV snapshots are served by the API, and
+  // in dev that is plain http, which `https:` does not cover.
+  `img-src 'self' data: blob: https: ${API_ORIGIN}`,
   "font-src 'self' data:",
   `connect-src 'self' ${API_ORIGIN} https://api.maptiler.com https://*.maptiler.com https://tiles.openfreemap.org https://*.openstreetmap.org`,
   "worker-src 'self' blob:",

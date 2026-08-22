@@ -49,6 +49,13 @@ def _ago(minutes: int) -> tuple[int, str]:
     return int(t.timestamp() * 1000), t.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+# Open-Meteo stamps `current.time` without seconds. Relative for the same
+# reason as _ago(): ingest quarantines anything over 24 h old as clock skew,
+# so a literal date makes this test start failing on a calendar date.
+_OM_AT = (datetime.now(UTC) - timedelta(minutes=30)).replace(second=0, microsecond=0)
+OM_TIME = _OM_AT.strftime("%Y-%m-%dT%H:%M")
+OM_ISO = _OM_AT.strftime("%Y-%m-%dT%H:%M:%SZ")
+
 NEAR_MS, NEAR_ISO = _ago(55)
 FAR_MS, FAR_ISO = _ago(20)
 FEED_MS, FEED_ISO = _ago(1)
@@ -292,7 +299,7 @@ def test_openmeteo_ingests_the_upstream_observation_time(monkeypatch):
     _seam(monkeypatch, {
         "latitude": 16.5, "longitude": 80.65, "elevation": 23.0,
         "current_units": {"temperature_2m": "°C", "rain": "mm"},
-        "current": {"time": "2026-08-21T09:15", "interval": 900,
+        "current": {"time": OM_TIME, "interval": 900,
                     "temperature_2m": 29.4, "relative_humidity_2m": 81,
                     "rain": 0.5, "precipitation": 0.5, "surface_pressure": 1003.2,
                     "wind_speed_10m": 12.4, "weather_code": 61},
@@ -301,11 +308,11 @@ def test_openmeteo_ingests_the_upstream_observation_time(monkeypatch):
     out = weather.fetch_open_meteo(LAT, LON, principal=PRINCIPAL)
 
     assert out["status"] == "ok"
-    assert out["observed_at"] == "2026-08-21T09:15:00Z"
+    assert out["observed_at"] == OM_ISO
     # 0.5 mm over a 900 s bucket is 2 mm/h, not 0.5 mm/h.
     assert out["rain_rate_mm_h"] == 2.0
     row = db.q1("SELECT * FROM evidence WHERE id=?", out["evidence_id"])
-    assert row["observed_at"] == "2026-08-21T09:15:00Z"
+    assert row["observed_at"] == OM_ISO
     assert row["trust_tier"] == "verified"
     assert db.jload(row["value_json"], {})["payload"]["source_note"] == (
         "aggregated national met services; not IMD")

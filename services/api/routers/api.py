@@ -75,7 +75,10 @@ def list_incidents(
 def get_incident(incident_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
-    detail = repo.incident_detail(principal["tenant_id"], incident_id)
+    # incident_detail(incident_id, degraded) - the tenant is not a parameter.
+    # Passing it first looked up an incident whose id was the tenant, so every
+    # request 404'd.
+    detail = repo.incident_detail(incident_id)
     if detail is None:
         raise HTTPException(status_code=404, detail="incident not found")
     return detail
@@ -129,7 +132,7 @@ def approve(
 def list_actions(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
-    return repo.list_actions(principal["tenant_id"])
+    return repo.list_actions_for_tenant(principal["tenant_id"])
 
 
 @router.post("/actions/{action_id}/execute")
@@ -154,7 +157,7 @@ def rollback_action(action_id: str, principal: dict = Depends(get_principal)) ->
 def get_evidence(evidence_id: str, principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import repo
 
-    ev = repo.get_evidence(principal["tenant_id"], evidence_id)
+    ev = repo.get_evidence(evidence_id)
     if ev is None:
         raise HTTPException(status_code=404, detail="evidence not found")
     return ev
@@ -231,7 +234,8 @@ def audit_export(workflow_id: str, principal: dict = Depends(get_principal)) -> 
     Reconstruction must be possible from this payload ALONE."""
     from services.api.core import audit
 
-    return audit.export_workflow(workflow_id, principal["tenant_id"])
+    # export_workflow(workflow_id) - it reads the tenant off the ledger rows.
+    return audit.export_workflow(workflow_id)
 
 
 # ------------------------------------------------------------------ policy
@@ -248,7 +252,8 @@ def policy_decisions(
 def policy_bundle(principal: dict = Depends(get_principal)) -> Any:
     from services.api.core import policy
 
-    return policy.active_bundle()
+    # The /governance screen wants the rule catalogue, not the module object.
+    return {"version": policy.ACTIVE_VERSION, "rules": policy.explain()}
 
 
 # ------------------------------------------------------------------- tools
@@ -299,7 +304,11 @@ def revoke_agent(
     """Kill switch. R4-gated, dual control, audited."""
     from services.api.core import gateway
 
-    return gateway.revoke_agent(agent_id, principal, body.get("second_approver_id"), body.get("reason"))
+    # revoke_agent(agent_id, approver_a, approver_b): two approver IDs, not
+    # the principal dict, and no reason parameter.
+    return gateway.revoke_agent(
+        agent_id, principal["id"], body.get("second_approver_id") or ""
+    )
 
 
 # ------------------------------------------------------------------ public
@@ -386,3 +395,20 @@ async def stream(request: Request) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.get("/geo/locate")
+def geo_locate(request: Request, principal: dict = Depends(get_principal)) -> Any:
+    """Coarse position for the caller, resolved server-side.
+
+    The browser cannot reach IP providers directly: the app's CSP forbids it,
+    and privacy extensions block them anyway. Resolving here keeps the policy
+    tight and works regardless of what the browser allows.
+    """
+    from services.api.connectors import ip_geo
+
+    ip = ip_geo.client_ip(dict(request.headers), request.client.host if request.client else None)
+    result = ip_geo.locate(ip)
+    # The address is used, never stored or returned.
+    result["resolved_for"] = "caller" if ip else "service host"
+    return result

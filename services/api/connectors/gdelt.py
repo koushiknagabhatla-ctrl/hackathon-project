@@ -13,14 +13,13 @@ from __future__ import annotations
 
 import logging
 import os
-import urllib.parse
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
 
 from services.api.connectors import registry
-from services.api.core import db, evidence, ingest
+from services.api.core import ingest
 from services.api.models import EventIn
 
 log = logging.getLogger("auralis.connectors.gdelt")
@@ -135,19 +134,10 @@ def ingest_gdelt_feed(principal: str = "p_operator") -> dict[str, Any]:
                 payload=event_body,
                 geometry={"type": "Point", "coordinates": [DEFAULT_LON, DEFAULT_LAT]},
             )
-            # Record evidence directly
-            evidence.mint(
-                tenant_id="ten_vijayawada",
-                connector_id="conn_gdelt",
-                evidence_class="derived",
-                statement=f"GDELT Regional Intelligence: {art['title'][:120]} ({art['source']})",
-                value=event_body,
-                trust_tier="verified",
-                geometry={"type": "Point", "coordinates": [DEFAULT_LON, DEFAULT_LAT]},
-                observed_at=now_iso,
-                expires_at=(datetime.now(UTC) + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            )
-            ingested_count += 1
+            # News is a report ABOUT an event, never an observation of one.
+            accepted = ingest.ingest_event(event, "p_operator", evidence_class="derived")
+            if accepted.accepted and not accepted.deduplicated:
+                ingested_count += 1
         except Exception as exc:
             log.warning("GDELT item ingest skipped: %s", exc)
 

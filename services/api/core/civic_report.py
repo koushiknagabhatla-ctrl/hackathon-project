@@ -13,7 +13,8 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
-from services.api.core import audit, db, evidence, ingest, vision
+from services.api.core import audit, db, ingest, vision
+from services.api.models import EventIn
 
 log = logging.getLogger("auralis.civic_report")
 
@@ -219,25 +220,27 @@ def create_civic_report(
     # 4. Mint Evidence into Evidence Ledger
     evidence_id = None
     try:
-        ev_item = evidence.mint(
-            tenant_id=tenant_id,
-            connector_id="conn_open311",
-            evidence_class="observation",
-            statement=f"Citizen report: {title} ({severity.upper()}) at {latitude:.4f},{longitude:.4f}",
-            value={
-                "report_id": report_id,
-                "category": category,
-                "severity": severity,
-                "department": dept,
-                "ai_verified": ai_verif.get("ai_verified", False),
-                "confidence": ai_verif.get("confidence", 0.7),
-            },
-            trust_tier="verified" if ai_verif.get("confidence", 0) >= 0.8 else "crowdsourced",
-            geometry={"type": "Point", "coordinates": [longitude, latitude]},
-            observed_at=now_iso,
-            expires_at=(datetime.now(UTC) + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # Evidence is minted BY ingest, from a persisted event. Minting straight
+        # into the ledger would leave evidence with no event behind it.
+        accepted = ingest.ingest_event(
+            EventIn(
+                connector_id="conn_open311",
+                kind="citizen_report",
+                event_time=now_iso,
+                payload={
+                    "report_id": report_id,
+                    "title": title,
+                    "category": category,
+                    "severity": severity,
+                    "department": dept,
+                    "ai_verified": ai_verif.get("ai_verified", False),
+                    "confidence": ai_verif.get("confidence", 0.7),
+                },
+                geometry={"type": "Point", "coordinates": [longitude, latitude]},
+            ),
+            reported_by if reported_by.startswith("p_") else "p_operator",
         )
-        evidence_id = ev_item.id
+        evidence_id = accepted.evidence_id if accepted.accepted else None
     except Exception as exc:
         log.warning("Evidence minting for civic report failed: %s", exc)
 

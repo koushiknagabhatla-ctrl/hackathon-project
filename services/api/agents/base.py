@@ -320,11 +320,12 @@ class Agent:
 
     # ---- forbidden zone ---------------------------------------------------
     def call_tool(self, ctx: RunContext, tool_id: str, args: Mapping[str, Any]) -> Any:
-        """The ONLY way an agent may reach a tool, and the place the forbidden
-        zone is enforced in code rather than in prompt text.
+        """The only door from an agent to an external effect - and it is shut.
 
-        An agent declaring `allowed_tools=()` is a read-only agent: every call
-        raises, whatever the model was persuaded to want.
+        Every agent in this system is declared `writes=False` with an empty
+        `allowed_tools`, so this refuses every tool id. The refusal is written
+        to the audit ledger before it is raised: a blocked attempt is evidence,
+        not a silent no-op.
         """
         if not self.spec.writes or tool_id not in self.spec.allowed_tools:
             audit.append(
@@ -343,9 +344,18 @@ class Agent:
                 f"({self.spec.tool_call_budget})"
             )
         self._tool_calls += 1
-        from services.api.core import gateway  # Lane B owns every external effect
-
-        return gateway.execute_for_agent(ctx, tool_id, dict(args))
+        # Unreachable while every agent is read-only. It used to call
+        # `gateway.execute_for_agent`, which does not exist - so the day an
+        # agent was given a tool, this would have died with AttributeError
+        # instead of refusing cleanly. Lane B executes PERSISTED actions
+        # (`gateway.execute(action_id, ...)`); wiring an agent to it means
+        # drafting an action row first, which is a deliberate design decision,
+        # not something to improvise here.
+        raise ForbiddenZone(
+            f"{self.spec.id} is allowed {tool_id!r}, but no agent-side path to "
+            f"Lane B is implemented; actions must be drafted and executed via "
+            f"the gateway"
+        )
 
     # ---- the run ----------------------------------------------------------
     def run(self, ctx: RunContext) -> AgentResult:

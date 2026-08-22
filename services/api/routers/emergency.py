@@ -169,7 +169,10 @@ def analyze_incident_ai(incident_id: str, principal: dict = Depends(get_principa
     if ev_ids:
         rows = db.q(f"SELECT * FROM evidence WHERE id IN ({','.join(['?']*len(ev_ids))})", *ev_ids)
         evidence_items = [
-            {"id": r["id"], "subject": r["subject"], "value": db.jload(r["value_json"], {}),
+            # `evidence` has no `subject` column; `statement` is the human-readable
+            # one, and the subject key lives inside the value payload.
+            {"id": r["id"], "subject": r["statement"],
+             "value": db.jload(r["value_json"], {}),
              "observed_at": r["observed_at"], "trust_tier": r["trust_tier"]}
             for r in rows
         ]

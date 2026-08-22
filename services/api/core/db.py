@@ -291,7 +291,13 @@ def _open(path: str | Path) -> sqlite3.Connection:
     if p != ":memory:":
         Path(p).parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(p, check_same_thread=False, isolation_level=None)
-    c.row_factory = sqlite3.Row
+    # `_Row`, not `sqlite3.Row`: the code is written against dict-shaped rows
+    # (the psycopg path), and calls `row.get(...)` in several places.
+    # `sqlite3.Row` has no `.get`, so those raised AttributeError on SQLite
+    # only. `_Row` keeps name access, positional access and `dict(row)`.
+    c.row_factory = lambda cur, row: _Row(
+        zip([d[0] for d in cur.description], row)
+    )
     c.execute("PRAGMA journal_mode=WAL")
     c.execute("PRAGMA foreign_keys=ON")
     return c

@@ -1,0 +1,484 @@
+{
+  "/": [
+    {
+      "kind": "net.failed",
+      "text": "net::ERR_ABORTED",
+      "url": "",
+      "n": 2
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/",
+      "n": 1
+    }
+  ],
+  "/chat": [
+    {
+      "kind": "net.failed",
+      "text": "net::ERR_ABORTED",
+      "url": "",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/chat",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/chat",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/chat",
+      "n": 1
+    }
+  ],
+  "/cctv": [
+    {
+      "kind": "net.failed",
+      "text": "net::ERR_ABORTED",
+      "url": "",
+      "n": 1
+    }
+  ],
+  "/command": [
+    {
+      "kind": "net.failed",
+      "text": "net::ERR_ABORTED",
+      "url": "",
+      "n": 3
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/command",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/command",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/command",
+      "n": 1
+    }
+  ],
+  "/actions": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/actions",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/actions",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/actions",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/actions",
+      "n": 1
+    }
+  ],
+  "/trace": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/trace",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/trace",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/trace",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/trace",
+      "n": 1
+    }
+  ],
+  "/alerts": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/alerts",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/alerts",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/alerts",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/alerts",
+      "n": 1
+    }
+  ],
+  "/routes": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/routes",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/routes",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/routes",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/routes",
+      "n": 1
+    }
+  ],
+  "/report": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/report",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/report",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/report",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/report",
+      "n": 1
+    }
+  ],
+  "/analytics": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/analytics",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/analytics",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/analytics",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/analytics",
+      "n": 1
+    }
+  ],
+  "/executive": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/executive",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/executive",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/executive",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/executive",
+      "n": 1
+    }
+  ],
+  "/emergency": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/emergency",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/emergency",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/emergency",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/emergency",
+      "n": 1
+    }
+  ],
+  "/data-health": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/data-health",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/data-health",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/data-health",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/data-health",
+      "n": 1
+    }
+  ],
+  "/audit": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/audit",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/audit",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/audit",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/audit",
+      "n": 1
+    }
+  ],
+  "/governance": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/governance",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/governance",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/governance",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/governance",
+      "n": 1
+    }
+  ],
+  "/field": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/field",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/field",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/field",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/field",
+      "n": 1
+    }
+  ],
+  "/simulation": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/simulation",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/simulation",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/simulation",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/simulation",
+      "n": 1
+    }
+  ],
+  "/public": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0x7nn9b1wagpc.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/public",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/public",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/public",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/public",
+      "n": 1
+    }
+  ],
+  "/this-route-does-not-exist": [
+    {
+      "kind": "http.404",
+      "text": "",
+      "url": "http://localhost:3001/this-route-does-not-exist",
+      "n": 1
+    },
+    {
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "url": "http://localhost:3001/this-route-does-not-exist",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/0vrqkmy5-tm34.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/this-route-does-not-exist",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/14pkb24dk_alw.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/this-route-does-not-exist",
+      "n": 1
+    },
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3001/_next/static/chunks/32vt0x1uk9xnk.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an app",
+      "url": "http://localhost:3001/this-route-does-not-exist",
+      "n": 1
+    }
+  ]
+}

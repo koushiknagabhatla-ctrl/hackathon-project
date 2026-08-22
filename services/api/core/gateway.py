@@ -403,6 +403,69 @@ def _prior_result(a: dict, key: str) -> dict | None:
 
 
 # ------------------------------------------------------------- kill switch
+# An approval is a fact with a shelf life: evidence moves, and a decision
+# taken twenty minutes ago should not authorise an effect now.
+APPROVAL_TTL_S = 1800
+
+
+def record_approval(plan_id: str, body: Any, principal: Any) -> dict:
+    """Record one approver's decision on one action of a plan.
+
+    Step 10 of `execute` reads these rows back, so what is written here has to
+    match what that gate queries: an `approved` row, an approver id, and an
+    expiry it can test.
+    """
+    who = _principal(principal)
+    if who["role"] not in ("approver", "admin"):
+        raise GatewayError("not_authorized",
+                           f"role '{who['role']}' may not approve actions")
+
+    action = db.q1("SELECT * FROM action WHERE id=?", body.action_id)
+    if action is None:
+        raise GatewayError("action_unknown", f"no action '{body.action_id}'")
+    if action["plan_id"] != plan_id:
+        raise GatewayError("action_unknown",
+                           f"action '{body.action_id}' is not part of plan '{plan_id}'")
+
+    plan = db.q1("SELECT * FROM plan WHERE id=?", plan_id)
+    if plan is None or plan["tenant_id"] != who["tenant_id"]:
+        raise GatewayError("not_authorized", "plan belongs to another tenant")
+
+    decided_at = db.now_iso()
+    expires_at = db.iso(
+        _dt.datetime.now(_dt.UTC) + _dt.timedelta(seconds=APPROVAL_TTL_S)
+    )
+    approval_id = db.new_id("apr")
+    with db.tx() as c:
+        # One standing decision per approver per action: re-approving replaces
+        # the old row instead of stacking a second vote for dual control.
+        c.execute("DELETE FROM approval WHERE action_id=? AND approver_id=?"
+                  " AND decision IN ('approved','denied')",
+                  (body.action_id, who["id"]))
+        c.execute(
+            "INSERT INTO approval (id, action_id, plan_id, decision, approver_id,"
+            " approver_authority, rationale, decided_at, expires_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?)",
+            (approval_id, body.action_id, plan_id, body.decision, who["id"],
+             who.get("authority"), getattr(body, "rationale", None) or "",
+             decided_at, expires_at))
+
+    audit.append(who["tenant_id"], plan_id, who["id"], "human",
+                 "plan.approval_recorded", body.action_id,
+                 {"decision": body.decision, "approval_id": approval_id,
+                  "expires_at": expires_at})
+
+    standing = [dict(r) for r in db.q(
+        "SELECT approver_id FROM approval WHERE action_id=? AND decision='approved'"
+        " AND (expires_at IS NULL OR expires_at > ?)", body.action_id, decided_at)]
+    return {
+        "approval_id": approval_id, "action_id": body.action_id, "plan_id": plan_id,
+        "decision": body.decision, "approver_id": who["id"],
+        "decided_at": decided_at, "expires_at": expires_at,
+        "distinct_approvals": len({r["approver_id"] for r in standing}),
+    }
+
+
 def revoke_agent(agent_id: str, approver_a: str, approver_b: str) -> dict:
     """Kill switch. Dual control, revokes identity, halts runs, quarantines plans."""
     if approver_a == approver_b:

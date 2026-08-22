@@ -69,3 +69,52 @@
 .wrap :global(.maplibregl-ctrl-attrib) {
   display: none;
 }
+
+/* No WebGL2: the canvas will never paint, so the panel becomes a readable
+   text panel rather than an empty rectangle with a pill floating in it. */
+.textFallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow-y: auto;
+  padding: 20px 22px;
+  background: var(--surface);
+}
+
+.textFallback p {
+  margin: 0 0 12px;
+  max-width: 60ch;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.textFallback ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.textFallback li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.unsupportedNote {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}

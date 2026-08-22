@@ -281,12 +281,17 @@ export default function ChatPage() {
     setLocating(false);
 
     if (r.status !== "ok" || !r.coords || !r.match) {
-      setLocateMsg("No location source answered. Search for the city instead.");
+      setLocateMsg(
+        r.permissionDenied
+          ? "Location is blocked for this site. Allow it from the address-bar icon (and Brave Shields), then retry."
+          : "No location source answered. Search for the city instead."
+      );
       return;
     }
     if (!r.match.insideCoverage) {
+      // Still useful: name the closest covered city rather than refusing flatly.
       setLocateMsg(
-        `You are ~${r.match.distanceKm.toFixed(0)} km from ${r.match.location.name}, outside coverage.`
+        `Your network places you ~${r.match.distanceKm.toFixed(0)} km outside coverage. Closest covered city is ${r.match.location.name}.`
       );
       return;
     }

@@ -79,7 +79,7 @@ def _tokenize(text: str) -> list[str]:
 
 def _build_tfidf_index() -> None:
     """Build TF-IDF inverted index over all registered knowledge chunks."""
-    global _VOCAB, _IDF, _DOC_VECTORS
+    global _IDF, _DOC_VECTORS
     N = float(max(1, len(_CHUNKS)))
     df: dict[str, int] = {}
 
