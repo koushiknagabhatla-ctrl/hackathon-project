@@ -121,7 +121,10 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
 function renderInline(text: string, lineIdx: number): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  const regex = /(\*\*(.+?)\*\*|`(.+?)`)/g;
+  // Bold before italic, or `**x**` is eaten as two empty italics. The source
+  // and provenance lines are emitted in italics, so without this the answer
+  // showed raw asterisks around them.
+  const regex = /(\*\*(.+?)\*\*|`(.+?)`|\*([^*]+?)\*)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -138,6 +141,12 @@ function renderInline(text: string, lineIdx: number): React.ReactNode[] {
         <code key={`c-${lineIdx}-${match.index}`} className={s.codePill}>
           {match[3]}
         </code>
+      );
+    } else if (match[4]) {
+      parts.push(
+        <em key={`i-${lineIdx}-${match.index}`} className={s.sourceNote}>
+          {match[4]}
+        </em>
       );
     }
     lastIndex = match.index + match[0].length;

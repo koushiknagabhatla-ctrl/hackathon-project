@@ -43,11 +43,16 @@ log = logging.getLogger("auralis.chat")
 MAX_SESSIONS = 500
 MAX_HISTORY_PER_SESSION = 50
 MAX_TOOL_CALLS_PER_TURN = 5
+# A briefing asks about the place as a whole, so it is allowed to consult
+# every source that describes one.
+BRIEFING_TOOL_CALLS = 7
 CHAT_MODEL = os.environ.get("AURALIS_CHAT_MODEL", "claude-sonnet-4-20250514")
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_API_VERSION = "2023-06-01"
-CHAT_MAX_TOKENS = 1500
-CHAT_TIMEOUT_S = 6.0
+CHAT_MAX_TOKENS = 2500
+# 6s was not enough to return a detailed answer once tool results were in the
+# context, so the LLM path timed out and every reply came from the fallback.
+CHAT_TIMEOUT_S = 30.0
 
 
 # ──────────────────────────────────────────────────── Session Store
@@ -144,19 +149,22 @@ Your role:
 
 Your personality:
 - Professional yet approachable
-- Clear and concise
+- Thorough: give the full reading, not a headline
 - Proactive in suggesting helpful actions
 - Empathetic during emergencies
 
 You have access to these tools — use them when the user's question requires real data:
 - get_weather: Current weather conditions
+- get_air_quality: OpenAQ station readings (PM2.5, PM10, NO2 and similar)
 - search_incidents: Find active incidents nearby
 - get_incident_details: Get full incident information
+- get_local_news: Regional news reporting for the city
 - create_civic_report: Report civic issues (potholes, garbage, flooding, etc.)
 - get_city_status: Overall city operations summary
 - search_nearby_services: Find hospitals, fire stations, police, etc.
 - get_emergency_info: Emergency preparedness guidance
 - get_traffic_status: Current traffic conditions
+- get_safe_route: A route that avoids active hazards
 - search_city_knowledge: Search verified municipal bylaws, property tax rules, flood SOPs, and citizen charters
 
 IMPORTANT RULES:
@@ -166,8 +174,29 @@ IMPORTANT RULES:
 4. When creating reports — confirm the details with the user first
 5. Never claim to know real-time data without calling a tool
 6. When a tool returns an error, communicate it honestly
-7. Keep responses concise but informative
-8. Use location context when available for more relevant answers"""
+7. Use location context when available for more relevant answers
+
+DEPTH — the operator wants detail, and detail comes from data, never from padding:
+8. Report every field a tool returned that bears on the question — a temperature
+   reading also carries humidity, wind, pressure and its observation time. Give
+   them, with units.
+9. Name the source and the time it was observed. "34.1 °C (Open-Meteo, observed
+   11:30 UTC)" is worth more than "it is hot".
+10. When two sources disagree, show both figures and say they disagree. Never
+    average them or pick one silently.
+11. Say what you checked that came back empty — "no OpenAQ station within 25 km"
+    is an answer. An empty section is not a reason to go quiet.
+12. NEVER lengthen an answer with generalities, background prose, or anything a
+    tool did not return. A short answer grounded in data beats a long one that
+    drifts. If a source has nothing, say so and stop — do not fill the space.
+13. Answer the question that was asked. A weather question gets a thorough
+    weather answer, not a tour of the city.
+14. NEVER infer, imply, estimate, derive or guess a value the tools did not
+    return — not a wind direction, not a trend, not a cause, not an air quality
+    index, not a severity. If a field is absent, write that it was not reported
+    and move on. Words like "implied", "roughly", "probably" or "suggests"
+    attached to a number you were not given are fabrication. Converting units
+    of a number you WERE given is fine; producing a new quantity is not."""
 
 
 
@@ -410,6 +439,45 @@ def platform_answer(message: str) -> str | None:
 
 # ──────────────────────────────────────────────────── Intent Detection
 
+# An open request - "explain about this city", "give me an overview" - names no
+# single subject, so keyword matching finds nothing and the reply comes back
+# nearly empty. These mark a request for the full briefing instead.
+# Asks about the place itself. These always widen to the full briefing.
+CITY_WIDE_WORDS = {
+    "about this city", "about that city", "about the city", "overview",
+    "briefing", "everything", "full picture", "rundown", "city status",
+    "how is the city", "what do you know", "city profile",
+}
+
+# Asks for depth, without naming a subject. On their own these widen to the
+# full briefing; alongside a named subject ("explain the traffic") they mean
+# "more detail about THAT", so the answer stays on the subject asked about.
+DETAIL_WORDS = {
+    "explain", "describe", "tell me about", "in detail", "detailed", "details",
+    "brief", "profile", "walk me through", "situation", "summary",
+    "summarise", "summarize", "elaborate", "more information", "more info",
+    "go deeper", "expand",
+}
+
+BRIEFING_WORDS = CITY_WIDE_WORDS | DETAIL_WORDS
+
+# The order a briefing reads in: where things stand, what happened, then the
+# live conditions.
+BRIEFING_SEQUENCE = (
+    "get_city_status", "search_incidents", "get_local_news", "get_weather",
+    "get_air_quality", "get_traffic_status", "search_nearby_services",
+)
+
+
+def _word_hit(msg: str, words: set[str]) -> bool:
+    """Whole-word match, plural tolerated on words long enough to take one."""
+    for w in words:
+        suffix = "(?:e?s)?" if len(w) >= 5 and " " not in w else ""
+        if re.search(rf"(?<!\w){re.escape(w)}{suffix}(?!\w)", msg):
+            return True
+    return False
+
+
 def detect_intent(message: str) -> list[str]:
     """Detect which tools might be needed based on the user message.
 
@@ -438,8 +506,17 @@ def detect_intent(message: str) -> list[str]:
                      "storm", "hot", "cold", "sunny", "cloudy", "monsoon", "cyclone"}
     incident_words = {"accident", "incident", "crash", "collision", "fire", "flood",
                       "emergency", "hazard", "danger", "blockage", "damage"}
-    report_words = {"report", "complaint", "pothole", "garbage", "broken", "streetlight",
-                    "water problem", "infrastructure", "issue", "problem"}
+    # Filing a report WRITES to the ingest pipeline, so it needs an explicit
+    # intent to file - not the bare noun. The old set matched "report", "issue"
+    # and "problem", so "give me a detailed weather report" and "what is the
+    # traffic problem" both filed a civic report with the question as its
+    # description. A read-only question must never cause a write.
+    report_words = {"report a", "report an", "report the", "reporting a",
+                    "i want to report", "i would like to report", "want to report",
+                    "file a report", "file a complaint", "submit a report",
+                    "submit a complaint", "raise a complaint", "log a complaint",
+                    "register a complaint", "make a complaint", "complain about",
+                    "there is a", "there's a", "there are"}
     traffic_words = {"traffic", "congestion", "jam", "road", "route", "commute", "drive"}
     emergency_words = {"emergency", "help", "what should i do", "safety", "evacuation",
                        "flooding", "earthquake", "fire safety", "first aid", "rescue"}
@@ -453,12 +530,6 @@ def detect_intent(message: str) -> list[str]:
                    "happened", "happend", "recent", "recently", "today", "overnight",
                    "so far", "latest", "since yesterday", "yesterday", "briefing", "recap",
                    "last day", "last night", "this week", "past week", "what went on"}
-    # Past-tense and time-window phrasing ("what happened in the last 24hrs") is a
-    # recap request: it wants the recent record, not the current snapshot alone.
-    recap_words = {"last 24", "24hr", "24 hr", "24hour", "24 hour", "past day", "past 24",
-                   "happened", "happend", "recent", "recently", "today", "overnight",
-                   "so far", "latest", "since yesterday", "yesterday", "briefing", "recap",
-                   "last day", "last night", "this week", "past week"}
     knowledge_words = {"tax", "property tax", "bylaw", "rule", "guideline", "prakasam barrage",
                        "discharge", "cusecs", "budameru", "segregation", "penalty", "fine",
                        "charter", "sla", "certificate", "license", "how to pay", "how do i pay"}
@@ -495,15 +566,26 @@ def detect_intent(message: str) -> list[str]:
             tools.append("get_city_status")
         if "get_local_news" not in tools:
             tools.append("get_local_news")
-    if has(recap_words):
-        # Recent incidents carry the "what happened"; city status carries the
-        # "where things stand now". A recap wants both, in that order.
-        if "search_incidents" not in tools:
-            tools.append("search_incidents")
-        if "get_city_status" not in tools:
-            tools.append("get_city_status")
     if has(knowledge_words):
         tools.append("search_city_knowledge")
+
+    # A briefing pulls every live reading that describes a place. Nothing is
+    # invented to fill it out: a source with nothing to say is reported as
+    # having nothing to say.
+    #
+    # "explain the traffic" names a subject, so it stays on that subject and
+    # only the traffic answer gets deeper. Widening there would answer six
+    # questions nobody asked.
+    named_subject = any(
+        t in tools for t in
+        ("get_weather", "get_air_quality", "get_traffic_status", "get_local_news",
+         "search_nearby_services", "search_city_knowledge", "get_emergency_info",
+         "create_civic_report")
+    )
+    if has(CITY_WIDE_WORDS) or (has(DETAIL_WORDS) and not named_subject):
+        for name in BRIEFING_SEQUENCE:
+            if name not in tools:
+                tools.append(name)
 
     # Rank by how directly each tool answers the question. Without this the
     # answer leads with whatever keyword happened to match first.
@@ -523,6 +605,15 @@ def detect_intent(message: str) -> list[str]:
             break
     if lead:
         tools = [lead] + [t for t in tools if t != lead]
+
+    # A briefing reads in a fixed order regardless of which keyword matched
+    # first: where things stand, what happened, then the live conditions.
+    # Keyword order is arbitrary and made the same question answer differently
+    # depending on how it was phrased.
+    if all(n in tools for n in BRIEFING_SEQUENCE):
+        order = list(BRIEFING_SEQUENCE) + ["search_city_knowledge"]
+        rank = {name: i for i, name in enumerate(order)}
+        tools.sort(key=lambda n: rank.get(n, len(order)))
     return tools
 
 
@@ -615,7 +706,404 @@ def _execute_tool_calls(
     return results
 
 
+# ──────────────────────────────────────────────────── Cloud LLM (OpenAI-shaped)
+
+# All three providers speak the OpenAI chat-completions shape, so one caller
+# covers them. Tried in order; the first with a key configured and a model that
+# answers wins. Measured on the same grounded-narration turn:
+#   Groq gpt-oss-120b   3.3s     Groq gpt-oss-20b    1.9s
+#   NVIDIA mistral      2.5s median, but stalls under burst
+#   OpenRouter gemma    2.2s median on a small payload, 8.5s on a real one
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+DEFAULT_GROQ_MODELS = (
+    # Both keep their reasoning in a separate field, so it never reaches the
+    # answer. qwen3.6-27b is comparably quick but writes its <think> block into
+    # the content, so it is deliberately not listed.
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+)
+DEFAULT_NVIDIA_MODELS = (
+    # Complete and fast. llama-3.1-8b is quicker still but dropped a whole
+    # source's readings; the 49b reasoner is better but took 63s.
+    "mistralai/mistral-nemotron",
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+)
+DEFAULT_OPENROUTER_MODELS = (
+    "google/gemma-4-31b-it:free",
+    "z-ai/glm-5.2:free",
+    "openrouter/free",
+)
+
+# (key variable, endpoint, model-list variable, defaults)
+CLOUD_PROVIDERS = (
+    ("GROQ_API_KEY", GROQ_API_URL, "AURALIS_GROQ_MODELS", DEFAULT_GROQ_MODELS),
+    ("NVIDIA_API_KEY", NVIDIA_API_URL, "AURALIS_NVIDIA_MODELS", DEFAULT_NVIDIA_MODELS),
+    ("OPENROUTER_API_KEY", OPENROUTER_API_URL, "AURALIS_OPENROUTER_MODELS",
+     DEFAULT_OPENROUTER_MODELS),
+)
+
+# Retryable upstream conditions. Free tiers rate-limit without warning, so a
+# 429 from one model is routine rather than a failure of the whole path.
+_RETRY_STATUS = {408, 429, 500, 502, 503, 504}
+
+
+def _configured_cloud_calls() -> list[tuple[str, str, str]]:
+    """(endpoint, api key, model) for every provider that has a key set."""
+    out: list[tuple[str, str, str]] = []
+    for key_var, url, models_var, defaults in CLOUD_PROVIDERS:
+        api_key = os.environ.get(key_var)
+        if not api_key:
+            continue
+        raw = os.environ.get(models_var, "")
+        models = [m.strip() for m in raw.split(",") if m.strip()] or list(defaults)
+        out.extend((url, api_key, m) for m in models)
+    return out
+
+
+def _call_cloud_llm(messages: list[dict[str, Any]]) -> dict[str, Any]:
+    """Post one turn, walking provider/model pairs until one answers."""
+    attempts = _configured_cloud_calls()
+    if not attempts:
+        raise RuntimeError("no_api_key")
+
+    last: str = "no model attempted"
+    for url, api_key, model in attempts:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        if url == OPENROUTER_API_URL:
+            # Attribution headers, not credentials.
+            headers["HTTP-Referer"] = "https://auralis.local"
+            headers["X-Title"] = "Auralis Civic Intelligence"
+
+        body: dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": CHAT_MAX_TOKENS,
+            "temperature": 0.2,
+        }
+        if url == OPENROUTER_API_URL:
+            # Reasoning models otherwise emit their scratchpad as the answer -
+            # "We need to answer... Let's extract data precisely" - along with
+            # the raw JSON key names they are reading. NVIDIA returns that in a
+            # separate reasoning_content field, so it never reaches the answer.
+            body["reasoning"] = {"exclude": True}
+        try:
+            with httpx.Client(timeout=CHAT_TIMEOUT_S) as client:
+                resp = client.post(url, headers=headers, json=body)
+            if resp.status_code in _RETRY_STATUS:
+                # Logged: a silent fall-through to a slower provider looks like
+                # the primary being slow rather than rate-limited.
+                last = f"{model}: HTTP {resp.status_code}"
+                log.info("cloud model %s unavailable (HTTP %s), trying next",
+                         model, resp.status_code)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+            # A provider failure can arrive inside a 200 body.
+            if data.get("error") or not data.get("choices"):
+                last = f"{model}: {str(data.get('error'))[:120]}"
+                continue
+            if not (data["choices"][0].get("message", {}).get("content") or "").strip():
+                # A reasoning model that spent its whole budget thinking.
+                last = f"{model}: empty content"
+                continue
+            data["_model"] = model
+            return data
+        except Exception as exc:
+            last = f"{model}: {type(exc).__name__}"
+            log.info("cloud model %s errored (%s), trying next",
+                     model, type(exc).__name__)
+            continue
+    raise RuntimeError(f"all cloud models failed ({last})")
+
+
+# A number the model was not given, dressed as an observation. The first cloud
+# answer reported a wind DIRECTION that no feed returned, marked "(implied by
+# the low speed)" - the hedge is the tell. Verifying every digit against the
+# tool payload would reject honest unit conversions, so this looks for the
+# hedge sitting next to a figure instead.
+_HEDGE_NEAR_NUMBER = re.compile(
+    r"(?:implied|imply|probably|presumably|roughly|approximately|approx\.?|"
+    r"estimated|estimate|suggests?|likely|around about|i'd guess|guess)"
+    r"[^.\n]{0,40}?\d"
+    r"|\d[^.\n]{0,40}?"
+    r"(?:\(implied|as implied|probably|presumably|estimated to|"
+    r"i would estimate|my estimate)",
+    re.IGNORECASE,
+)
+
+
+# Some models write a tool call as prose when they cannot emit a real one.
+# That markup must never reach the user.
+# `<think>` is here too: some models write their reasoning into the content as
+# a tagged block instead of returning it in a separate field.
+_LEAKED_TOOL_MARKUP = re.compile(
+    r"<\s*/?\s*(?:tool_call|function|parameter|think|thinking|reasoning)\b"
+    r"|^\s*\{\s*\"name\"\s*:",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _looks_fabricated(text: str) -> str | None:
+    """The hedged-number tell, or None. Returns the matched phrase for the log."""
+    m = _HEDGE_NEAR_NUMBER.search(text or "")
+    return m.group(0)[:80] if m else None
+
+
+# A model thinking out loud instead of answering. Backstop for when the
+# request to exclude reasoning tokens is ignored by a provider.
+_SCRATCHPAD = re.compile(
+    r"^\s*(?:we need to|we must|let'?s |let us |first,? i(?:'| a)?ll|"
+    r"the instruction[s]?\b|okay,? so\b|the user (?:wants|is asking))"
+    r"|\bmust comply\b|\bwe should (?:list|report|answer)\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_scratchpad(text: str) -> bool:
+    """True when the reply is reasoning rather than an answer."""
+    return bool(_SCRATCHPAD.search((text or "")[:400]))
+
+
+def _trim_reading(value: Any, max_items: int = 8, depth: int = 0) -> Any:
+    """Shrink a tool result to what an answer can actually use.
+
+    Air quality alone returns every station's whole history - 52 readings of
+    17 fields. Sending it whole made one briefing 24 KB of JSON and took 40
+    seconds to narrate. Long lists are cut, with a note saying how many were
+    dropped so the model does not present a slice as the whole.
+    """
+    if depth > 4:
+        return value
+    if isinstance(value, dict):
+        return {k: _trim_reading(v, max_items, depth + 1) for k, v in value.items()
+                if k not in ("event_id", "evidence_id", "subject", "endpoint",
+                             "integrity_hash", "prov_activity", "prov_derived_from")}
+    if isinstance(value, list):
+        kept = [_trim_reading(v, max_items, depth + 1) for v in value[:max_items]]
+        if len(value) > max_items:
+            kept.append(f"... and {len(value) - max_items} more not shown")
+        return kept
+    return value
+
+
+def _mentions_tool_names(text: str) -> bool:
+    """Internal machinery showing through. The operator asked for the city's
+    state, not for the names of the functions that fetched it."""
+    lowered = (text or "").lower()
+    return any(t["name"] in lowered for t in chat_tools.TOOL_DEFINITIONS)
+
+
+def _cloud_chat(
+    session: ChatSession,
+    user_message: str,
+    context: dict[str, Any],
+) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]], str] | None:
+    """Answer through a cloud model, grounded on tool results.
+
+    The model chooses the tools and writes the prose; every number it is
+    allowed to use comes from a tool result placed in its context. It is never
+    asked what the weather is - only to report what the feed returned.
+    """
+    if not _configured_cloud_calls():
+        return None
+    try:
+        analysis = analyze_question(user_message, context)
+        if analysis.window_hours:
+            context = {**context, "window_hours": analysis.window_hours}
+
+        city = context.get("city_name") or "the selected city"
+        system = (
+            f"{SYSTEM_PROMPT}\n\n"
+            f"CURRENT CONTEXT: the operator is looking at {city} "
+            f"({context.get('latitude')}, {context.get('longitude')}). "
+            f"Answer about {city} unless the user names another place."
+        )
+
+        messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
+        for m in session.messages[-6:]:
+            if m.role in ("user", "assistant") and m.content:
+                messages.append({"role": m.role, "content": m.content})
+        if not messages or messages[-1].get("content") != user_message:
+            messages.append({"role": "user", "content": user_message})
+
+        # Readings are gathered HERE, not by the model. Left to choose its own
+        # tools it called two of the seven a briefing needs, then wrote "omitted
+        # for brevity" over real rows. `detect_intent` already picks the right
+        # sources and is covered by tests, so the model's only job is prose.
+        det_text, tool_calls, tool_results = _deterministic_response(
+            user_message, analysis.intents, context
+        )
+        if not tool_calls:
+            # Conversation, not a reading. Nothing to ground an answer on, so
+            # leave it to the paths that handle that.
+            return None
+
+        # Measured, not assumed: on a full briefing the cloud model took 43s to
+        # produce 2,750 characters where the composer produces 3,885 in 10s,
+        # because it re-narrates seven sources it did not need to reword. The
+        # composer already orders and sources those. Cloud prose earns its
+        # latency on a focused question, so that is where it is used.
+        if all(n in analysis.intents for n in BRIEFING_SEQUENCE):
+            return det_text, tool_calls, tool_results, "Auralis Civic Intelligence"
+
+        # Labelled in plain words, never by tool name. Handing the model
+        # "get_city_status" and then forbidding it to say so just made it echo
+        # the name and get the whole answer rejected.
+        readings = json.dumps(
+            [
+                {
+                    "reading": _TOOL_SUBJECT.get(tr["name"], tr["name"]),
+                    "data": _trim_reading(tr["result"]),
+                }
+                for tr in tool_results
+            ],
+            default=str,
+        )[:12000]
+        messages.append({
+            "role": "user",
+            "content": (
+                "Here are the verified readings for that question, as JSON.\n\n"
+                f"{readings}\n\n"
+                "Write the answer from these readings only. Report every field "
+                "that bears on the question, with units, and say when each was "
+                "observed and which feed it came from. Include every item "
+                "returned — never write 'omitted for brevity' or summarise a "
+                "list away. Write for a city operator, not a programmer: use "
+                "the provider names (Open-Meteo, OpenAQ, TomTom) and plain "
+                "English, never the raw JSON keys. If a reading is absent, say "
+                "it was not reported.\n\n"
+                "FORMAT: short bold headings and '- ' bullet lists only. No "
+                "markdown tables — the chat pane is narrow and a table does not "
+                "render there. To compare two sources, give each its own "
+                "bullet. Do not describe your own process or restate these "
+                "instructions; begin with the answer."
+            ),
+        })
+
+        data = _call_cloud_llm(messages)
+        model_used = data.get("_model", "")
+        text = (data["choices"][0]["message"].get("content") or "").strip()
+
+        if not text:
+            return None
+        if (_LEAKED_TOOL_MARKUP.search(text)
+                or _mentions_tool_names(text)
+                or _looks_like_scratchpad(text)):
+            log.warning("Cloud answer leaked internals; using grounded text")
+            return det_text, tool_calls, tool_results, "Auralis Civic Intelligence"
+        hedged = _looks_fabricated(text)
+        if hedged:
+            # Ship the grounded composition rather than a guessed figure.
+            log.warning("Cloud answer discarded, hedged figure: %r", hedged)
+            return det_text, tool_calls, tool_results, "Auralis Civic Intelligence"
+        return text, tool_calls, tool_results, f"Auralis AI · {model_used}"
+    except Exception as exc:
+        log.info("Cloud chat unavailable (%s)", exc)
+        return None
+
+
 # ──────────────────────────────────────────────────── Deterministic Fallback
+
+# What each tool was asked for, in plain words. Used to say what was checked
+# when a source comes back with nothing - "we looked and there was nothing" is
+# information, and it is the honest alternative to padding the answer out.
+_TOOL_SUBJECT: dict[str, str] = {
+    "get_weather": "live weather telemetry",
+    "get_air_quality": "OpenAQ air quality stations",
+    "search_incidents": "the active incident register",
+    "get_local_news": "regional news reporting",
+    "get_traffic_status": "TomTom traffic flow",
+    "search_nearby_services": "the emergency services directory",
+    "get_city_status": "the city status snapshot",
+    "search_city_knowledge": "municipal bylaws and documents",
+    "get_emergency_info": "emergency response guidance",
+}
+
+
+def _city_profile_section(context: dict[str, Any]) -> str | None:
+    """The registry facts about the place, for a briefing.
+
+    Population, district and elevation come from the AP city registry, not from
+    a model. A city that is not in the registry gets no section rather than an
+    invented one.
+    """
+    from services.api.core import geo_cities
+
+    name = context.get("city_name")
+    if not name:
+        return None
+    city = geo_cities.find_city_by_name(name) or geo_cities.get_city_by_id(str(name))
+    if city is None:
+        return None
+
+    lines = [f"**{city.name}, {city.state}**", ""]
+    lines.append(f"- **District:** {city.district}")
+    lines.append(f"- **Region:** {city.zone}")
+    lines.append(f"- **Classification:** {city.tier}"
+                 + (" - state capital" if city.is_capital else ""))
+    if city.population:
+        lines.append(f"- **Population:** {city.population:,}")
+    lines.append(f"- **Elevation:** {city.elevation_m} m above sea level")
+    lines.append(f"- **Coordinates:** {city.lat:.4f} N, {city.lon:.4f} E")
+    lines.append("")
+    lines.append("*Source: Andhra Pradesh city registry.*")
+    return "\n".join(lines)
+
+
+def _coverage_note(empties: list[str]) -> str | None:
+    """Name the sources that were queried and had nothing to report."""
+    if not empties:
+        return None
+    subjects = [_TOOL_SUBJECT.get(n, n) for n in dict.fromkeys(empties)]
+    body = (subjects[0] if len(subjects) == 1
+            else ", ".join(subjects[:-1]) + f" and {subjects[-1]}")
+    return (f"**Checked, nothing found:** {body}. "
+            "Each was queried and held no records for this location. "
+            "Nothing has been estimated to fill the gap.")
+
+
+def _provenance(tool_results: list[dict[str, Any]]) -> str | None:
+    """Which upstream sources answered, and when they last observed."""
+    seen: dict[str, str] = {}
+
+    def note(provider: Any, observed: Any) -> None:
+        if not provider:
+            return
+        stamp = (str(observed)[:16].replace("T", " ") + " UTC") if observed else ""
+        seen.setdefault(str(provider), stamp)
+
+    for tr in tool_results:
+        r = tr.get("result")
+        if not isinstance(r, dict) or r.get("status") == "error":
+            continue
+        note(r.get("provider"), r.get("observed_at"))
+        detail = r.get("weather_detail")
+        if isinstance(detail, dict):
+            note(detail.get("provider"), detail.get("observed_at"))
+        flow = r.get("flow")
+        if isinstance(flow, dict):
+            note(flow.get("provider"), None)
+        srcs = r.get("sources")
+        if isinstance(srcs, dict):
+            srcs = list(srcs.values())
+        if isinstance(srcs, list):
+            for s in srcs:
+                if isinstance(s, dict) and s.get("status") in ("ok", "no_stations"):
+                    note(s.get("source"), s.get("observed_at") or s.get("last_upstream_at"))
+
+    if not seen:
+        return None
+    lines = ["**Sources**", ""]
+    for provider, stamp in list(seen.items())[:8]:
+        lines.append(f"- {provider}" + (f" - observed {stamp}" if stamp else ""))
+    return "\n".join(lines)
+
 
 def _deterministic_response(
     user_message: str,
@@ -646,10 +1134,15 @@ def _deterministic_response(
             [],
         )
 
-    # Execute the detected tools
     # Answer the question asked: run the tools the question implies, most
     # relevant first, and stop. A weather question returns weather.
-    for tool_name in intents[:MAX_TOOL_CALLS_PER_TURN]:
+    # A briefing is the exception - it asks about the place as a whole, so it
+    # gets a wider budget rather than a truncated answer. Read off the selected
+    # tools rather than re-matching the wording, so this cannot disagree with
+    # what detect_intent decided.
+    is_briefing = all(n in intents for n in BRIEFING_SEQUENCE)
+    budget = BRIEFING_TOOL_CALLS if is_briefing else MAX_TOOL_CALLS_PER_TURN
+    for tool_name in intents[:budget]:
         args = _infer_tool_args(tool_name, user_message, context)
         result = chat_tools.execute_tool(tool_name, args, context)
         tc_id = f"det_{uuid.uuid4().hex[:8]}"
@@ -658,7 +1151,13 @@ def _deterministic_response(
 
     # Synthesize a response from tool results
     response_parts = []
+    empty_sources: list[str] = []
     city_name = context.get("city_name", "the selected city")
+
+    if is_briefing:
+        profile = _city_profile_section(context)
+        if profile:
+            response_parts.append(profile)
     for tr in tool_results:
         result = tr["result"]
         name = tr["name"]
@@ -682,36 +1181,55 @@ def _deterministic_response(
                 else {}
             )
             parsed_weather = False
-            for src_name, src_data in sources_dict.items():
-                if isinstance(src_data, dict) and src_data.get("status") == "ok":
-                    temp = src_data.get("temperature_c")
-                    humidity = src_data.get("humidity_pct")
-                    rain = src_data.get("rain_rate_mm_h", 0)
-                    wind = src_data.get("wind_speed_kph")
-                    observed = src_data.get("observed_at", "")
-                    provider = src_data.get("source_provider", "Live Telemetry Feed")
+            # Every provider that answered, not just the first. Two independent
+            # feeds agreeing is worth more than one, and a disagreement is
+            # something the operator should see rather than have hidden.
+            answered = [
+                d for d in sources_dict.values()
+                if isinstance(d, dict) and d.get("status") == "ok"
+                and d.get("temperature_c") is not None
+            ]
+            if answered:
+                lead = answered[0]
+                observed = lead.get("observed_at", "")
+                obs_str = f" as of {observed[:16].replace('T', ' ')} UTC" if observed else ""
 
-                    parts = []
-                    if temp is not None:
-                        parts.append(f"**Temperature:** {temp}°C")
-                    if humidity is not None:
-                        parts.append(f"**Relative Humidity:** {humidity}%")
-                    if wind is not None:
-                        parts.append(f"**Wind Speed:** {wind} km/h")
-                    if rain is not None and rain > 0:
-                        parts.append(f"**Precipitation:** {rain} mm/h")
-                    else:
-                        parts.append("**Conditions:** Clear / No Precipitation")
+                parts = [f"**Weather in {city_name}**{obs_str}", ""]
+                temp = lead.get("temperature_c")
+                humidity = lead.get("humidity_pct")
+                rain = lead.get("rain_rate_mm_h", 0)
+                wind = lead.get("wind_speed_kph")
+                pressure = lead.get("pressure_hpa")
 
-                    parts.append(f"**Verified Source:** {provider}")
+                parts.append(f"- **Temperature:** {temp} °C")
+                if humidity is not None:
+                    parts.append(f"- **Relative humidity:** {humidity} %")
+                if wind is not None:
+                    parts.append(f"- **Wind speed:** {wind} km/h")
+                if pressure is not None:
+                    parts.append(f"- **Barometric pressure:** {pressure} hPa")
+                if rain:
+                    parts.append(f"- **Precipitation:** {rain} mm/h")
+                else:
+                    parts.append("- **Precipitation:** none recorded")
 
-                    obs_str = f" as of {observed[:16].replace('T', ' ')} UTC" if observed else ""
-                    response_parts.append(
-                        f"**Current Verified Weather in {city_name}**{obs_str}:\n\n"
-                        + "\n".join(parts)
-                    )
-                    parsed_weather = True
-                    break
+                if len(answered) > 1:
+                    parts.append("")
+                    parts.append("**Cross-check**")
+                    parts.append("")
+                    for d in answered[:4]:
+                        prov = d.get("source") or d.get("source_provider") or "feed"
+                        parts.append(
+                            f"- {prov}: {d.get('temperature_c')} °C"
+                            + (f", {d.get('humidity_pct')} % RH"
+                               if d.get("humidity_pct") is not None else "")
+                        )
+
+                provider = lead.get("source") or lead.get("source_provider") or "Live telemetry"
+                parts.append("")
+                parts.append(f"*Source: {provider} ({lead.get('trust_tier', 'verified')}).*")
+                response_parts.append("\n".join(parts))
+                parsed_weather = True
 
             if not parsed_weather and isinstance(weather, dict) and "temperature" in weather:
                 temp = weather.get("temperature")
@@ -723,26 +1241,103 @@ def _deterministic_response(
                 response_parts.append(f"Weather data for {city_name} is currently unavailable.")
 
         elif name == "get_air_quality":
-            sources = result.get("sources", {})
-            readings = []
-            if isinstance(sources, dict):
-                openaq = sources.get("openaq", {})
-                if isinstance(openaq, dict):
-                    readings = openaq.get("readings", [])
-            elif isinstance(sources, list):
-                for src in sources:
-                    if isinstance(src, dict) and src.get("name") == "openaq":
-                        readings = src.get("readings", [])
-                        break
-
+            readings = result.get("readings") or []
             city_n = result.get("city_name") or city_name or "Andhra Pradesh"
+
             if not readings:
-                response_parts.append(f"**Air Quality Telemetry for {city_n}:**\nNo active OpenAQ monitoring stations reporting in this jurisdiction right now.")
+                # The connector's own message says how far it searched and that
+                # no value exists. Repeat that rather than the older wording,
+                # which claimed stations were "not reporting" — a different and
+                # unverified claim.
+                radius = result.get("radius_m")
+                # The connector's message already names the radius it searched,
+                # so nothing is appended to it.
+                detail = result.get("message") or (
+                    "OpenAQ returned no measurements within "
+                    f"{int(radius) // 1000} km of this location."
+                    if radius else "OpenAQ returned no measurements for this location."
+                )
+                response_parts.append(f"**Air quality — {city_n}**\n\n{detail}")
+                empty_sources.append("get_air_quality")
             else:
-                lines = [f"**Verified Air Quality (OpenAQ v3 Real-Time) — {city_n}:**\n"]
-                for r in readings[:6]:
-                    if isinstance(r, dict):
-                        lines.append(f"  • **{r.get('parameter', '').upper()}**: {r.get('value')} {r.get('unit')} (Station: {r.get('location')})")
+                stations = result.get("stations") or []
+                # OpenAQ carries weather channels on the same stations. Listing
+                # them under air quality put a 23.8 C station temperature next
+                # to a 34.3 C live reading, which reads as a contradiction.
+                pollutants = {"pm25", "pm10", "pm1", "no", "no2", "nox", "so2",
+                              "o3", "co", "bc", "nh3"}
+                candidates = [
+                    r for r in readings
+                    if isinstance(r, dict)
+                    and str(r.get("parameter", "")).lower() in pollutants
+                ]
+                # One line per pollutant, the most recent one. The feed returns
+                # every station's whole history, so taking the first few gave
+                # the OLDEST readings and presented them as the current air.
+                latest: dict[str, dict[str, Any]] = {}
+                for r in candidates:
+                    key = str(r.get("parameter", "")).lower()
+                    seen_at = str(r.get("observed_at") or "")
+                    if seen_at >= str(latest.get(key, {}).get("observed_at") or ""):
+                        latest[key] = r
+                order = ["pm25", "pm10", "pm1", "no2", "o3", "so2", "co", "nox",
+                         "no", "nh3", "bc"]
+                shown = sorted(
+                    latest.values(),
+                    key=lambda r: order.index(str(r.get("parameter", "")).lower())
+                    if str(r.get("parameter", "")).lower() in order else len(order),
+                )
+
+                lines = [f"**Air quality — {city_n}**", ""]
+                for r in shown[:8]:
+                    param = str(r.get("parameter", "")).upper()
+                    when = str(r.get("observed_at") or "")[:16].replace("T", " ")
+                    station = r.get("station") or r.get("location") or "unnamed station"
+                    lines.append(
+                        f"- **{param}:** {r.get('value')} {r.get('unit', '')}".rstrip()
+                        + f" — {station}"
+                        + (f", observed {when} UTC" if when else "")
+                    )
+
+                # These readings are timestamped by the station, and the nearest
+                # one can be days behind. Saying so is the difference between a
+                # measurement and a guess about now.
+                newest = max((str(r.get("observed_at") or "") for r in shown),
+                             default="")
+                if newest:
+                    try:
+                        from datetime import UTC, datetime
+                        age_h = (datetime.now(UTC)
+                                 - datetime.fromisoformat(
+                                     newest.replace("Z", "+00:00"))
+                                 ).total_seconds() / 3600.0
+                        if age_h > 24:
+                            lines.append("")
+                            lines.append(
+                                f"**These are not current.** The most recent "
+                                f"measurement is {age_h / 24:.1f} days old "
+                                f"({newest[:16].replace('T', ' ')} UTC). No "
+                                f"newer value has been published for this area."
+                            )
+                    except ValueError:
+                        pass
+
+                if stations:
+                    named = ", ".join(
+                        dict.fromkeys(
+                            s.get("name") for s in stations[:3] if s.get("name")
+                        )
+                    )
+                    lines.append("")
+                    lines.append(
+                        f"Stations in range: {len(stations)}"
+                        + (f" — {named}" if named else "") + "."
+                    )
+                lines.append("")
+                lines.append(
+                    f"*Source: {result.get('provider', 'OpenAQ v3')} "
+                    f"({result.get('trust_tier', 'verified')}).*"
+                )
                 response_parts.append("\n".join(lines))
 
         elif name == "search_incidents":
@@ -752,8 +1347,10 @@ def _deterministic_response(
             scope = f" within {int(radius_m) // 1000} km" if radius_m else ""
             if count == 0:
                 response_parts.append(
-                    f"No active incidents on the record for {city_name}{scope}."
+                    f"**Incidents — {city_name}**\n\n"
+                    f"No active incidents on the record{scope}."
                 )
+                empty_sources.append("search_incidents")
             else:
                 lines = [f"**{count} active incident(s) in {city_name}{scope}:**\n"]
                 for inc in incidents[:5]:
@@ -769,9 +1366,10 @@ def _deterministic_response(
             if not arts:
                 window = result.get("within_hours")
                 response_parts.append(
-                    f"No reporting found for {scope}"
+                    f"**News — {scope}**\n\nNo regional reporting found"
                     + (f" in the last {int(window)} hours." if window else ".")
                 )
+                empty_sources.append("get_local_news")
             else:
                 lines = [f"**Reported for {scope}:**\n"]
                 for a in arts[:6]:
@@ -790,37 +1388,67 @@ def _deterministic_response(
         elif name == "get_city_status":
             active = result.get("active_incidents", 0)
             by_sev = result.get("incidents_by_severity", {})
-            weather = result.get("weather", "unavailable")
-            sev_parts = [f"{k}: {v}" for k, v in by_sev.items()]
-            response_parts.append(
-                f"**{city_name} status**\n\n"
-                f"**Active Incidents:** {active}\n"
-                + (f"  Breakdown: {', '.join(sev_parts)}\n" if sev_parts else "")
-                + f"**Weather:** {weather}\n"
-                + f"**Updated:** {result.get('timestamp', 'now')[:16]}"
-            )
+            total = result.get("total_incidents_recorded", 0)
+            place = result.get("city") or city_name
+
+            lines = [f"**Operational status — {place}**", ""]
+            lines.append(f"- **Active incidents:** {active}")
+            if by_sev:
+                lines.append("- **By severity:** "
+                             + ", ".join(f"{k} {v}" for k, v in by_sev.items()))
+            lines.append(f"- **Total incidents on record:** {total}")
+
+            wd = result.get("weather_detail") or {}
+            if wd.get("temperature_c") is not None:
+                lines.append(
+                    f"- **Conditions:** {wd['temperature_c']} °C"
+                    + (f", {wd['humidity_pct']} % humidity"
+                       if wd.get("humidity_pct") is not None else "")
+                    + (f", wind {wd['wind_speed_kph']} km/h"
+                       if wd.get("wind_speed_kph") is not None else "")
+                    + (f", {wd['rain_rate_mm_h']} mm/h rain"
+                       if wd.get("rain_rate_mm_h") else ", no precipitation")
+                )
+            else:
+                lines.append(f"- **Conditions:** {result.get('weather', 'unavailable')}")
+
+            lines.append(f"- **Snapshot taken:** "
+                         f"{str(result.get('timestamp', ''))[:16].replace('T', ' ')} UTC")
+            response_parts.append("\n".join(lines))
 
         elif name == "get_traffic_status":
             overall = result.get("overall_traffic", "unknown")
             areas = result.get("congestion_details") or []
             flow = result.get("flow") or {}
-            lines = [f"**Traffic in {city_name}:** {overall}"]
+            lines = [f"**Traffic — {city_name}**", ""]
+            lines.append(f"- **Overall:** {overall}")
 
             cur, free = flow.get("current_speed_kph"), flow.get("free_flow_kph")
             if cur is not None and free:
                 pct = round((cur / free) * 100) if free else None
                 lines.append(
-                    f"**Current flow:** {cur} km/h against a free-flow {free} km/h"
+                    f"- **Measured flow:** {cur} km/h against a free-flow {free} km/h"
                     + (f" ({pct}% of normal)" if pct is not None else "")
                 )
 
             if areas:
-                lines.append(f"\n**{len(areas)} affected area(s):**")
+                lines.append(f"- **Affected areas:** {len(areas)}")
+                lines.append("")
                 for a in areas[:4]:
                     sev = str(a.get("severity", "")).upper()
                     lines.append(f"- {a.get('title', 'Untitled')}" + (f" — {sev}" if sev else ""))
             else:
-                lines.append("No congestion reported on the record.")
+                lines.append("- **Congestion:** none reported on the record")
+
+            # A clear road is a reading, not a silent source. Only count traffic
+            # as having nothing to say when it returned no measurement at all,
+            # or the coverage note claims a source failed when it answered.
+            if cur is None and not areas:
+                empty_sources.append("get_traffic_status")
+
+            if flow.get("provider"):
+                lines.append("")
+                lines.append(f"*Source: {flow['provider']}.*")
 
             response_parts.append("\n".join(lines))
 
@@ -853,15 +1481,31 @@ def _deterministic_response(
             count = result.get("count", 0)
             city = result.get("city", "the area")
             if count == 0:
-                response_parts.append(result.get("message", "No services found nearby."))
+                response_parts.append(
+                    f"**Emergency services — {city}**\n\n"
+                    + result.get("message", "No services found nearby.")
+                )
+                empty_sources.append("search_nearby_services")
             else:
-                lines = [f"**Verified Emergency & Healthcare Services in {city}:**\n"]
+                lines = [f"**Emergency services — {city}**", ""]
                 for svc in services[:6]:
                     name_s = svc.get("name", "Unknown")
-                    addr = f" — {svc.get('address')}" if svc.get("address") else ""
-                    phone = f" ({svc.get('phone')})" if svc.get("phone") else ""
-                    beds = f" — {svc.get('beds')} beds" if svc.get("beds") else ""
-                    lines.append(f"  • **{name_s}**{beds}{phone}{addr}")
+                    lines.append(f"- **{name_s}**")
+                    facts = []
+                    if svc.get("type"):
+                        facts.append(str(svc["type"]).replace("_", " "))
+                    if svc.get("beds"):
+                        facts.append(f"{svc['beds']} beds")
+                    if svc.get("phone"):
+                        facts.append(f"tel {svc['phone']}")
+                    if facts:
+                        lines.append(f"  {' · '.join(facts)}")
+                    if svc.get("address"):
+                        lines.append(f"  {svc['address']}")
+                src = next((s.get("source") for s in services if s.get("source")), None)
+                if src:
+                    lines.append("")
+                    lines.append(f"*Source: {src}.*")
                 response_parts.append("\n".join(lines))
 
         elif name == "search_city_knowledge":
@@ -880,6 +1524,17 @@ def _deterministic_response(
             "I processed your request but couldn't generate a specific response. "
             "Could you rephrase your question?"
         )
+
+
+    # A briefing says what it looked at, not only what it found.
+    # Without this a quiet city reads as a broken answer.
+    if is_briefing:
+        note = _coverage_note(empty_sources)
+        if note:
+            response_parts.append(note)
+        sources = _provenance(tool_results)
+        if sources:
+            response_parts.append(sources)
 
     return "\n\n".join(response_parts), tool_calls, tool_results
 
@@ -938,8 +1593,21 @@ def _infer_tool_args(tool_name: str, message: str, context: dict[str, Any]) -> d
         args["longitude"] = 80.6480
         args["city_name"] = "Vijayawada"
 
-    if tool_name in ("search_incidents", "search_city_knowledge"):
+    if tool_name == "search_city_knowledge":
+        # Semantic search: the whole question is the useful input.
         args["query"] = message
+
+    elif tool_name == "search_incidents":
+        # `query` is a literal substring match against incident titles, so
+        # passing the whole sentence matched nothing and every incident search
+        # from chat came back empty — even with a critical incident open in
+        # the same city. Send a subject term, or nothing at all.
+        for term in ("accident", "collision", "crash", "flood", "waterlogging",
+                     "fire", "blockage", "outage", "traffic", "landslide",
+                     "cyclone", "storm", "earthquake"):
+            if re.search(rf"(?<!\w){term}", msg_lower):
+                args["query"] = term
+                break
 
     elif tool_name == "get_emergency_info":
         msg = message.lower()
@@ -1100,9 +1768,14 @@ def chat(
     # Record user message
     session.add_message(ChatMessage(role="user", content=user_message))
 
-    # 1. Try Local Custom LLM first
-    local_res = _local_custom_llm_chat(session, user_message, context)
-    if local_res:
+    # 1. Cloud model, if a key is configured. It writes the prose; the numbers
+    #    in it come from tool results, same as every other path.
+    cloud_res = _cloud_chat(session, user_message, context)
+    if cloud_res:
+        response_text, tool_calls, tool_results, model = cloud_res
+        degraded = False
+    # 2. Local fine-tuned model
+    elif (local_res := _local_custom_llm_chat(session, user_message, context)):
         response_text, tool_calls, tool_results, model = local_res
         degraded = False
     else:

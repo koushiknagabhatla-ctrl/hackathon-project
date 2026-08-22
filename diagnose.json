@@ -1,5 +1,12 @@
 {
-  "/": [],
+  "/": [
+    {
+      "kind": "net.failed",
+      "text": "net::ERR_ABORTED",
+      "url": "",
+      "n": 2
+    }
+  ],
   "/chat": [
     {
       "kind": "console.warning",
@@ -16,14 +23,7 @@
       "n": 1
     }
   ],
-  "/command": [
-    {
-      "kind": "console.warning",
-      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
-      "url": "http://localhost:3000/command",
-      "n": 1
-    }
-  ],
+  "/command": [],
   "/actions": [
     {
       "kind": "console.warning",
@@ -42,7 +42,14 @@
   ],
   "/alerts": [],
   "/routes": [],
-  "/report": [],
+  "/report": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/report",
+      "n": 1
+    }
+  ],
   "/analytics": [
     {
       "kind": "console.warning",
@@ -51,7 +58,14 @@
       "n": 1
     }
   ],
-  "/executive": [],
+  "/executive": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/executive",
+      "n": 1
+    }
+  ],
   "/emergency": [
     {
       "kind": "console.warning",
@@ -76,7 +90,14 @@
       "n": 1
     }
   ],
-  "/governance": [],
+  "/governance": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/governance",
+      "n": 1
+    }
+  ],
   "/field": [
     {
       "kind": "console.warning",
@@ -85,7 +106,14 @@
       "n": 1
     }
   ],
-  "/simulation": [],
+  "/simulation": [
+    {
+      "kind": "console.warning",
+      "text": "The resource http://localhost:3000/_next/static/chunks/apps_web_app_not-found_module_1cj25q5.css was preloaded using link preload but not used within a few seconds from the window's load event. Please",
+      "url": "http://localhost:3000/simulation",
+      "n": 1
+    }
+  ],
   "/public": [
     {
       "kind": "console.warning",

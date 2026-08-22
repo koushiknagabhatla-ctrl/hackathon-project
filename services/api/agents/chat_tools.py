@@ -276,13 +276,38 @@ def handle_get_air_quality(args: dict[str, Any], context: dict[str, Any]) -> dic
     lon = args.get("longitude", context.get("longitude", DEFAULT_LON))
     city_name = args.get("city_name", context.get("city_name", "Vijayawada"))
     try:
-        from services.api.connectors.weather import fetch_live_weather
-        result = fetch_live_weather(lat=lat, lon=lon, principal="p_operator")
-        sources = result.get("sources", {})
+        # This used to call fetch_live_weather, so the "air quality" tool
+        # returned temperature readings and never contacted OpenAQ at all -
+        # while the reply still told the user no OpenAQ station was reporting.
+        # That asserted a fact about a source nobody had asked.
+        from services.api.connectors.air_quality import fetch_air_quality
+
+        aq = fetch_air_quality(lat=lat, lon=lon, principal="p_operator")
+        # Newest first. The feed returns each station's whole history oldest
+        # first, so anything that takes "the first few" was reporting readings
+        # days old as the current air.
+        readings = sorted(
+            aq.get("readings") or [],
+            key=lambda r: str(r.get("observed_at") or ""),
+            reverse=True,
+        )
         return {
             "status": "ok",
             "city_name": city_name,
-            "sources": sources,
+            "coordinates": {"lat": lat, "lon": lon},
+            "aq_status": aq.get("status"),
+            "readings": readings,
+            "stations": aq.get("stations") or [],
+            "radius_m": aq.get("radius_m"),
+            "observed_at": aq.get("last_upstream_at"),
+            "checked_at": aq.get("last_verified_at"),
+            "provider": aq.get("source"),
+            "endpoint": aq.get("endpoint"),
+            "trust_tier": aq.get("trust_tier"),
+            # The connector's own words when it has nothing: it says no value
+            # exists rather than estimating one.
+            "message": aq.get("message"),
+            "sources": [aq],
         }
     except Exception as exc:
         log.warning("Air quality tool failed: %s", exc)
@@ -408,6 +433,25 @@ def handle_create_civic_report(args: dict[str, Any], context: dict[str, Any]) ->
     lon = args.get("longitude", context.get("longitude", DEFAULT_LON))
     severity = args.get("severity", "medium")
 
+    # Second guard on a write path. Intent detection decides WHETHER to call
+    # this; this decides whether what arrived is actually a report. A question
+    # with no identified issue is a question, and filing it would put the
+    # user's own words into the incident ledger as a civic complaint.
+    text = str(description).strip()
+    looks_like_question = text.endswith("?") or text.lower().startswith(
+        ("what", "when", "where", "why", "how", "who", "is ", "are ", "can ",
+         "could ", "would ", "do ", "does ", "did ", "explain", "tell me",
+         "show me", "give me", "list ")
+    )
+    if issue_type == "other" and (looks_like_question or not text):
+        return {
+            "status": "ok",
+            "report_created": False,
+            "message": ("That reads as a question rather than a report, so nothing "
+                        "was filed. To report an issue, say what it is and where - "
+                        "for example \"report a pothole on Eluru Road\"."),
+        }
+
     try:
         now = datetime.now(UTC).isoformat()
         event = EventIn(
@@ -453,6 +497,7 @@ def handle_get_city_status(args: dict[str, Any], context: dict[str, Any]) -> dic
         # Weather for the city actually in context, read from the same live
         # feed the weather tool uses. `sources` is a list of readings.
         weather_summary = "unavailable"
+        weather_detail: dict[str, Any] = {}
         try:
             from services.api.connectors.weather import fetch_live_weather
 
@@ -469,17 +514,29 @@ def handle_get_city_status(args: dict[str, Any], context: dict[str, Any]) -> dic
                 rain = src.get("rain_rate_mm_h") or 0
                 if rain > 0:
                     weather_summary += f", {rain} mm/h rain"
+                weather_detail = {
+                    "temperature_c": temp,
+                    "humidity_pct": src.get("humidity_pct"),
+                    "wind_speed_kph": src.get("wind_speed_kph"),
+                    "pressure_hpa": src.get("pressure_hpa"),
+                    "rain_rate_mm_h": rain,
+                    "observed_at": src.get("observed_at"),
+                    "provider": src.get("source"),
+                }
                 break
         except Exception as exc:
             log.warning("city status weather lookup failed: %s", exc)
 
         return {
             "status": "ok",
-            "city": "Vijayawada",
+            # Was hardcoded to "Vijayawada", so every other city's status
+            # answer was labelled with the wrong place.
+            "city": args.get("city_name") or context.get("city_name") or "Vijayawada",
             "active_incidents": len(active),
             "incidents_by_severity": by_severity,
             "total_incidents_recorded": len(incidents),
             "weather": weather_summary,
+            "weather_detail": weather_detail,
             "timestamp": datetime.now(UTC).isoformat(),
         }
     except Exception as exc:
